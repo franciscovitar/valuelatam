@@ -17,17 +17,17 @@ const useCases = [
   {
     icon: "💼",
     title: "Capital de trabajo",
-    desc: "Inventario, cobranzas y necesidades operativas estacionales.",
+    desc: "Inventario, cobranzas y necesidades operativas estacionales para sostener el ritmo del negocio.",
   },
   {
     icon: "🏗️",
     title: "Proyectos de inversión",
-    desc: "Expansión, activos o nuevas líneas.",
+    desc: "Expansión, compra de activos o nuevas líneas para crecer con una estructura financiera clara.",
   },
   {
     icon: "⚡",
     title: "Necesidades urgentes",
-    desc: "mprevistos u oportunidades con velocidad.",
+    desc: "Imprevistos u oportunidades que requieren velocidad, liquidez inmediata y ejecución sin fricción.",
   },
 ];
 

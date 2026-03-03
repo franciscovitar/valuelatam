@@ -58,6 +58,7 @@ export default function HeroVisual() {
       {/* ✅ CARDS (dock premium) */}
       <div className={styles.cardRow}>
         {/* Card 1 */}
+        {/* Card 1 */}
         <motion.article
           className={`${styles.card} ${styles.cardWide}`}
           variants={card}
@@ -71,10 +72,8 @@ export default function HeroVisual() {
           </header>
 
           <div className={styles.metric}>
-            <span className={styles.metricValue}>15+ años</span>
-            <span className={styles.metricLabel}>
-              Sistema bancario y mercado de capitales
-            </span>
+            <span className={styles.metricValue}>+15 años</span>
+            <span className={styles.metricLabel}>Banca & capitales</span>
           </div>
         </motion.article>
 
@@ -92,10 +91,8 @@ export default function HeroVisual() {
           </header>
 
           <div className={styles.metric}>
-            <span className={styles.metricValue}>Bancos · ALyCs · SGRs</span>
-            <span className={styles.metricLabel}>
-              Red activa para ejecutar alternativas
-            </span>
+            <span className={styles.metricValue}>Partners </span>
+            <span className={styles.metricLabel}>Bancos · ALyCs · SGRs</span>
           </div>
         </motion.article>
 
@@ -114,9 +111,7 @@ export default function HeroVisual() {
 
           <div className={styles.metric}>
             <span className={styles.metricValue}>End-to-end</span>
-            <span className={styles.metricLabel}>
-              Diagnóstico → estrategia → implementación
-            </span>
+            <span className={styles.metricLabel}>Estrategia → acción</span>
           </div>
         </motion.article>
       </div>

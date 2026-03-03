@@ -259,6 +259,8 @@
 
 /* =========================
    WHY (cards más modernas)
+/* =========================
+   WHY US (hover violeta suave)
 ========================= */
 .why {
     position: relative;
@@ -293,21 +295,79 @@
     text-align: left;
     box-shadow: var(--shadow-lg);
     backdrop-filter: blur(10px);
+    overflow: hidden;
 
+    /* ✅ transiciones más lindas */
     transition:
-        transform 220ms cubic-bezier(0.4, 0, 0.2, 1),
-        box-shadow 220ms cubic-bezier(0.4, 0, 0.2, 1),
-        border-color 220ms cubic-bezier(0.4, 0, 0.2, 1);
+        transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1),
+        border-color 260ms cubic-bezier(0.22, 1, 0.36, 1);
+
+    will-change: transform;
+
+    /* ✅ overlay violeta animable (evita cambio brusco) */
+    &::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        pointer-events: none;
+        z-index: 0;
+
+        background: linear-gradient(135deg, var(--ink-deep) 0%, var(--ink) 100%);
+        opacity: 0;
+        transform: translateY(8px);
+        transition:
+            opacity 280ms cubic-bezier(0.22, 1, 0.36, 1),
+            transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* ✅ contenido arriba del overlay */
+    >* {
+        position: relative;
+        z-index: 1;
+    }
 
     @media (hover: hover) and (pointer: fine) {
         &:hover {
             transform: translateY(-2px);
-            box-shadow: var(--shadow-xl);
-            border-color: rgba(41, 66, 148, 0.22);
+            box-shadow:
+                0 1px 0 rgba(255, 255, 255, 0.10) inset,
+                var(--shadow-xl);
+            border-color: rgba(113, 184, 227, 0.22);
+        }
+
+        &:hover::after {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ✅ texto blanco */
+        &:hover .whyTitle {
+            color: #fff;
+        }
+
+        &:hover .whyDesc {
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        /* ✅ icon “invertido” */
+        &:hover .whyIcon {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.18);
+            color: #fff;
+            transform: translateY(-1px);
+            box-shadow: 0 14px 40px rgba(19, 15, 58, 0.18);
+        }
+
+        /* ✅ la línea de arriba se adapta */
+        &:hover::before {
+            opacity: 0.25;
         }
     }
 }
 
+/* línea superior */
 .whyCard::before {
     content: "";
     position: absolute;
@@ -316,15 +376,19 @@
     top: 0;
     height: 2px;
     border-radius: 999px;
+    z-index: 1;
+    /* arriba del overlay para que se vea suave */
     background: linear-gradient(90deg,
             rgba(41, 66, 148, 0),
             rgba(41, 66, 148, 0.55),
             rgba(113, 184, 227, 0.45),
             rgba(41, 66, 148, 0));
     opacity: 0.55;
+
+    transition: opacity 280ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* icon más “enterprise” (cuadradito suave) */
+/* icon más “enterprise” */
 .whyIcon {
     width: 44px;
     height: 44px;
@@ -337,6 +401,13 @@
     background: rgba(41, 66, 148, 0.10);
     border: 1px solid rgba(41, 66, 148, 0.18);
     color: var(--color-french-blue, #294294);
+
+    transition:
+        transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+        background-color 260ms cubic-bezier(0.22, 1, 0.36, 1),
+        border-color 260ms cubic-bezier(0.22, 1, 0.36, 1),
+        color 260ms cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .whyTitle {
@@ -346,6 +417,8 @@
     color: var(--text-2);
     letter-spacing: -0.02em;
     line-height: 1.25;
+
+    transition: color 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .whyDesc {
@@ -353,8 +426,9 @@
     color: var(--text-2);
     line-height: 1.65;
     font-size: 0.95rem;
-}
 
+    transition: color 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
 
 /* =========================
    TEAM (más premium)

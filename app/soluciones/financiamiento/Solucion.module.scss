@@ -173,7 +173,9 @@
     border-top: 1px solid rgba(19, 15, 58, 0.06);
 }
 
-/* Use cases */
+/* =========================
+   USE CASES (hover violeta suave)
+========================= */
 .useCases {
     margin-top: var(--space-12);
     display: grid;
@@ -194,17 +196,70 @@
     background: rgba(255, 255, 255, 0.82);
     box-shadow: var(--shadow-lg);
     backdrop-filter: blur(10px);
+    overflow: hidden;
 
     transition:
-        transform 220ms cubic-bezier(0.4, 0, 0.2, 1),
-        box-shadow 220ms cubic-bezier(0.4, 0, 0.2, 1),
-        border-color 220ms cubic-bezier(0.4, 0, 0.2, 1);
+        transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1),
+        border-color 260ms cubic-bezier(0.22, 1, 0.36, 1);
+
+    will-change: transform;
+
+    /* overlay violeta animable */
+    &::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        pointer-events: none;
+        z-index: 0;
+
+        background: linear-gradient(135deg, var(--ink-deep) 0%, var(--ink) 100%);
+        opacity: 0;
+        transform: translateY(8px);
+        transition:
+            opacity 280ms cubic-bezier(0.22, 1, 0.36, 1),
+            transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* contenido arriba del overlay */
+    >* {
+        position: relative;
+        z-index: 1;
+    }
 
     @media (hover: hover) and (pointer: fine) {
         &:hover {
             transform: translateY(-2px);
-            box-shadow: var(--shadow-xl);
-            border-color: rgba(41, 66, 148, 0.22);
+            box-shadow:
+                0 1px 0 rgba(255, 255, 255, 0.10) inset,
+                var(--shadow-xl);
+            border-color: rgba(113, 184, 227, 0.22);
+        }
+
+        &:hover::after {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        &:hover .useCaseTitle {
+            color: #fff;
+        }
+
+        &:hover .useCaseDesc {
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        &:hover .useCaseIcon {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.18);
+            color: #fff;
+            transform: translateY(-1px);
+            box-shadow: 0 14px 40px rgba(19, 15, 58, 0.18);
+        }
+
+        &:hover::before {
+            opacity: 0.25;
         }
     }
 }
@@ -218,12 +273,14 @@
     top: 0;
     height: 2px;
     border-radius: 999px;
+    z-index: 1;
     background: linear-gradient(90deg,
             rgba(41, 66, 148, 0),
             rgba(41, 66, 148, 0.55),
             rgba(113, 184, 227, 0.45),
             rgba(41, 66, 148, 0));
     opacity: 0.55;
+    transition: opacity 280ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .useCaseIcon {
@@ -238,6 +295,13 @@
     border: 1px solid rgba(41, 66, 148, 0.18);
     color: var(--color-french-blue, #294294);
     font-size: 18px;
+
+    transition:
+        transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+        background-color 260ms cubic-bezier(0.22, 1, 0.36, 1),
+        border-color 260ms cubic-bezier(0.22, 1, 0.36, 1),
+        color 260ms cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .useCaseTitle {
@@ -247,6 +311,8 @@
     font-weight: 800;
     letter-spacing: -0.02em;
     line-height: 1.25;
+
+    transition: color 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .useCaseDesc {
@@ -254,9 +320,13 @@
     color: var(--text-2);
     line-height: 1.65;
     font-size: 0.98rem;
+
+    transition: color 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Services grid */
+/* =========================
+   SERVICES GRID (hover violeta suave)
+========================= */
 .grid {
     margin-top: var(--space-12);
     display: grid;
@@ -280,12 +350,37 @@
     padding: clamp(18px, 2vw, 26px);
     box-shadow: var(--shadow-lg);
     backdrop-filter: blur(10px);
+    overflow: hidden;
 
     transition:
-        transform 220ms cubic-bezier(0.4, 0, 0.2, 1),
-        box-shadow 220ms cubic-bezier(0.4, 0, 0.2, 1),
-        border-color 220ms cubic-bezier(0.4, 0, 0.2, 1),
-        background 220ms cubic-bezier(0.4, 0, 0.2, 1);
+        transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1),
+        border-color 260ms cubic-bezier(0.22, 1, 0.36, 1);
+
+    will-change: transform;
+
+    /* overlay violeta animable */
+    &::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        pointer-events: none;
+        z-index: 0;
+
+        background: linear-gradient(135deg, var(--ink-deep) 0%, var(--ink) 100%);
+        opacity: 0;
+        transform: translateY(8px);
+        transition:
+            opacity 280ms cubic-bezier(0.22, 1, 0.36, 1),
+            transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* contenido arriba del overlay */
+    >* {
+        position: relative;
+        z-index: 1;
+    }
 }
 
 .card::before {
@@ -296,20 +391,65 @@
     top: 0;
     height: 2px;
     border-radius: 999px;
+    z-index: 1;
     background: linear-gradient(90deg,
             rgba(41, 66, 148, 0),
             rgba(41, 66, 148, 0.55),
             rgba(113, 184, 227, 0.45),
             rgba(41, 66, 148, 0));
     opacity: 0.55;
+    transition: opacity 280ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @media (hover: hover) and (pointer: fine) {
     .card:hover {
         transform: translateY(-2px);
-        box-shadow: var(--shadow-xl);
-        border-color: rgba(41, 66, 148, 0.22);
-        background: rgba(255, 255, 255, 0.94);
+        box-shadow:
+            0 1px 0 rgba(255, 255, 255, 0.10) inset,
+            var(--shadow-xl);
+        border-color: rgba(113, 184, 227, 0.22);
+    }
+
+    .card:hover::after {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .card:hover::before {
+        opacity: 0.25;
+    }
+
+    .card:hover .cardTitle {
+        color: #fff;
+    }
+
+    .card:hover .cardDesc {
+        color: rgba(255, 255, 255, 0.85);
+    }
+
+    .card:hover .feature {
+        color: rgba(255, 255, 255, 0.88);
+    }
+
+    .card:hover .check {
+        background: rgba(255, 255, 255, 0.12);
+        border-color: rgba(255, 255, 255, 0.20);
+        color: #fff;
+    }
+
+    .card:hover .chipsBlock {
+        border-top-color: rgba(255, 255, 255, 0.16);
+    }
+
+    .card:hover .chipsTitle {
+        color: rgba(255, 255, 255, 0.88);
+    }
+
+    .card:hover .chip {
+        background: rgba(255, 255, 255, 0.10);
+        border-color: rgba(255, 255, 255, 0.18);
+        color: rgba(255, 255, 255, 0.92);
+        box-shadow: 0 14px 40px rgba(19, 15, 58, 0.18);
     }
 }
 
@@ -320,6 +460,8 @@
     color: var(--text);
     letter-spacing: -0.02em;
     line-height: 1.25;
+
+    transition: color 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .cardDesc {
@@ -327,6 +469,8 @@
     color: var(--text-2);
     line-height: 1.65;
     font-size: 0.98rem;
+
+    transition: color 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Features */
@@ -345,6 +489,8 @@
     font-size: 0.95rem;
     color: var(--color-gray-700, rgba(11, 16, 32, 0.82));
     line-height: 1.45;
+
+    transition: color 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .check {
@@ -361,6 +507,11 @@
     font-weight: 900;
     flex-shrink: 0;
     margin-top: 1px;
+
+    transition:
+        background-color 260ms cubic-bezier(0.22, 1, 0.36, 1),
+        border-color 260ms cubic-bezier(0.22, 1, 0.36, 1),
+        color 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Chips */
@@ -368,6 +519,8 @@
     margin-top: 18px;
     padding-top: 16px;
     border-top: 1px solid rgba(19, 15, 58, 0.08);
+
+    transition: border-color 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .chipsTitle {
@@ -376,6 +529,8 @@
     font-weight: 700;
     color: var(--color-gray-700);
     letter-spacing: 0.02em;
+
+    transition: color 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .chips {
@@ -396,12 +551,14 @@
     font-weight: 650;
 
     transition:
-        transform 180ms cubic-bezier(0.4, 0, 0.2, 1),
-        box-shadow 180ms cubic-bezier(0.4, 0, 0.2, 1),
-        background 180ms cubic-bezier(0.4, 0, 0.2, 1),
-        border-color 180ms cubic-bezier(0.4, 0, 0.2, 1);
+        transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 200ms cubic-bezier(0.22, 1, 0.36, 1),
+        background-color 200ms cubic-bezier(0.22, 1, 0.36, 1),
+        border-color 200ms cubic-bezier(0.22, 1, 0.36, 1),
+        color 200ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* hover chip normal (si querés conservarlo) */
 @media (hover: hover) and (pointer: fine) {
     .chip:hover {
         transform: translateY(-1px);

@@ -1,12 +1,20 @@
 .section {
     position: relative;
     padding: var(--space-24) 0;
-    background: var(--color-white);
+    background: var(--color-gray-50);
     overflow: hidden;
     isolation: isolate;
 }
 
-/* ✅ Fondo sutil (glows + líneas suaves) */
+/* ✅ Capa contenedora de decoraciones */
+.bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+}
+
+/* ✅ Fondo más gris + glows MUY sutiles (menos “ruido”) */
 .section::before {
     content: "";
     position: absolute;
@@ -15,64 +23,36 @@
     pointer-events: none;
 
     background:
-        radial-gradient(260px 260px at 12% 22%, rgba(113, 184, 227, 0.22) 0%, rgba(113, 184, 227, 0.10) 45%, transparent 75%),
-        radial-gradient(420px 420px at 86% 18%, rgba(41, 66, 148, 0.16) 0%, rgba(41, 66, 148, 0.08) 50%, transparent 78%),
-        radial-gradient(560px 560px at 72% 82%, rgba(45, 35, 86, 0.10) 0%, rgba(45, 35, 86, 0.05) 55%, transparent 80%),
-        radial-gradient(220px 220px at 26% 86%, rgba(113, 184, 227, 0.16) 0%, rgba(113, 184, 227, 0.07) 50%, transparent 78%);
-
-    filter: blur(6px);
+        radial-gradient(520px 520px at 14% 18%, rgba(113, 184, 227, 0.10) 0%, transparent 60%),
+        radial-gradient(620px 620px at 86% 22%, rgba(41, 66, 148, 0.08) 0%, transparent 62%),
+        radial-gradient(560px 560px at 60% 86%, rgba(45, 35, 86, 0.06) 0%, transparent 66%);
+    filter: blur(10px);
     opacity: 1;
-    mix-blend-mode: screen;
 }
 
-.section::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-    opacity: 0.22;
-    // background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1400' height='700' viewBox='0 0 1400 700'%3E%3Cdefs%3E%3CradialGradient id='b1' cx='35%25' cy='35%25' r='70%25'%3E%3Cstop offset='0%25' stop-color='rgba(113,184,227,0.35)'/%3E%3Cstop offset='60%25' stop-color='rgba(113,184,227,0.10)'/%3E%3Cstop offset='100%25' stop-color='rgba(113,184,227,0)'/%3E%3C/radialGradient%3E%3CradialGradient id='b2' cx='40%25' cy='40%25' r='70%25'%3E%3Cstop offset='0%25' stop-color='rgba(41,66,148,0.26)'/%3E%3Cstop offset='60%25' stop-color='rgba(41,66,148,0.08)'/%3E%3Cstop offset='100%25' stop-color='rgba(41,66,148,0)'/%3E%3C/radialGradient%3E%3Cfilter id='blur'%3E%3CfeGaussianBlur stdDeviation='1.2'/%3E%3C/filter%3E%3C/defs%3E%3Ccircle cx='180' cy='120' r='140' fill='url(%23b1)'/%3E%3Ccircle cx='420' cy='220' r='90' fill='url(%23b2)'/%3E%3Ccircle cx='720' cy='160' r='160' fill='url(%23b1)'/%3E%3Ccircle cx='1020' cy='260' r='110' fill='url(%23b2)'/%3E%3Ccircle cx='1240' cy='140' r='130' fill='url(%23b1)'/%3E%3Ccircle cx='260' cy='520' r='170' fill='url(%23b2)'/%3E%3Ccircle cx='560' cy='520' r='120' fill='url(%23b1)'/%3E%3Ccircle cx='860' cy='520' r='160' fill='url(%23b2)'/%3E%3Ccircle cx='1180' cy='520' r='140' fill='url(%23b1)'/%3E%3Cg filter='url(%23blur)' fill='none'%3E%3Ccircle cx='210' cy='150' r='34' stroke='rgba(113,184,227,0.35)' stroke-width='2'/%3E%3Ccircle cx='520' cy='130' r='26' stroke='rgba(41,66,148,0.30)' stroke-width='2'/%3E%3Ccircle cx='980' cy='160' r='30' stroke='rgba(113,184,227,0.28)' stroke-width='2'/%3E%3Ccircle cx='1140' cy='240' r='22' stroke='rgba(41,66,148,0.26)' stroke-width='2'/%3E%3Ccircle cx='360' cy='540' r='28' stroke='rgba(113,184,227,0.26)' stroke-width='2'/%3E%3Ccircle cx='760' cy='560' r='34' stroke='rgba(41,66,148,0.24)' stroke-width='2'/%3E%3Ccircle cx='1080' cy='520' r='26' stroke='rgba(113,184,227,0.26)' stroke-width='2'/%3E%3C/g%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-size: cover;
-    background-position: center;
-    mix-blend-mode: multiply;
-}
-
-.bg {
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-}
-
-/* ===== Stars (si los estás usando en JSX) =====
-   Si NO tenés <div className={styles.stars}/> y stars2 en JSX, podés borrar todo este bloque. */
+/* Stars opcionales (más apagadas). Si no las querés, borrá stars/stars2 en JSX. */
 .stars,
 .stars2 {
     position: absolute;
     inset: -25%;
     background-repeat: repeat;
     will-change: transform;
-    opacity: 0.45;
-    /* más sutil */
-    mix-blend-mode: multiply;
     pointer-events: none;
     z-index: 0;
-    /* atrás de las cards */
+    mix-blend-mode: multiply;
 }
 
 .stars {
+    opacity: 0.08;
     background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='360'%20height='240'%20viewBox='0%200%20360%20240'%3E%3Cg%20fill='%230f172a'%3E%3Ccircle%20cx='18'%20cy='22'%20r='1'%20opacity='.18'/%3E%3Ccircle%20cx='74'%20cy='38'%20r='1'%20opacity='.14'/%3E%3Ccircle%20cx='126'%20cy='18'%20r='1'%20opacity='.16'/%3E%3Ccircle%20cx='162'%20cy='54'%20r='1'%20opacity='.12'/%3E%3Ccircle%20cx='210'%20cy='26'%20r='1'%20opacity='.16'/%3E%3Ccircle%20cx='248'%20cy='62'%20r='1'%20opacity='.14'/%3E%3Ccircle%20cx='310'%20cy='28'%20r='1'%20opacity='.12'/%3E%3Ccircle%20cx='340'%20cy='70'%20r='1'%20opacity='.16'/%3E%3Ccircle%20cx='26'%20cy='98'%20r='1'%20opacity='.12'/%3E%3Ccircle%20cx='92'%20cy='124'%20r='1'%20opacity='.16'/%3E%3Ccircle%20cx='148'%20cy='112'%20r='1'%20opacity='.14'/%3E%3Ccircle%20cx='206'%20cy='138'%20r='1'%20opacity='.12'/%3E%3Ccircle%20cx='260'%20cy='118'%20r='1'%20opacity='.16'/%3E%3Ccircle%20cx='320'%20cy='150'%20r='1'%20opacity='.14'/%3E%3Ccircle%20cx='44'%20cy='190'%20r='1'%20opacity='.14'/%3E%3Ccircle%20cx='118'%20cy='206'%20r='1'%20opacity='.12'/%3E%3Ccircle%20cx='172'%20cy='186'%20r='1'%20opacity='.16'/%3E%3Ccircle%20cx='236'%20cy='210'%20r='1'%20opacity='.14'/%3E%3Ccircle%20cx='300'%20cy='196'%20r='1'%20opacity='.12'/%3E%3Ccircle%20cx='342'%20cy='220'%20r='1'%20opacity='.16'/%3E%3C/g%3E%3C/svg%3E");
     background-size: 360px 240px;
     animation: starDrift1 26s linear infinite;
-    filter: blur(0.2px);
 }
 
 .stars2 {
+    opacity: 0.05;
     background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='520'%20height='340'%20viewBox='0%200%20520%20340'%3E%3Cg%20fill='%230f172a'%3E%3Ccircle%20cx='60'%20cy='54'%20r='1.5'%20opacity='.10'/%3E%3Ccircle%20cx='180'%20cy='80'%20r='1.6'%20opacity='.08'/%3E%3Ccircle%20cx='320'%20cy='66'%20r='1.4'%20opacity='.10'/%3E%3Ccircle%20cx='460'%20cy='98'%20r='1.7'%20opacity='.08'/%3E%3Ccircle%20cx='96'%20cy='190'%20r='1.6'%20opacity='.09'/%3E%3Ccircle%20cx='250'%20cy='210'%20r='1.5'%20opacity='.08'/%3E%3Ccircle%20cx='410'%20cy='226'%20r='1.7'%20opacity='.09'/%3E%3Ccircle%20cx='140'%20cy='300'%20r='1.6'%20opacity='.08'/%3E%3Ccircle%20cx='360'%20cy='308'%20r='1.7'%20opacity='.09'/%3E%3C/g%3E%3C/svg%3E");
     background-size: 520px 340px;
-    opacity: 0.22;
     animation: starDrift2 44s linear infinite;
 }
 
@@ -109,182 +89,217 @@
     position: relative;
     z-index: 1;
     margin-top: var(--space-12);
-
     display: grid;
     grid-template-columns: 1fr;
-    gap: 18px;
+    gap: var(--space-8);
 
     @media (min-width: 768px) {
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 20px;
+        gap: var(--space-10);
     }
 
-    @media (min-width: 1100px) {
+    @media (min-width: 1024px) {
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 22px;
+        gap: var(--space-12);
     }
 }
 
-/* ===== Card (estilo referencia) ===== */
+/* ===== Card (suave, con overlay violeta animado) ===== */
 .card {
     position: relative;
-    isolation: isolate;
-    overflow: hidden;
+    z-index: 1;
 
-    border-radius: 28px;
-    border: 1px solid var(--border, rgba(41, 66, 148, 0.14));
-    background: rgba(255, 255, 255, 0.92);
-    box-shadow: var(--shadow-lg);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 
-    display: grid;
-    grid-template-columns: 0.46fr 0.54fr;
-    min-height: 190px;
+    padding: 10px;
+    border-radius: 34px;
+    text-decoration: none;
+    color: inherit;
 
+    background: rgba(244, 246, 250, 0.92);
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.55) inset,
+        0 26px 80px rgba(16, 24, 40, 0.08);
+
+    min-height: 540px;
+
+    /* ✅ transiciones más “premium” */
     transition:
-        transform var(--transition-normal),
-        box-shadow var(--transition-normal),
-        border-color var(--transition-normal),
-        background var(--transition-normal);
+        transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1);
 
-    @media (max-width: 520px) {
-        grid-template-columns: 1fr;
+    will-change: transform;
+
+    /* Overlay violeta animable (evita cambio brusco de background) */
+    &::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        pointer-events: none;
+        z-index: 0;
+
+        background: linear-gradient(135deg, var(--ink-deep) 0%, var(--ink) 100%);
+        opacity: 0;
+        transform: translateY(6px);
+        transition:
+            opacity 280ms cubic-bezier(0.22, 1, 0.36, 1),
+            transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* Asegura que el contenido quede arriba del overlay */
+    >* {
+        position: relative;
+        z-index: 1;
     }
 
     &:focus-visible {
         outline: 2px solid rgba(41, 66, 148, 0.75);
         outline-offset: 4px;
-        border-radius: 28px;
-        box-shadow: 0 0 0 5px rgba(113, 184, 227, 0.14);
-    }
-
-    @media (hover: hover) and (pointer: fine) {
-        &:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-xl);
-            border-color: rgba(41, 66, 148, 0.22);
-        }
-
-        &:hover .fill {
-            opacity: 1;
-            transform: translate3d(0, 0, 0) scale(1);
-        }
-
-        &:hover .arrow {
-            background: var(--ink-deep);
-            color: white;
-            transform: translateY(-1px);
-            box-shadow: 0 14px 40px rgba(19, 15, 58, 0.22);
-        }
-
-        &:hover .mediaImg {
-            transform: scale(1.06);
-        }
     }
 }
 
-/* Fill “blob” en el lado derecho (como referencia, con tu paleta) */
-.fill {
-    position: absolute;
-    inset: -18% -14% -18% 44%;
-    z-index: 0;
-    pointer-events: none;
-
-    border-radius: 44px;
-    background:
-        radial-gradient(700px 420px at 20% 40%, rgba(113, 184, 227, 0.55) 0%, transparent 60%),
-        radial-gradient(620px 420px at 70% 65%, rgba(41, 66, 148, 0.38) 0%, transparent 62%),
-        linear-gradient(135deg, rgba(113, 184, 227, 0.95), rgba(41, 66, 148, 0.72));
-
-    opacity: 0;
-    transform: translate3d(10px, 6px, 0) scale(0.98);
-    transition: opacity var(--transition-normal), transform var(--transition-normal);
+/* Top row */
+.topRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 18px 18px 0 18px;
 }
 
-/* ===== Media ===== */
-.media {
-    position: relative;
-    z-index: 1;
-    margin: 14px;
-    border-radius: 22px;
+/* Pill */
+.pill {
+    display: inline-flex;
+    align-items: center;
+    height: 30px;
+    padding: 0 14px;
+
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+
+    color: var(--text-2);
+    background: rgba(255, 255, 255, 0.65);
+
+    transition:
+        color 260ms cubic-bezier(0.22, 1, 0.36, 1),
+        background-color 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Arrow */
+.arrow {
+    width: 46px;
+    height: 46px;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+
+    background: rgba(255, 255, 255, 0.72);
+    color: var(--ink);
+
+    box-shadow: 0 14px 40px rgba(16, 24, 40, 0.08);
+
+    transition:
+        transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1),
+        background-color 260ms cubic-bezier(0.22, 1, 0.36, 1),
+        color 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Headline */
+.headline {
+    margin: 0;
+    color: var(--ink-deep);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    line-height: 1.22;
+    padding: 0 18px;
+    font-size: 20px;
+
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
     overflow: hidden;
 
-    background: rgba(113, 184, 227, 0.10);
-    border: 1px solid rgba(41, 66, 148, 0.14);
-    box-shadow: var(--shadow-md);
+    transition: color 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
 
-    @media (max-width: 520px) {
-        margin: 14px 14px 0;
-        min-height: 170px;
+/* Media */
+.media {
+    position: relative;
+    margin-top: auto;
+    height: 280px;
+    border-radius: 26px;
+    overflow: hidden;
+
+    background: rgba(255, 255, 255, 0.55);
+    box-shadow: 0 18px 56px rgba(16, 24, 40, 0.09);
+
+    @media (max-width: 480px) {
+        height: 240px;
     }
+}
+
+/* Overlay sutil sobre la imagen en hover (animado) */
+.media::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0;
+    background: linear-gradient(180deg,
+            rgba(19, 15, 58, 0.06) 0%,
+            rgba(19, 15, 58, 0.30) 100%);
+    transition: opacity 280ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .mediaImg {
     object-fit: cover;
     transform: scale(1.02);
-    transition: transform var(--transition-normal);
-    filter: saturate(1.03) contrast(1.02);
+    transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Overlay sutil para unificar fotos */
-.media::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background:
-        radial-gradient(circle at 20% 25%, rgba(113, 184, 227, 0.18) 0%, transparent 60%),
-        linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, rgba(19, 15, 58, 0.18) 100%);
-}
-
-/* ===== Content ===== */
-.body {
-    position: relative;
-    z-index: 2;
-    padding: 18px 18px 18px 0;
-    display: grid;
-    align-content: center;
-    gap: 8px;
-    min-width: 0;
-
-    @media (max-width: 520px) {
-        padding: 16px 16px 18px;
+/* ✅ Hover violeta suave (solo desktop real) */
+@media (hover: hover) and (pointer: fine) {
+    .card:hover {
+        transform: translateY(-4px);
+        box-shadow:
+            0 1px 0 rgba(255, 255, 255, 0.10) inset,
+            0 34px 110px rgba(19, 15, 58, 0.22);
     }
-}
 
-.title {
-    margin: 0;
-    font-size: 1.12rem;
-    font-weight: 900;
-    letter-spacing: -0.02em;
-    line-height: 1.2;
-    color: var(--ink);
-}
+    .card:hover::after {
+        opacity: 1;
+        transform: translateY(0);
+    }
 
-.desc {
-    margin: 0;
-    font-size: 0.96rem;
-    line-height: 1.55;
-    color: rgba(11, 16, 32, 0.70);
-    max-width: 42ch;
-}
+    .card:hover .headline {
+        color: #fff;
+    }
 
-/* Botón circular (como referencia) */
-.arrow {
-    position: absolute;
-    right: 18px;
-    bottom: 18px;
+    .card:hover .pill {
+        color: rgba(255, 255, 255, 0.92);
+        background: rgba(255, 255, 255, 0.10);
+    }
 
-    width: 42px;
-    height: 42px;
-    border-radius: 999px;
+    .card:hover .arrow {
+        transform: translateY(-1px);
+        background: rgba(255, 255, 255, 0.14);
+        color: #fff;
+        box-shadow: 0 18px 52px rgba(19, 15, 58, 0.22);
+    }
 
-    display: grid;
-    place-items: center;
+    .card:hover .media::before {
+        opacity: 1;
+    }
 
-    background: rgba(255, 255, 255, 0.78);
-    border: 1px solid rgba(41, 66, 148, 0.18);
-    color: var(--ink);
-
-    box-shadow: 0 10px 28px rgba(16, 24, 40, 0.10);
-    transition: transform var(--transition-fast), background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
+    .card:hover .mediaImg {
+        transform: scale(1.05);
+    }
 }
