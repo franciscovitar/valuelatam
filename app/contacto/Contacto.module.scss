@@ -1,0 +1,472 @@
+/* app/empresa/Empresa.module.scss */
+
+.page {
+    background: var(--color-gray-50);
+}
+
+/* HERO estilo referencia (panel suave + pill + title + icons) */
+
+.hero {
+    padding: 144px 0 66px;
+    background: var(--color-gray-50, #f7f8fb);
+
+    @media (max-width: 640px) {
+        padding: 110px 0 60px;
+    }
+}
+
+.heroPanel {
+    background: rgba(255, 255, 255, 0);
+    // border: 1px solid var(--color-gray-200, rgba(19, 15, 58, 0.12));
+    border-radius: 28px;
+    padding: clamp(22px, 3.2vw, 44px);
+    // box-shadow: 0 18px 60px rgba(19, 15, 58, 0.10);
+    backdrop-filter: blur(10px);
+}
+
+.heroInner {
+    text-align: center;
+    max-width: 920px;
+    margin: 0 auto;
+}
+
+.heroPill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 30px;
+    padding: 0 14px;
+    border-radius: 999px;
+    background: rgba(247, 248, 251, 0);
+    border: 1px solid rgba(19, 15, 58, 0.12);
+    font-weight: 750;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink);
+}
+
+.heroTitle {
+    margin: 14px 0 8px;
+    font-size: clamp(34px, 4.2vw, 56px);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+
+    span {
+        color: var(--color-french-blue, #294294);
+        /* highlight tipo referencia */
+    }
+}
+
+.heroText {
+    margin: 0 auto;
+    max-width: 58ch;
+    font-size: 1.02rem;
+    line-height: 1.65;
+    color: var(--text-2);
+}
+
+/* ICONOS (fila centrada como la referencia) */
+.heroInfoRow {
+    display: grid;
+    gap: 18px;
+    margin-top: 34px;
+    justify-items: center;
+
+    @media (min-width: 900px) {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 22px;
+        align-items: center;
+    }
+}
+
+.heroInfoItem {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: min(340px, 100%);
+    justify-content: center;
+
+    @media (min-width: 900px) {
+        justify-content: center;
+    }
+}
+
+/* círculo del icono (más “enterprise” y delicado) */
+.heroInfoIcon {
+    width: 54px;
+    height: 54px;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    flex: 0 0 54px;
+
+    background: var(--color-intense-blue, #2d2356);
+    color: #fff;
+
+    box-shadow: 0 14px 34px rgba(45, 35, 86, 0.22);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+
+    font-size: 18px;
+}
+
+.heroInfoText {
+    text-align: left;
+    line-height: 1.25;
+}
+
+.heroInfoLabel {
+    margin: 0 0 4px;
+    font-weight: 750;
+    font-size: 0.95rem;
+    color: var(--text);
+}
+
+.heroInfoValue {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--text-2);
+
+    a {
+        color: inherit;
+        text-decoration: none;
+        border-bottom: 1px solid rgba(41, 66, 148, 0.25);
+
+        @media (hover: hover) and (pointer: fine) {
+            &:hover {
+                border-bottom-color: rgba(41, 66, 148, 0.45);
+            }
+        }
+    }
+}
+
+
+/* Content */
+.section {
+    padding: 44px 0 86px;
+    background: white;
+}
+
+/* Barra superior más ligera */
+.topBar {
+    display: grid;
+    gap: 14px;
+    margin: 0 0 28px;
+
+    @media (min-width: 900px) {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+        margin: 0 0 34px;
+    }
+}
+
+.topItem {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid var(--color-gray-200, rgba(19, 15, 58, 0.12));
+    box-shadow: 0 10px 26px rgba(19, 15, 58, 0.08);
+    backdrop-filter: blur(10px);
+}
+
+.topIcon {
+    width: 44px;
+    height: 44px;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    flex: 0 0 44px;
+    background: rgba(41, 66, 148, 0.10);
+    color: var(--color-french-blue, #294294);
+    font-size: 18px;
+}
+
+.topMeta {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+
+.topLabel {
+    font-weight: 650;
+    color: var(--text);
+    font-size: 0.92rem;
+}
+
+.topValue {
+    color: var(--text-2);
+    font-size: 0.92rem;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    a {
+        color: inherit;
+        text-decoration: none;
+        border-bottom: 1px solid rgba(41, 66, 148, 0.25);
+
+        @media (hover: hover) and (pointer: fine) {
+            &:hover {
+                border-bottom-color: rgba(41, 66, 148, 0.45);
+            }
+        }
+    }
+}
+
+/* Tarjeta principal más fina */
+.contactCard {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr;
+    border-radius: 24px;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid var(--color-gray-200, rgba(19, 15, 58, 0.12));
+    box-shadow: 0 18px 54px rgba(19, 15, 58, 0.12);
+
+    @media (min-width: 1024px) {
+        grid-template-columns: 0.95fr 1.05fr;
+    }
+}
+
+.formSide {
+    padding: clamp(18px, 2.2vw, 34px);
+}
+
+.kicker {
+    display: inline-flex;
+    align-items: center;
+    height: 28px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1px solid var(--color-gray-200, rgba(19, 15, 58, 0.12));
+    background: rgba(247, 248, 251, 0.75);
+    color: var(--color-gray-700, rgba(11, 16, 32, 0.82));
+    font-weight: 700;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.formHeading {
+    margin: 12px 0 8px;
+    font-size: clamp(22px, 2.1vw, 32px);
+    line-height: 1.12;
+    color: var(--color-intense-blue, #2d2356);
+    letter-spacing: -0.02em;
+}
+
+.formSub {
+    margin: 0 0 16px;
+    color: var(--text-2);
+    line-height: 1.6;
+    max-width: 56ch;
+    font-size: 0.98rem;
+}
+
+/* Form layout */
+.row2 {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-bottom: 14px;
+
+    @media (min-width: 640px) {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.field {
+    display: grid;
+    gap: 7px;
+    margin-bottom: 14px;
+}
+
+.label {
+    font-size: 0.88rem;
+    font-weight: 650;
+    color: var(--color-gray-700, rgba(11, 16, 32, 0.82));
+}
+
+.input,
+.select,
+.textarea {
+    padding: 10px 12px;
+    border: 1px solid var(--color-gray-300, rgba(19, 15, 58, 0.18));
+    border-radius: 14px;
+    font-size: 0.95rem;
+    color: var(--color-gray-900, #0b1020);
+    background: #fff;
+
+    transition:
+        border-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.select {
+    cursor: pointer;
+}
+
+.textarea {
+    resize: vertical;
+    min-height: 108px;
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+    outline: none;
+    border-color: var(--color-french-blue, #294294);
+    box-shadow: 0 0 0 3px rgba(41, 66, 148, 0.12);
+}
+
+.input:hover,
+.select:hover,
+.textarea:hover {
+    border-color: rgba(41, 66, 148, 0.28);
+
+    @media (hover: hover) and (pointer: fine) {
+        border-color: rgba(41, 66, 148, 0.28);
+    }
+}
+
+.submit {
+    width: 100%;
+    margin-top: 4px;
+}
+
+.feedback {
+    min-height: 18px;
+    margin: 10px 0 0;
+    text-align: center;
+    font-size: 0.92rem;
+    color: var(--text-2);
+}
+
+.privacy {
+    margin: 10px 0 0;
+    text-align: center;
+    font-size: 0.80rem;
+    color: var(--color-gray-500, rgba(11, 16, 32, 0.55));
+    line-height: 1.45;
+
+    a {
+        color: var(--color-french-blue, #294294);
+        text-decoration: none;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+}
+
+/* Hours más chico */
+.hours {
+    margin-top: 14px;
+    padding: 14px;
+    background: var(--color-gray-50, #f7f8fb);
+    border: 1px solid var(--color-gray-200, rgba(19, 15, 58, 0.12));
+    border-radius: 16px;
+}
+
+.hoursTitle {
+    margin: 0 0 8px;
+    font-size: 0.92rem;
+    font-weight: 750;
+    color: var(--text);
+}
+
+.hoursRow {
+    margin: 0 0 5px;
+    color: var(--text-2);
+    font-size: 0.90rem;
+}
+
+.hoursHint {
+    margin: 8px 0 0;
+    color: var(--color-gray-500, rgba(11, 16, 32, 0.55));
+    font-size: 0.80rem;
+}
+
+/* Imagen */
+.mediaSide {
+    position: relative;
+    min-height: 300px;
+    background: #e9eefc;
+
+    @media (min-width: 1024px) {
+        min-height: 520px;
+    }
+}
+
+.mediaBg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    transform: scale(1.01);
+}
+
+.mediaOverlay {
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 46%),
+        linear-gradient(180deg, rgba(19, 15, 58, 0.02) 0%, rgba(19, 15, 58, 0.08) 100%);
+}
+
+/* Callout: deja de ser “pastilla enorme”, pasa a pill suave */
+.callout {
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 12px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.84);
+    border: 1px solid rgba(19, 15, 58, 0.12);
+    box-shadow: 0 14px 40px rgba(19, 15, 58, 0.16);
+    backdrop-filter: blur(10px);
+
+    @media (min-width: 540px) {
+        left: 18px;
+        right: auto;
+        width: min(460px, calc(100% - 36px));
+    }
+}
+
+.calloutIcon {
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    background: rgba(113, 184, 227, 0.28);
+    color: var(--color-intense-blue, #2d2356);
+    flex: 0 0 38px;
+    font-size: 16px;
+}
+
+.calloutText {
+    color: var(--color-gray-700, rgba(11, 16, 32, 0.82));
+    font-size: 0.92rem;
+    line-height: 1.35;
+
+    a {
+        color: var(--color-french-blue, #294294);
+        font-weight: 750;
+        text-decoration: none;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+}

@@ -1,0 +1,216 @@
+.section {
+    padding: 150px 0;
+    background: transparent;
+    max-width: 1800px;
+    margin: auto;
+    padding: 150px 0;
+    background: transparent;
+}
+
+.panel {
+    /* violeta profundo + leve azul, más premium */
+    background: radial-gradient(1100px circle at 18% 10%, rgba(41, 66, 148, 0.22) 0%, transparent 55%),
+        linear-gradient(135deg, var(--ink-deep) 0%, var(--ink) 55%, rgba(45, 35, 86, 0.98) 100%);
+    border-radius: 28px;
+    padding: clamp(28px, 4vw, 56px);
+    padding: 110px 0;
+    box-shadow: var(--shadow-xl);
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    // max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* glows + “dibujito” tipo flower (como la referencia) */
+.panel::before {
+    content: "";
+    position: absolute;
+    inset: -12%;
+    z-index: 0;
+    pointer-events: none;
+
+    /* 1) dibujito grande */
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='800' viewBox='0 0 1200 800'%3E%3Cg opacity='0.70'%3E%3Cpath d='M600 70 C 670 160, 720 260, 760 400 C 720 540, 670 640, 600 730 C 530 640, 480 540, 440 400 C 480 260, 530 160, 600 70Z' fill='rgba(255,255,255,0.06)'/%3E%3Cpath d='M180 260 C 300 240, 410 260, 540 320 C 620 420, 700 520, 820 540 C 700 560, 620 580, 540 680 C 410 740, 300 760, 180 740 C 240 650, 260 520, 260 400 C 260 300, 240 290, 180 260Z' fill='rgba(255,255,255,0.045)'/%3E%3Cpath d='M1020 260 C 960 290, 940 300, 940 400 C 940 520, 960 650, 1020 740 C 900 760, 790 740, 660 680 C 580 580, 500 480, 380 540 C 500 520, 580 420, 660 320 C 790 260, 900 240, 1020 260Z' fill='rgba(255,255,255,0.045)'/%3E%3C/g%3E%3C/svg%3E"),
+        /* 2) glows */
+        radial-gradient(circle at 22% 30%, rgba(113, 184, 227, 0.18) 0%, transparent 55%),
+        radial-gradient(circle at 80% 22%, rgba(41, 66, 148, 0.20) 0%, transparent 60%),
+        radial-gradient(900px 500px at 55% 90%, rgba(113, 184, 227, 0.10) 0%, transparent 65%);
+
+    background-repeat: no-repeat;
+    background-size: 1100px auto, auto, auto, auto;
+    /* dibujito grande */
+    background-position: 78% 50%, 18% 20%, 86% 25%, 55% 92%;
+
+    filter: blur(0px);
+    mix-blend-mode: screen;
+    opacity: 1;
+
+    /* micro movimiento como “vivo”, no molesta */
+    animation: panelDrift 14s ease-in-out infinite;
+}
+
+/* una capa extra para profundidad (suave) */
+.panel::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(900px circle at 15% 0%, rgba(113, 184, 227, 0.10) 0%, transparent 55%),
+        radial-gradient(900px circle at 95% 35%, rgba(41, 66, 148, 0.10) 0%, transparent 60%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(0, 0, 0, 0.08));
+    opacity: 1;
+}
+
+.panel2 {
+    margin: auto;
+    max-width: 1200px;
+}
+
+@keyframes panelDrift {
+
+    0%,
+    100% {
+        transform: translate3d(0, 0, 0) scale(1);
+    }
+
+    50% {
+        transform: translate3d(-1.2%, -0.6%, 0) scale(1.015);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .panel::before {
+        animation: none;
+    }
+
+    .card {
+        transition: none;
+    }
+}
+
+.badge {
+
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    height: 30px;
+    padding: 0 14px;
+    border-radius: 999px;
+
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+
+    color: rgba(255, 255, 255, 0.88);
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.title {
+    position: relative;
+    z-index: 1;
+    margin: var(--space-6) 0 0;
+    color: rgba(255, 255, 255, 0.92);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1.06;
+    // max-width: 24ch;
+    font-size: clamp(2rem, 2.4vw + 1.2rem, 3.2rem);
+}
+
+.underline {
+    position: relative;
+    display: inline-block;
+}
+
+/* ✅ underline con tu accent */
+.underline::after {
+    content: "";
+    position: absolute;
+    left: 0.05em;
+    right: 0.35em;
+    bottom: -0.18em;
+    height: 2px;
+    background: rgba(113, 184, 227, 0.95);
+    border-radius: 999px;
+}
+
+.grid {
+    position: relative;
+    z-index: 1;
+    margin-top: var(--space-12);
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-6);
+
+    @media (min-width: 768px) {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    @media (min-width: 1024px) {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+.card {
+    border-radius: 22px;
+    padding: 22px 22px 20px;
+    text-align: left;
+
+    /* ✅ glass con tu paleta */
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+    backdrop-filter: blur(10px);
+
+    transition:
+        transform 220ms cubic-bezier(0.4, 0, 0.2, 1),
+        border-color 220ms cubic-bezier(0.4, 0, 0.2, 1),
+        background 220ms cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 220ms cubic-bezier(0.4, 0, 0.2, 1);
+
+    @media (hover: hover) and (pointer: fine) {
+        &:hover {
+            transform: translateY(-2px);
+            border-color: rgba(113, 184, 227, 0.24);
+            background: rgba(255, 255, 255, 0.07);
+            box-shadow: 0 22px 62px rgba(0, 0, 0, 0.24);
+        }
+    }
+}
+
+.cardIcon {
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+
+    display: grid;
+    place-items: center;
+
+    background: rgba(113, 184, 227, 0.14);
+    border: 1px solid rgba(113, 184, 227, 0.22);
+    color: rgba(113, 184, 227, 0.95);
+
+    font-size: 18px;
+    margin-bottom: 14px;
+}
+
+.cardTitle {
+    margin: 0 0 8px 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.92);
+    line-height: 1.25;
+}
+
+.cardDescription {
+    margin: 0;
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.74);
+    line-height: 1.6;
+}

@@ -1,0 +1,75 @@
+.trustBar {
+    padding: var(--space-16) 0;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid var(--color-gray-100);
+    border-bottom: 1px solid var(--color-gray-100);
+}
+
+.content {
+    text-align: center;
+}
+
+.label {
+    font-size: var(--font-size-sm);
+    color: var(--color-gray-500);
+    margin-bottom: var(--space-8);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: var(--font-weight-medium);
+}
+
+.logos {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: var(--space-8);
+
+    @media (max-width: 768px) {
+        gap: var(--space-6);
+    }
+}
+
+.logo {
+    opacity: 0.6;
+    transition: opacity var(--transition-normal);
+
+    &:hover {
+        opacity: 1;
+    }
+}
+
+.logoBox {
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 var(--space-4);
+    border: 2px solid var(--color-gray-200);
+    border-radius: var(--radius-lg);
+    background: white;
+    transition: all var(--transition-normal);
+
+    &:hover {
+        border-color: var(--color-french-blue);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    @media (max-width: 768px) {
+        height: 50px;
+        padding: 0 var(--space-3);
+    }
+}
+
+.logoText {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-gray-600);
+    white-space: nowrap;
+
+    @media (max-width: 768px) {
+        font-size: var(--font-size-xs);
+    }
+}
