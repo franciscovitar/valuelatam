@@ -3,21 +3,37 @@
 import Link from "next/link";
 import Container from "./ui/Container";
 import SectionTitle from "./ui/SectionTitle";
-import { solutions } from "../lib/data";
 import styles from "./Solutions.module.scss";
 import { useReveal } from "../lib/useReveal";
 import Image from "next/image";
 import foto from "../public/contacto.png";
 
+const CARD_COPY = {
+  financiamiento: {
+    title: "Financiamiento",
+    desc: "Accedé a alternativas de financiamiento con acompañamiento end-to-end, desde el diagnóstico hasta la ejecución.",
+  },
+  "inversiones-liquidez": {
+    title: "Inversiones & Liquidez",
+    desc: "Optimización de liquidez y estrategias de inversión según horizonte, riesgo y necesidades de caja.",
+  },
+  "comercio-exterior": {
+    title: "Comercio Exterior",
+    desc: "Transferencias, pagos y financiamiento import/export para operar internacionalmente con menos fricción.",
+  },
+};
+
 export default function Solutions() {
   const { ref, isVisible } = useReveal();
 
+  const items = [
+    { id: "financiamiento", href: "/soluciones/financiamiento" },
+    { id: "inversiones-liquidez", href: "/soluciones/inversiones-liquidez" },
+    { id: "comercio-exterior", href: "/soluciones/comercio-exterior" },
+  ];
+
   return (
     <section id="soluciones" className={styles.section}>
-      <div className={styles.bg} aria-hidden="true">
-        <div className={styles.stars} />
-        <div className={styles.stars2} />
-      </div>
       <Container>
         <SectionTitle
           subtitle="Soluciones integrales"
@@ -27,63 +43,40 @@ export default function Solutions() {
         />
 
         <div ref={ref} className={styles.grid}>
-          {solutions.map((solution, index) => {
-            const href = solution.href ?? `/soluciones/${solution.id}`;
+          {items.map((item, index) => {
+            const copy = CARD_COPY[item.id];
 
             return (
               <Link
-                key={solution.id}
-                href={href}
-                data-variant={solution.color ?? "blue"} // ✅
+                key={item.id}
+                href={item.href}
                 className={`${styles.card} fade-in-up ${isVisible ? "visible" : ""}`}
-                style={{ transitionDelay: `${index * 80}ms` }}
+                style={{ transitionDelay: `${index * 90}ms` }}
               >
-                {/* top row: badge + arrow */}
-                <div className={styles.topRow}>
-                  <span className={styles.badge}>Solución</span>
+                {/* hover fill */}
+                <span className={styles.fill} aria-hidden="true" />
+
+                {/* image */}
+                <div className={styles.media} aria-hidden="true">
+                  <Image
+                    src={foto}
+                    alt=""
+                    fill
+                    sizes="(min-width: 1100px) 320px, (min-width: 768px) 45vw, 100vw"
+                    className={styles.mediaImg}
+                    priority={index === 0}
+                  />
+                </div>
+
+                {/* content */}
+                <div className={styles.body}>
+                  <h3 className={styles.title}>{copy.title}</h3>
+                  <p className={styles.desc}>{copy.desc}</p>
+
                   <span className={styles.arrow} aria-hidden="true">
                     ↗
                   </span>
                 </div>
-
-                {/* header */}
-                <div className={styles.cardHeader}>
-                  <div className={styles.cardIcon} aria-hidden="true">
-                    <span>{solution.icon}</span>
-                  </div>
-
-                  <div className={styles.cardHeaderText}>
-                    <h3 className={styles.cardTitle}>{solution.title}</h3>
-                  </div>
-                </div>
-
-                <p className={styles.cardDescription}>{solution.description}</p>
-
-                {/* mini visual (queda tipo “imagen” sin necesitar assets) */}
-                <div className={styles.media} aria-hidden="true">
-                  {solution.image ? (
-                    <Image
-                      src={foto}
-                      alt=""
-                      fill
-                      sizes="(min-width: 1024px) 360px, (min-width: 768px) 45vw, 100vw"
-                      className={styles.mediaImg}
-                      priority={index < 3}
-                    />
-                  ) : (
-                    <div className={styles.mediaFallback} />
-                  )}
-                </div>
-                <ul className={styles.cardFeatures}>
-                  {solution.features?.map((feature) => (
-                    <li key={feature} className={styles.cardFeature}>
-                      <span className={styles.featureIcon} aria-hidden="true">
-                        ✓
-                      </span>
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
               </Link>
             );
           })}
