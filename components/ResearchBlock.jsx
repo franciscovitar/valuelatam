@@ -48,7 +48,7 @@ export default function ResearchBlock() {
 
             <Button
               href="/contacto"
-              variant="dark"
+              variant="primary"
               size="lg"
               className={styles.cta}
             >

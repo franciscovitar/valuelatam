@@ -7,7 +7,7 @@ import { solutions } from "../lib/data";
 import styles from "./Solutions.module.scss";
 import { useReveal } from "../lib/useReveal";
 import Image from "next/image";
-import fallbackImg from "../public/contacto.png";
+// import solution1 from "../public/solution1.jpg";
 
 export default function Solutions() {
   const { ref, isVisible } = useReveal();

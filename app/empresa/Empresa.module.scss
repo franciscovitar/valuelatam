@@ -7,7 +7,7 @@
 /* HERO — versión más delicada */
 
 .hero {
-    padding: 164px 0 148px;
+    padding: 174px 0 148px;
     /* antes estaba muy alto */
     background: linear-gradient(135deg,
             var(--color-gray-50) 0%,
@@ -80,7 +80,7 @@
     /* antes se sentía grande */
     color: var(--text-2);
     line-height: 1.65;
-    max-width: 66ch;
+    // max-width: 66ch;
 }
 
 /* CTA más delicado */
@@ -135,7 +135,7 @@
     transform: scale(1.005);
 
     @media (min-width: 1024px) {
-        max-height: 420px;
+        max-height: 460px;
         /* antes 420px era enorme */
     }
 }

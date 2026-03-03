@@ -4,7 +4,7 @@ import SectionTitle from "../../../components/ui/SectionTitle";
 import Button from "../../../components/ui/Button";
 import styles from "./Solucion.module.scss";
 import { investmentServices, investmentInstruments } from "../../../lib/data";
-import foto from "../../../public/contacto.png";
+import foto from "../../../public/inversiones.jpg";
 import Image from "next/image";
 
 export const metadata = {

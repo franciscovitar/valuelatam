@@ -5,7 +5,7 @@ import Button from "../../../components/ui/Button";
 import styles from "./Solucion.module.scss";
 import { financingServices } from "../../../lib/data";
 import Image from "next/image";
-import foto from "../../../public/contacto.png";
+import foto from "../../../public/finanzas.jpg";
 
 export const metadata = {
   title: "Financiamiento | Value Latam",

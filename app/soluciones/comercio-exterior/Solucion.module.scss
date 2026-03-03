@@ -7,7 +7,7 @@
 /* Hero — igual al de referencia + imagen */
 
 .hero {
-    padding: 164px 0 148px;
+    padding: 184px 0 148px;
     background: linear-gradient(135deg,
             var(--color-gray-50) 0%,
             rgba(113, 184, 227, 0.10) 50%,
@@ -149,7 +149,7 @@
     transform: scale(1.005);
 
     @media (min-width: 1024px) {
-        max-height: 420px;
+        max-height: 470px;
         /* antes 420px era enorme */
     }
 }

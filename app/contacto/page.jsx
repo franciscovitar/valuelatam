@@ -64,7 +64,7 @@ export default function ContactoPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const imageUrl = "/contacto.png";
+  const imageUrl = "contacto2.jpg";
 
   return (
     <div className={styles.page}>

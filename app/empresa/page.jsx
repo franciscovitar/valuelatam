@@ -5,7 +5,7 @@ import Button from "../../components/ui/Button";
 import styles from "./Empresa.module.scss";
 import { team, whyUs } from "../../lib/data";
 import Image from "next/image";
-import foto from "../../public/contacto.png";
+import foto from "../../public/empresa.jpg";
 
 export const metadata = {
   title: "Empresa | Value Latam",
