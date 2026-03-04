@@ -303,3 +303,92 @@
         transform: scale(1.05);
     }
 }
+
+
+
+/* =========================================================
+   Responsive proporcional (NO cambia desktop)
+   Solo escala en pantallas chicas manteniendo proporciones
+========================================================= */
+
+/* default (desktop / base) */
+.section {
+    --s: 1;
+    /* scale factor */
+}
+
+/* tablets */
+@media (max-width: 1023px) {
+    .section {
+        --s: 0.92;
+    }
+}
+
+/* phones */
+@media (max-width: 767px) {
+    .section {
+        --s: 0.86;
+    }
+}
+
+/* phones chicos */
+@media (max-width: 420px) {
+    .section {
+        --s: 0.82;
+    }
+}
+
+/* ===== aplica escala proporcional ===== */
+@media (max-width: 1023px) {
+    .grid {
+        gap: calc(var(--space-8) * var(--s));
+        margin-top: calc(var(--space-12) * var(--s));
+    }
+
+    .card {
+        /* todo igual, pero “más chico” */
+        padding: calc(10px * var(--s));
+        border-radius: calc(34px * var(--s));
+        min-height: 400px;
+        gap: calc(16px * var(--s));
+        padding: 10px
+    }
+
+    .topRow {
+        gap: calc(12px * var(--s));
+        padding: 0;
+        // padding: calc(18px * var(--s)) calc(18px * var(--s)) 0 calc(18px * var(--s));
+    }
+
+    .pill {
+        height: calc(30px * var(--s));
+        padding: 0 calc(14px * var(--s));
+        // padding: 0;
+        font-size: calc(10px * var(--s));
+    }
+
+    .arrow {
+        width: calc(46px * var(--s));
+        height: calc(46px * var(--s));
+    }
+
+    .headline {
+        // padding: 0 calc(18px * var(--s));
+        font-size: calc(20px * var(--s));
+        padding: 5px;
+    }
+
+    .media {
+        height: calc(280px * var(--s));
+        border-radius: calc(26px * var(--s));
+    }
+}
+
+/* Extra: en phones muy chicos, reducimos un toque el line-clamp
+   para que no “empuje” tanto pero sin cambiar el look */
+@media (max-width: 420px) {
+    .headline {
+        -webkit-line-clamp: 3;
+        /* mantiene lo que ya tenías */
+    }
+}

@@ -414,6 +414,48 @@
     }
 }
 
+@media (max-width: 640px) {
+    .chips {
+        display: grid;
+        justify-content: center;
+        gap: 10px;
+
+        /* columnas fluidas que se acomodan solas */
+        // grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+
+        /* limita el ancho total para que no se “estire” feo */
+        // max-width: 820px;
+        margin: 0 auto;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        max-width: 520px;
+    }
+
+    .chip {
+        width: 100%;
+        justify-content: center;
+        /* texto centrado dentro */
+        text-align: center;
+
+        /* altura consistente */
+        min-height: 42px;
+
+        /* evita cortes feos */
+        line-height: 1.2;
+
+
+        padding: 10px 12px;
+        font-size: 0.88rem;
+    }
+}
+
+/* En celulares chicos: 1 columna para que no quede apretado */
+@media (max-width: 360px) {
+    .chips {
+        grid-template-columns: 1fr;
+        max-width: 320px;
+    }
+}
+
 .cta {
     position: relative;
     padding: 84px 0;

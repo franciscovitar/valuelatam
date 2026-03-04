@@ -431,7 +431,7 @@
 }
 
 /* =========================
-   TEAM (más premium)
+   TEAM (cards tipo TeamPreview)
 ========================= */
 .team {
     position: relative;
@@ -445,104 +445,292 @@
 .teamGrid {
     margin-top: var(--space-12);
     display: grid;
-    grid-template-columns: 1fr;
     gap: var(--space-6);
+
+    /* ✅ centra 1–2 cards y escala bien con 3 */
+    grid-template-columns: repeat(auto-fit, minmax(320px, 420px));
+    justify-content: center;
+
     max-width: 1100px;
     margin-left: auto;
     margin-right: auto;
+}
 
-    @media (min-width: 768px) {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
+/* wrapper clickable */
+.card {
+    outline: none;
+    text-decoration: none;
+    color: inherit;
 
-    @media (min-width: 1024px) {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+    &:focus-visible {
+        outline: 2px solid rgba(41, 66, 148, 0.9);
+        outline-offset: 6px;
+        border-radius: 22px;
     }
 }
 
-.teamCard {
+.cardInner {
     position: relative;
-    background: rgba(255, 255, 255, 0.86);
-    border: 1px solid var(--border, rgba(41, 66, 148, 0.14));
+    height: clamp(420px, 40vw, 500px);
     border-radius: 22px;
-    padding: clamp(18px, 2vw, 26px);
-    text-align: left;
+    overflow: hidden;
+
+    border: 1px solid rgba(41, 66, 148, 0.10);
+    background: rgba(255, 255, 255, 0.92);
     box-shadow: var(--shadow-lg);
-    backdrop-filter: blur(10px);
+    transform: translateZ(0);
 
     transition:
-        transform 220ms cubic-bezier(0.4, 0, 0.2, 1),
-        box-shadow 220ms cubic-bezier(0.4, 0, 0.2, 1),
-        border-color 220ms cubic-bezier(0.4, 0, 0.2, 1);
+        transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 420ms cubic-bezier(0.22, 1, 0.36, 1),
+        border-color 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Foto */
+.photoImage {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+
+    transform: scale(1.02);
+    filter: saturate(1.05) contrast(1.04) brightness(0.92);
+    transition:
+        transform 520ms cubic-bezier(0.22, 1, 0.36, 1),
+        filter 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Placeholder */
+.photoPlaceholder {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(135deg, var(--ink-deep), var(--ink));
+}
+
+.initials {
+    color: #fff;
+    font-size: 44px;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+}
+
+/* Shade base */
+.frontShade {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(180deg,
+            rgba(0, 0, 0, 0.00) 0%,
+            rgba(0, 0, 0, 0.10) 52%,
+            rgba(0, 0, 0, 0.55) 100%);
+}
+
+/* Nombre + cargo */
+.frontMeta {
+    position: absolute;
+    left: 18px;
+    right: 18px;
+    bottom: 16px;
+    z-index: 3;
+
+    transition:
+        opacity 220ms cubic-bezier(0.22, 1, 0.36, 1),
+        transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: opacity, transform;
+}
+
+.frontName {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.96);
+    font-size: 1.02rem;
+    font-weight: 850;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    text-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+}
+
+.frontRole {
+    margin: 6px 0 0;
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 0.74rem;
+    font-weight: 750;
+    text-transform: uppercase;
+    letter-spacing: 0.10em;
+    text-shadow: 0 10px 22px rgba(0, 0, 0, 0.45);
+}
+
+.overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+
+    padding: 18px;
+    display: flex;
+
+    /* ✅ anclado abajo */
+    align-items: flex-end;
+
+    background:
+        radial-gradient(900px 520px at 22% 18%, rgba(113, 184, 227, 0.14) 0%, transparent 58%),
+        radial-gradient(700px 420px at 84% 26%, rgba(41, 66, 148, 0.16) 0%, transparent 60%),
+        linear-gradient(180deg,
+            rgba(19, 15, 58, 0.10) 0%,
+            rgba(19, 15, 58, 0.78) 55%,
+            rgba(19, 15, 58, 0.96) 100%);
+
+    backdrop-filter: blur(7px);
+
+    opacity: 0;
+    transform: translateY(10px);
+    transition:
+        opacity 260ms cubic-bezier(0.22, 1, 0.36, 1),
+        transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+
+    pointer-events: none;
+    overflow: hidden;
+
+    &::after {
+        content: "";
+        position: absolute;
+        top: -40%;
+        left: -90%;
+        width: 85%;
+        height: 190%;
+        transform: rotate(18deg);
+        pointer-events: none;
+
+        background: linear-gradient(90deg,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.18) 45%,
+                rgba(255, 255, 255, 0) 70%);
+
+        opacity: 0;
+        filter: blur(0.6px);
+        transition:
+            opacity 260ms cubic-bezier(0.22, 1, 0.36, 1),
+            left 700ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+}
+
+.overlayInner {
+    width: 100%;
+
+    display: flex;
+    flex-direction: column;
+
+    /* ✅ separación linda entre texto y botón */
+    gap: 14px;
+
+    /* ✅ aire abajo/arriba similar al mock */
+    padding: 18px;
+
+    /* ✅ glass adicional interno para que quede más “pro” */
+    // background: rgba(255, 255, 255, 0.04);
+    // border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 18px;
+
+    /* ✅ clave: este bloque se apoya abajo pero puede crecer hacia arriba */
+}
+
+.description {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.90);
+    line-height: 1.55;
+    font-size: 0.92rem;
+
+    /* ✅ el texto puede crecer pero no romper toda la card */
+    max-height: 52%;
+    overflow: auto;
+
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+}
+
+.description::-webkit-scrollbar {
+    width: 8px;
+}
+
+.description::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+}
+
+.linkedin {
+    margin-top: auto;
+    align-self: flex-start;
+
+    border-radius: 999px !important;
+    background: rgba(255, 255, 255, 0.10) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    color: rgba(255, 255, 255, 0.92) !important;
 
     @media (hover: hover) and (pointer: fine) {
         &:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-xl);
-            border-color: rgba(41, 66, 148, 0.22);
+            background: rgba(255, 255, 255, 0.16) !important;
+            border-color: rgba(255, 255, 255, 0.26) !important;
         }
     }
 }
 
-.teamCard::before {
-    content: "";
-    position: absolute;
-    left: 16px;
-    right: 16px;
-    top: 0;
-    height: 2px;
-    border-radius: 999px;
-    background: linear-gradient(90deg,
-            rgba(41, 66, 148, 0),
-            rgba(41, 66, 148, 0.55),
-            rgba(113, 184, 227, 0.45),
-            rgba(41, 66, 148, 0));
-    opacity: 0.55;
+/* Hover desktop */
+@media (hover: hover) and (pointer: fine) {
+    .card:hover .overlay {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+    }
+
+    .card:hover .cardInner {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-xl);
+        border-color: rgba(113, 184, 227, 0.20);
+    }
+
+    .card:hover .photoImage {
+        transform: scale(1.06);
+        filter: saturate(1.08) contrast(1.05) brightness(0.90);
+    }
+
+    /* ocultar nombre/rol al abrir */
+    .card:hover .frontMeta {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+
+    /* shine */
+    .card:hover .overlay::after {
+        opacity: 1;
+        left: 120%;
+    }
 }
 
-/* avatar más sutil, menos “pesado” */
-.avatar {
-    width: 54px;
-    height: 54px;
-    border-radius: 16px;
-    margin: 0 0 14px;
-    display: grid;
-    place-items: center;
-
-    color: #fff;
-    font-size: 1rem;
-    font-weight: 900;
-    letter-spacing: 0.04em;
-
-    background: linear-gradient(135deg,
-            rgba(41, 66, 148, 0.95) 0%,
-            rgba(113, 184, 227, 0.95) 100%);
-    box-shadow: 0 14px 34px rgba(41, 66, 148, 0.18);
+/* Touch/teclado */
+.card:focus-within .overlay {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
 }
 
-.teamName {
-    margin: 0 0 6px;
-    font-size: 1.05rem;
-    font-weight: 900;
-    color: var(--text-2);
-    letter-spacing: -0.02em;
+.card:focus-within .frontMeta {
+    opacity: 0;
+    transform: translateY(6px);
 }
 
-.teamRole {
-    margin: 0 0 10px;
-    font-size: 0.80rem;
-    font-weight: 800;
-    color: var(--color-french-blue);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    opacity: 0.9;
+.card:focus-within .overlay::after {
+    opacity: 1;
+    left: 120%;
 }
 
-.teamDesc {
-    margin: 0 0 14px;
-    color: var(--text-2);
-    line-height: 1.65;
-    font-size: 0.95rem;
+/* Accesibilidad */
+@media (prefers-reduced-motion: reduce) {
+
+    .overlay,
+    .cardInner,
+    .photoImage {
+        transition: none;
+    }
 }
 
 /* CTA — fondo premium con imagen translúcida + líneas animadas */

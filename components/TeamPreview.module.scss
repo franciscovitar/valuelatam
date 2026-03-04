@@ -1,8 +1,8 @@
 .section {
     padding: var(--space-24) 0;
     background:
-        radial-gradient(900px circle at 10% 0%, rgba(113, 184, 227, 0.12) 0%, transparent 55%),
-        radial-gradient(900px circle at 90% 25%, rgba(41, 66, 148, 0.10) 0%, transparent 60%),
+        radial-gradient(900px circle at 10% 0%, rgba(113, 184, 227, 0.10) 0%, transparent 55%),
+        radial-gradient(900px circle at 90% 25%, rgba(41, 66, 148, 0.08) 0%, transparent 60%),
         linear-gradient(180deg, #ffffff 0%, var(--color-gray-50, #f7f8fb) 100%);
     border-top: 1px solid rgba(19, 15, 58, 0.06);
 }
@@ -13,7 +13,7 @@
     gap: 18px;
     margin-top: var(--space-12);
 
-    max-width: 1080px;
+    max-width: 900px;
     margin-left: auto;
     margin-right: auto;
 
@@ -24,8 +24,9 @@
 }
 
 .card {
-    perspective: 1200px;
     outline: none;
+    text-decoration: none;
+    ;
 
     &:focus-visible {
         outline: 2px solid rgba(41, 66, 148, 0.9);
@@ -34,69 +35,25 @@
     }
 }
 
-/* ✅ Flip box */
 .cardInner {
     position: relative;
-    /* ✅ CLAVE: si falta, se rompe todo */
     height: clamp(420px, 40vw, 500px);
     border-radius: 22px;
     overflow: hidden;
 
-    border: 1px solid var(--border, rgba(41, 66, 148, 0.14));
+    border: 1px solid rgba(41, 66, 148, 0.10);
+    background: rgba(255, 255, 255, 0.92);
     box-shadow: var(--shadow-lg);
-    background: #fff;
-
-    transform-style: preserve-3d;
-    -webkit-transform-style: preserve-3d;
-    transition: transform 560ms cubic-bezier(0.22, 1, 0.36, 1);
 
     transform: translateZ(0);
-    /* ✅ evita glitches */
+
+    transition:
+        transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 420ms cubic-bezier(0.22, 1, 0.36, 1),
+        border-color 420ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* ✅ Flip solo en desktop con hover real */
-@media (hover: hover) and (pointer: fine) {
-    .card:hover .cardInner {
-        transform: rotateY(180deg) translateZ(0);
-    }
-}
-
-/* ✅ Flip por foco (tap/teclado) */
-.card:focus-within .cardInner {
-    transform: rotateY(180deg) translateZ(0);
-}
-
-/* ✅ En mobile NO forzamos el dorso (se queda en foto) */
-@media (hover: none) {
-    .card:focus-within .cardInner {
-        transform: rotateY(180deg) translateZ(0);
-        /* si tocás, gira */
-    }
-}
-
-/* Front & Back base */
-.front,
-.back {
-    position: absolute;
-    inset: 0;
-
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-
-    transform-style: preserve-3d;
-    -webkit-transform-style: preserve-3d;
-}
-
-/* FRONT */
-.front {
-    background: linear-gradient(135deg,
-            rgba(41, 66, 148, 0.10) 0%,
-            rgba(113, 184, 227, 0.10) 100%);
-
-    transform: rotateY(0deg);
-    -webkit-transform: rotateY(0deg);
-}
-
+/* Foto */
 .photoImage {
     position: absolute;
     inset: 0;
@@ -104,17 +61,10 @@
     background-position: center;
 
     transform: scale(1.02);
-    filter: saturate(1.03) contrast(1.05) brightness(0.72);
-}
-
-.frontShade {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: linear-gradient(180deg,
-            rgba(0, 0, 0, 0.12) 0%,
-            rgba(0, 0, 0, 0.25) 45%,
-            rgba(0, 0, 0, 0.72) 100%);
+    filter: saturate(1.05) contrast(1.04) brightness(0.92);
+    transition:
+        transform 520ms cubic-bezier(0.22, 1, 0.36, 1),
+        filter 520ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Placeholder */
@@ -123,127 +73,224 @@
     inset: 0;
     display: grid;
     place-items: center;
-    background: linear-gradient(135deg, var(--ink, #2d2356), var(--primary, #294294));
+    background: linear-gradient(135deg, var(--ink-deep), var(--ink));
 }
 
 .initials {
     color: #fff;
     font-size: 44px;
-    font-weight: 950;
+    font-weight: 900;
     letter-spacing: -0.02em;
 }
 
-/* ✅ Nombre + cargo sobre la foto (sin fondo) */
+/* Shade más fino */
+.frontShade {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(180deg,
+            rgba(0, 0, 0, 0.00) 0%,
+            rgba(0, 0, 0, 0.10) 52%,
+            rgba(0, 0, 0, 0.55) 100%);
+}
+
+/* Nombre + cargo */
 .frontMeta {
     position: absolute;
-    left: 16px;
-    right: 16px;
+    left: 18px;
+    right: 18px;
     bottom: 16px;
     z-index: 3;
 
-    padding: 0;
-    transform: translateZ(1px);
+    transition:
+        opacity 220ms cubic-bezier(0.22, 1, 0.36, 1),
+        transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: opacity, transform;
 }
 
 .frontName {
     margin: 0;
     color: rgba(255, 255, 255, 0.96);
-    font-size: 1.05rem;
-    font-weight: 900;
+    font-size: 1.02rem;
+    font-weight: 850;
     letter-spacing: -0.02em;
-    line-height: 1.1;
-    text-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+    line-height: 1.15;
+    text-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
 }
 
 .frontRole {
     margin: 6px 0 0;
     color: rgba(255, 255, 255, 0.78);
-    font-size: 0.78rem;
-    font-weight: 800;
+    font-size: 0.74rem;
+    font-weight: 750;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    text-shadow: 0 10px 26px rgba(0, 0, 0, 0.55);
+    letter-spacing: 0.10em;
+    text-shadow: 0 10px 22px rgba(0, 0, 0, 0.45);
 }
 
-/* BACK: info */
-.back {
-    transform: rotateY(180deg);
-    -webkit-transform: rotateY(180deg);
-
-    padding: 22px 18px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-
-    background: rgba(255, 255, 255, 0.96);
-    backdrop-filter: blur(10px);
-
+/* ✅ Overlay (anclado abajo, texto arriba del botón, crece hacia arriba) */
+.overlay {
     position: absolute;
     inset: 0;
+    z-index: 2;
 
-    transform: rotateY(180deg) translateZ(0);
-}
+    padding: 18px;
+    display: flex;
+    align-items: flex-end;
+    /* ✅ abajo */
 
-.back::before {
-    content: "";
-    position: absolute;
-    left: 16px;
-    right: 16px;
-    top: 0;
-    height: 2px;
-    border-radius: 999px;
-    background: linear-gradient(90deg,
-            rgba(41, 66, 148, 0),
-            rgba(41, 66, 148, 0.55),
-            rgba(113, 184, 227, 0.45),
-            rgba(41, 66, 148, 0));
-    opacity: 0.65;
-}
+    background:
+        radial-gradient(900px 520px at 22% 18%, rgba(113, 184, 227, 0.14) 0%, transparent 58%),
+        radial-gradient(700px 420px at 84% 26%, rgba(41, 66, 148, 0.16) 0%, transparent 60%),
+        linear-gradient(180deg,
+            rgba(19, 15, 58, 0.10) 0%,
+            rgba(19, 15, 58, 0.78) 55%,
+            rgba(19, 15, 58, 0.96) 100%);
 
-.name {
-    margin: 6px 0 0;
-    font-size: 1.10rem;
-    font-weight: 950;
-    color: var(--text);
-    letter-spacing: -0.02em;
-}
+    backdrop-filter: blur(7px);
 
-.role {
-    margin: 0;
-    font-size: 0.82rem;
-    font-weight: 800;
-    color: var(--text-2);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-}
+    opacity: 0;
+    transform: translateY(10px);
+    transition:
+        opacity 260ms cubic-bezier(0.22, 1, 0.36, 1),
+        transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
 
-.description {
-    margin: 6px 0 0;
-    color: var(--muted);
-    line-height: 1.65;
-    font-size: 0.95rem;
-
-    display: -webkit-box;
-    -webkit-line-clamp: 5;
-    -webkit-box-orient: vertical;
+    pointer-events: none;
     overflow: hidden;
+
+    /* shine */
+    &::after {
+        content: "";
+        position: absolute;
+        top: -40%;
+        left: -90%;
+        width: 85%;
+        height: 190%;
+        transform: rotate(18deg);
+        pointer-events: none;
+
+        background: linear-gradient(90deg,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.18) 45%,
+                rgba(255, 255, 255, 0) 70%);
+
+        opacity: 0;
+        filter: blur(0.6px);
+        transition:
+            opacity 260ms cubic-bezier(0.22, 1, 0.36, 1),
+            left 700ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
 }
 
-/* LinkedIn */
+/* ✅ Caja interna pegada abajo (como pediste) */
+.overlayInner {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+
+    padding: 18px;
+    // background: rgba(255, 255, 255, 0.04);
+    // border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 18px;
+}
+
+/* ✅ Texto abajo, arriba del botón, crece hacia arriba (scroll si se pasa) */
+.description {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.90);
+    line-height: 1.55;
+    font-size: 0.92rem;
+
+    max-height: 52%;
+    overflow: auto;
+
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+}
+
+.description::-webkit-scrollbar {
+    width: 8px;
+}
+
+.description::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+}
+
+/* LinkedIn button */
 .linkedin {
     margin-top: auto;
+    /* ✅ siempre abajo */
     align-self: flex-start;
 
     border-radius: 999px !important;
-    background: rgba(41, 66, 148, 0.08) !important;
-    border: 1px solid rgba(41, 66, 148, 0.14) !important;
-    color: var(--primary, #294294) !important;
+    background: rgba(255, 255, 255, 0.10) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    color: rgba(255, 255, 255, 0.92) !important;
 
     @media (hover: hover) and (pointer: fine) {
         &:hover {
-            background: rgba(41, 66, 148, 0.12) !important;
-            border-color: rgba(41, 66, 148, 0.22) !important;
+            background: rgba(255, 255, 255, 0.16) !important;
+            border-color: rgba(255, 255, 255, 0.26) !important;
         }
+    }
+}
+
+/* Hover desktop: muestra overlay + zoom leve + oculta nombre/rol + shine */
+@media (hover: hover) and (pointer: fine) {
+    .card:hover .overlay {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+    }
+
+    .card:hover .cardInner {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-xl);
+        border-color: rgba(113, 184, 227, 0.20);
+    }
+
+    .card:hover .photoImage {
+        transform: scale(1.06);
+        filter: saturate(1.08) contrast(1.05) brightness(0.90);
+    }
+
+    .card:hover .frontMeta {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+
+    .card:hover .overlay::after {
+        opacity: 1;
+        left: 120%;
+    }
+}
+
+/* Touch / teclado */
+.card:focus-within .overlay {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.card:focus-within .frontMeta {
+    opacity: 0;
+    transform: translateY(6px);
+}
+
+.card:focus-within .overlay::after {
+    opacity: 1;
+    left: 120%;
+}
+
+/* Accesibilidad */
+@media (prefers-reduced-motion: reduce) {
+
+    .overlay,
+    .cardInner,
+    .photoImage {
+        transition: none;
     }
 }
 

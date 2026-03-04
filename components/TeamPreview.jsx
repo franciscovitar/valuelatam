@@ -38,53 +38,60 @@ export default function TeamPreview() {
                 : member.image?.src;
 
             return (
-              <div
+              <a
+                target="_blank"
+                rel="noopener noreferrer"
+                href={hasLinkedIn ? member.linkedin : "#"}
                 key={member.name}
-                tabIndex={0} // ✅ permite flip con foco (opcional, pero ayuda en touch)
+                tabIndex={0}
                 className={`${styles.card} fade-in-up ${isVisible ? "visible" : ""}`}
                 style={{ transitionDelay: `${index * 90}ms` }}
               >
                 <div className={styles.cardInner}>
-                  {/* FRONT: foto + nombre/cargo encima */}
-                  <div className={styles.front} aria-hidden="true">
-                    {imgUrl ? (
-                      <div
-                        className={styles.photoImage}
-                        style={{ backgroundImage: `url(${imgUrl})` }}
-                      />
-                    ) : (
-                      <div className={styles.photoPlaceholder}>
-                        <span className={styles.initials}>{initials}</span>
-                      </div>
-                    )}
+                  {/* Foto */}
+                  {imgUrl ? (
+                    <div
+                      className={styles.photoImage}
+                      style={{ backgroundImage: `url(${imgUrl})` }}
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <div className={styles.photoPlaceholder} aria-hidden="true">
+                      <span className={styles.initials}>{initials}</span>
+                    </div>
+                  )}
 
-                    <div className={styles.frontShade} aria-hidden="true" />
+                  {/* Sombra base para que el nombre se lea siempre */}
+                  <div className={styles.frontShade} aria-hidden="true" />
 
-                    <div className={styles.frontMeta}>
-                      <h3 className={styles.frontName}>{member.name}</h3>
-                      <p className={styles.frontRole}>{member.role}</p>
+                  {/* Nombre / rol (siempre visible) */}
+                  <div className={styles.frontMeta}>
+                    <h3 className={styles.frontName}>{member.name}</h3>
+                    <p className={styles.frontRole}>{member.role}</p>
+                  </div>
+
+                  {/* Overlay que sube */}
+                  <div
+                    className={styles.overlay}
+                    aria-label={`Descripción de ${member.name}`}
+                  >
+                    <div className={styles.overlayInner}>
+                      <p className={styles.description}>{member.description}</p>
+
+                      {hasLinkedIn && (
+                        <Button
+                          href={member.linkedin}
+                          variant="ghost"
+                          size="sm"
+                          className={styles.linkedin}
+                        >
+                          Ver LinkedIn <span aria-hidden="true">→</span>
+                        </Button>
+                      )}
                     </div>
                   </div>
-
-                  {/* BACK: info */}
-                  <div className={styles.back}>
-                    <h3 className={styles.name}>{member.name}</h3>
-                    <p className={styles.role}>{member.role}</p>
-                    <p className={styles.description}>{member.description}</p>
-
-                    {hasLinkedIn && (
-                      <Button
-                        href={member.linkedin}
-                        variant="ghost"
-                        size="sm"
-                        className={styles.linkedin}
-                      >
-                        Ver LinkedIn <span aria-hidden="true">→</span>
-                      </Button>
-                    )}
-                  </div>
                 </div>
-              </div>
+              </a>
             );
           })}
         </div>

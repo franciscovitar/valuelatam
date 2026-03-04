@@ -146,6 +146,7 @@ export default function EmpresaPage() {
       </section>
 
       {/* Team */}
+      {/* Team */}
       <section id="equipo" className={styles.team}>
         <Container>
           <SectionTitle
@@ -156,7 +157,7 @@ export default function EmpresaPage() {
           />
 
           <div className={styles.teamGrid}>
-            {team.map((member) => {
+            {team.map((member, index) => {
               const initials = member.name
                 .split(" ")
                 .filter(Boolean)
@@ -167,22 +168,76 @@ export default function EmpresaPage() {
 
               const hasLinkedIn = member.linkedin && member.linkedin !== "#";
 
+              const imgUrl =
+                member.image && typeof member.image === "string"
+                  ? member.image
+                  : member.image?.src;
+
+              const CardTag = hasLinkedIn ? "a" : "div";
+              const cardProps = hasLinkedIn
+                ? { href: member.linkedin }
+                : { role: "button" };
+
               return (
-                <div key={member.name} className={styles.teamCard}>
-                  <div className={styles.avatar} aria-hidden="true">
-                    {initials}
+                <CardTag
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  key={member.name}
+                  tabIndex={0}
+                  className={`${styles.card} fade-in-up visible`}
+                  style={{ transitionDelay: `${index * 90}ms` }}
+                  {...cardProps}
+                >
+                  <div className={styles.cardInner}>
+                    {/* Foto */}
+                    {imgUrl ? (
+                      <div
+                        className={styles.photoImage}
+                        style={{ backgroundImage: `url(${imgUrl})` }}
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <div
+                        className={styles.photoPlaceholder}
+                        aria-hidden="true"
+                      >
+                        <span className={styles.initials}>{initials}</span>
+                      </div>
+                    )}
+
+                    {/* Sombra base (solo para estética/contraste) */}
+                    <div className={styles.frontShade} aria-hidden="true" />
+
+                    {/* Nombre / rol (se oculta al abrir overlay) */}
+                    <div className={styles.frontMeta}>
+                      <h3 className={styles.frontName}>{member.name}</h3>
+                      <p className={styles.frontRole}>{member.role}</p>
+                    </div>
+
+                    {/* Overlay */}
+                    <div
+                      className={styles.overlay}
+                      aria-label={`Descripción de ${member.name}`}
+                    >
+                      <div className={styles.overlayInner}>
+                        <p className={styles.description}>
+                          {member.description}
+                        </p>
+
+                        {hasLinkedIn && (
+                          <Button
+                            href={member.linkedin}
+                            variant="ghost"
+                            size="sm"
+                            className={styles.linkedin}
+                          >
+                            Ver LinkedIn <span aria-hidden="true">→</span>
+                          </Button>
+                        )}
+                      </div>
+                    </div>
                   </div>
-
-                  <h3 className={styles.teamName}>{member.name}</h3>
-                  <p className={styles.teamRole}>{member.role}</p>
-                  <p className={styles.teamDesc}>{member.description}</p>
-
-                  {hasLinkedIn && (
-                    <Button href={member.linkedin} variant="ghost" size="sm">
-                      LinkedIn →
-                    </Button>
-                  )}
-                </div>
+                </CardTag>
               );
             })}
           </div>

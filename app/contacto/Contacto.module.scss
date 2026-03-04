@@ -470,3 +470,96 @@
         }
     }
 }
+
+
+
+/* =========================================================
+   Contacto HERO mobile: columna prolija (icono + texto derechos)
+========================================================= */
+@media (max-width: 640px) {
+    .hero {
+        padding: 104px 0 50px;
+        /* un poco más compacto */
+    }
+
+    .heroPanel {
+        padding: 18px;
+        /* menos aire, mismo look */
+    }
+
+    .heroInfoRow {
+        margin-top: 22px;
+        /* antes 34px */
+        gap: 12px;
+        /* antes 18px */
+        justify-items: stretch;
+        /* evita “centro raro” */
+    }
+
+    .heroInfoItem {
+        width: 100%;
+        justify-content: flex-start;
+        /* alinea todo a la izquierda */
+        gap: 12px;
+        padding: 10px 12px;
+        /* hace que queden “derechos” visualmente */
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.55);
+        // border: 1px solid rgba(19, 15, 58, 0.10);
+        box-shadow: 0 10px 26px rgba(19, 15, 58, 0.06);
+        backdrop-filter: blur(10px);
+    }
+
+    .heroInfoIcon {
+        width: 46px;
+        /* un toque más chico */
+        height: 46px;
+        flex: 0 0 46px;
+        font-size: 16px;
+        box-shadow: 0 12px 28px rgba(45, 35, 86, 0.18);
+    }
+
+    .heroInfoText {
+        text-align: left;
+    }
+
+    .heroInfoLabel {
+        margin: 0 0 3px;
+        font-size: 0.9rem;
+        line-height: 1.2;
+    }
+
+    .heroInfoValue {
+        font-size: 0.9rem;
+        line-height: 1.25;
+    }
+
+    /* evita cortes feos en teléfono/email */
+    .heroInfoValue a {
+        display: inline-block;
+        max-width: 100%;
+        overflow-wrap: anywhere;
+        // border-bottom: 1px solid rgba(41, 66, 148, 0.22);
+    }
+}
+
+/* celus chicos: más compacto aún */
+@media (max-width: 420px) {
+    .heroInfoItem {
+        padding: 9px 10px;
+        border-radius: 16px;
+    }
+
+    .heroInfoIcon {
+        width: 42px;
+        height: 42px;
+        flex: 0 0 42px;
+    }
+
+
+
+    .heroInfoLabel,
+    .heroInfoValue {
+        font-size: 0.86rem;
+    }
+}

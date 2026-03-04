@@ -3,23 +3,33 @@
     background: transparent;
     max-width: 1800px;
     margin: auto;
-    padding: 150px 0;
-    background: transparent;
 }
 
+/* Mantiene el mismo look, pero ahora el padding es coherente y responsive */
 .panel {
-    /* violeta profundo + leve azul, más premium */
     background: radial-gradient(1100px circle at 18% 10%, rgba(41, 66, 148, 0.22) 0%, transparent 55%),
         linear-gradient(135deg, var(--ink-deep) 0%, var(--ink) 55%, rgba(45, 35, 86, 0.98) 100%);
     border-radius: 28px;
-    padding: clamp(28px, 4vw, 56px);
-    padding: 110px 0;
+
+    /* ✅ Un solo padding (no se pisa) */
+    padding: clamp(56px, 6vw, 110px) clamp(18px, 4vw, 56px);
+
     box-shadow: var(--shadow-xl);
     position: relative;
     overflow: hidden;
     isolation: isolate;
-    // max-width: 1400px;
     margin: 0 auto;
+}
+
+@media (max-width: 520px) {
+    .section {
+        padding: 110px 0;
+    }
+
+    .panel {
+        border-radius: 24px;
+        padding: 50px 20px;
+    }
 }
 
 /* glows + “dibujito” tipo flower (como la referencia) */

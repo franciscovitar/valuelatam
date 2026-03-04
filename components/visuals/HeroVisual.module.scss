@@ -209,3 +209,63 @@
     letter-spacing: 0.12em;
     line-height: 1.2;
 }
+
+/* =========================================================
+   Mobile/tablet: 3 cards en una fila o se ocultan.
+   Desktop (>=1024px): NO CAMBIAR NADA.
+========================================================= */
+
+/* 1) En pantallas chicas: ocultarlas (se ve feo apilado) */
+@media (max-width: 520px) {
+    .cardRow {
+        display: none !important;
+    }
+
+    /* opcional: como ya no hay cards, recuperamos el frame */
+    .frame {
+        bottom: 0 !important;
+    }
+
+    .container {
+        height: clamp(420px, 70vw, 560px) !important;
+    }
+}
+
+/* 2) En tablet y desktop: siempre 3 en línea, SIN scroll */
+@media (min-width: 520px) and (max-width: 1023px) {
+    .cardRow {
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        gap: 12px !important;
+
+        overflow: visible !important;
+        scroll-snap-type: none !important;
+
+        left: 18px !important;
+        right: 18px !important;
+        padding: 6px 0 10px !important;
+    }
+
+    .card {
+        flex: initial !important;
+        /* mata el carrusel */
+        width: 100% !important;
+        min-width: 0 !important;
+
+        /* compactamos un toque para que entren bien */
+        padding: 12px 12px 10px !important;
+        min-height: 104px !important;
+        gap: 10px !important;
+        border-radius: 18px !important;
+    }
+
+    .cardIcon {
+        width: 28px !important;
+        height: 28px !important;
+        border-radius: 10px !important;
+    }
+
+    .metricValue {
+        font-size: 1.05rem !important;
+    }
+}

@@ -2,7 +2,7 @@
 
 import styles from "./HeroVisual.module.scss";
 import { motion, useReducedMotion } from "framer-motion";
-import foto from "../../public/mauricio.jpeg";
+import foto from "../../public/inicio.jpg";
 
 export default function HeroVisual() {
   const reduceMotion = useReducedMotion();
