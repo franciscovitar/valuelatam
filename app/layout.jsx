@@ -13,25 +13,29 @@ const workSans = Work_Sans({
 export const metadata = {
   metadataBase: new URL("https://valuelatam.com"),
   title: {
-    default: "Value Latam | Consultoría Financiera Integral",
-    template: "%s | Value Latam",
+    default: "Value Latam | Mercado de Capitales & Consultoría Financiera",
+    template: "Value Latam",
   },
   description:
-    "Consultoría financiera integral para empresas. Financiamiento, inversiones, gestión de liquidez y comercio exterior. Experiencia senior para ejecutar con claridad en contextos volátiles.",
+    "Firma especializada en mercado de capitales y estructuración de financiamiento a través de agentes registrados. Consultoría financiera estratégica para empresas: financiamiento, inversiones y gestión de liquidez con ejecución end-to-end.",
   keywords: [
-    "consultoría financiera",
-    "financiamiento",
+    "mercado de capitales",
+    "financiamiento en mercado de capitales",
+    "estructuración de financiamiento",
+    "ALyC",
+    "SGR",
+    "CNV",
+    "consultoría financiera estratégica",
+    "gestión de liquidez",
     "inversiones",
-    "liquidez",
-    "comercio exterior",
     "empresas",
     "PyME",
   ],
   alternates: { canonical: "/" },
   openGraph: {
-    title: "Value Latam | Consultoría Financiera Integral",
+    title: "Value Latam | Mercado de Capitales & Consultoría Financiera",
     description:
-      "Consultoría financiera integral para empresas. Experiencia senior para ejecutar con claridad.",
+      "Mercado de capitales y estructuración de financiamiento a través de agentes registrados. Consultoría financiera estratégica para empresas con ejecución end-to-end.",
     type: "website",
     url: "/",
     images: [
@@ -45,9 +49,9 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Value Latam | Consultoría Financiera Integral",
+    title: "Value Latam | Mercado de Capitales & Consultoría Financiera",
     description:
-      "Consultoría financiera integral para empresas. Experiencia senior para ejecutar con claridad.",
+      "Mercado de capitales y estructuración de financiamiento a través de agentes registrados. Consultoría financiera estratégica para empresas.",
     images: ["/og-image.jpg"],
   },
 };

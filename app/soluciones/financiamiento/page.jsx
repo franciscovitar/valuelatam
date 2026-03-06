@@ -10,26 +10,8 @@ import foto from "../../../public/finanzas.jpg";
 export const metadata = {
   title: "Financiamiento | Value Latam",
   description:
-    "Soluciones de financiamiento integral para empresas: préstamos, factoring, descubiertos y créditos sindicados.",
+    "Financiamiento en mercado de capitales, avales SGR y líneas de crédito productivas para empresas.",
 };
-
-const useCases = [
-  {
-    icon: "💼",
-    title: "Capital de trabajo",
-    desc: "Inventario, cobranzas y necesidades operativas estacionales para sostener el ritmo del negocio.",
-  },
-  {
-    icon: "🏗️",
-    title: "Proyectos de inversión",
-    desc: "Expansión, compra de activos o nuevas líneas para crecer con una estructura financiera clara.",
-  },
-  {
-    icon: "⚡",
-    title: "Necesidades urgentes",
-    desc: "Imprevistos u oportunidades que requieren velocidad, liquidez inmediata y ejecución sin fricción.",
-  },
-];
 
 export default function FinanciamientoPage() {
   return (
@@ -81,58 +63,45 @@ export default function FinanciamientoPage() {
         </Container>
       </section>
 
-      {/* Use cases */}
-      <section className={styles.sectionWhite}>
-        <Container>
-          <SectionTitle
-            subtitle="Casos de uso"
-            title="Para qué sirve"
-            centered
-          />
-
-          <div className={styles.useCases}>
-            {useCases.map((c) => (
-              <article key={c.title} className={styles.useCaseCard}>
-                <div className={styles.useCaseIcon} aria-hidden="true">
-                  {c.icon}
-                </div>
-                <h3 className={styles.useCaseTitle}>{c.title}</h3>
-                <p className={styles.useCaseDesc}>{c.desc}</p>
-              </article>
-            ))}
-          </div>
-        </Container>
-      </section>
-
       {/* Services */}
       <section id="servicios" className={styles.sectionGray}>
         <Container>
-          <SectionTitle title="Nuestros servicios de financiamiento" centered />
+          <SectionTitle title="Servicios de financiamiento" centered />
 
           <div className={styles.grid}>
-            {financingServices.map((service) => {
-              const chips = service.chips || service.types || null;
+            {financingServices.map((service) => (
+              <article key={service.title} className={styles.card}>
+                <h3 className={styles.cardTitle}>{service.title}</h3>
+                <p className={styles.cardDesc}>{service.description}</p>
 
-              return (
-                <article key={service.title} className={styles.card}>
-                  <h3 className={styles.cardTitle}>{service.title}</h3>
-                  <p className={styles.cardDesc}>{service.description}</p>
+                {service.features?.length ? (
+                  <ul className={styles.features}>
+                    {service.features.map((feature) => (
+                      <li key={feature} className={styles.feature}>
+                        <span className={styles.check} aria-hidden="true">
+                          ✓
+                        </span>
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
 
-                  {service.features?.length ? (
-                    <ul className={styles.features}>
-                      {service.features.map((feature) => (
-                        <li key={feature} className={styles.feature}>
-                          <span className={styles.check} aria-hidden="true">
-                            ✓
-                          </span>
-                          {feature}
-                        </li>
+                {/* ✅ Opcional: chips (si los usás en data.js) */}
+                {service.chips?.length ? (
+                  <div className={styles.chipsBlock}>
+                    <p className={styles.chipsTitle}>Instrumentos</p>
+                    <div className={styles.chips}>
+                      {service.chips.map((chip) => (
+                        <span key={chip} className={styles.chip}>
+                          {chip}
+                        </span>
                       ))}
-                    </ul>
-                  ) : null}
-                </article>
-              );
-            })}
+                    </div>
+                  </div>
+                ) : null}
+              </article>
+            ))}
           </div>
         </Container>
       </section>

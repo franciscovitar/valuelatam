@@ -325,32 +325,45 @@
 }
 
 /* =========================
-   SERVICES GRID (hover violeta suave)
+   SERVICES GRID (premium + listas largas)
 ========================= */
 .grid {
     margin-top: var(--space-12);
     display: grid;
     grid-template-columns: 1fr;
-    gap: var(--space-6);
+    gap: 22px;
+
+    /* ✅ centra y limita ancho (antes se te iba) */
+    max-width: 1080px;
+    margin-left: auto;
+    margin-right: auto;
 
     @media (min-width: 768px) {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    @media (min-width: 1100px) {
+    @media (min-width: 1024px) {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 }
 
 .card {
     position: relative;
-    background: rgba(255, 255, 255, 0.86);
-    border: 1px solid var(--border, rgba(41, 66, 148, 0.14));
-    border-radius: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    background: rgba(255, 255, 255, 0.88);
+    border: 1px solid rgba(41, 66, 148, 0.10);
+    border-radius: 24px;
     padding: clamp(18px, 2vw, 26px);
+
     box-shadow: var(--shadow-lg);
     backdrop-filter: blur(10px);
     overflow: hidden;
+
+    /* ✅ da cuerpo para que se vea pro */
+    min-height: 440px;
 
     transition:
         transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
@@ -370,10 +383,30 @@
 
         background: linear-gradient(135deg, var(--ink-deep) 0%, var(--ink) 100%);
         opacity: 0;
-        transform: translateY(8px);
+        transform: translateY(10px);
         transition:
-            opacity 280ms cubic-bezier(0.22, 1, 0.36, 1),
-            transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+            opacity 320ms cubic-bezier(0.22, 1, 0.36, 1),
+            transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* acento superior */
+    &::before {
+        content: "";
+        position: absolute;
+        left: 16px;
+        right: 16px;
+        top: 0;
+        height: 2px;
+        border-radius: 999px;
+        z-index: 1;
+
+        background: linear-gradient(90deg,
+                rgba(41, 66, 148, 0),
+                rgba(41, 66, 148, 0.55),
+                rgba(113, 184, 227, 0.45),
+                rgba(41, 66, 148, 0));
+        opacity: 0.55;
+        transition: opacity 280ms cubic-bezier(0.22, 1, 0.36, 1);
     }
 
     /* contenido arriba del overlay */
@@ -383,27 +416,9 @@
     }
 }
 
-.card::before {
-    content: "";
-    position: absolute;
-    left: 16px;
-    right: 16px;
-    top: 0;
-    height: 2px;
-    border-radius: 999px;
-    z-index: 1;
-    background: linear-gradient(90deg,
-            rgba(41, 66, 148, 0),
-            rgba(41, 66, 148, 0.55),
-            rgba(113, 184, 227, 0.45),
-            rgba(41, 66, 148, 0));
-    opacity: 0.55;
-    transition: opacity 280ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
 @media (hover: hover) and (pointer: fine) {
     .card:hover {
-        transform: translateY(-2px);
+        transform: translateY(-3px);
         box-shadow:
             0 1px 0 rgba(255, 255, 255, 0.10) inset,
             var(--shadow-xl);
@@ -416,7 +431,7 @@
     }
 
     .card:hover::before {
-        opacity: 0.25;
+        opacity: 0.22;
     }
 
     .card:hover .cardTitle {
@@ -454,9 +469,9 @@
 }
 
 .cardTitle {
-    margin: 0 0 10px;
-    font-size: 1.15rem;
-    font-weight: 800;
+    margin: 0;
+    font-size: 1.10rem;
+    font-weight: 900;
     color: var(--text);
     letter-spacing: -0.02em;
     line-height: 1.25;
@@ -465,10 +480,16 @@
 }
 
 .cardDesc {
-    margin: 0 0 16px;
+    margin: 0 0 6px;
     color: var(--text-2);
     line-height: 1.65;
-    font-size: 0.98rem;
+    font-size: 0.96rem;
+
+    /* ✅ evita “pared” de texto */
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 
     transition: color 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -476,17 +497,20 @@
 /* Features */
 .features {
     list-style: none;
-    margin: 0;
+    margin: 2px 0 0;
     padding: 0;
     display: grid;
-    gap: 10px;
+    gap: 5px;
+
+    /* ✅ ocupa el espacio y no empuja todo */
+    // flex: 1;
 }
 
 .feature {
     display: flex;
     align-items: flex-start;
     gap: 10px;
-    font-size: 0.95rem;
+    font-size: 0.92rem;
     color: var(--color-gray-700, rgba(11, 16, 32, 0.82));
     line-height: 1.45;
 
@@ -500,9 +524,11 @@
     width: 22px;
     height: 22px;
     border-radius: 999px;
+
     background: rgba(41, 66, 148, 0.14);
     border: 1px solid rgba(41, 66, 148, 0.22);
     color: var(--color-french-blue);
+
     font-size: 12px;
     font-weight: 900;
     flex-shrink: 0;
@@ -514,22 +540,21 @@
         color 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Chips */
+/* Chips (opcionales) */
 .chipsBlock {
-    margin-top: 18px;
-    padding-top: 16px;
+    margin-top: 14px;
+    padding-top: 14px;
     border-top: 1px solid rgba(19, 15, 58, 0.08);
-
     transition: border-color 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .chipsTitle {
     margin: 0 0 10px;
-    font-size: 0.86rem;
-    font-weight: 700;
+    font-size: 0.78rem;
+    font-weight: 800;
     color: var(--color-gray-700);
-    letter-spacing: 0.02em;
-
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
     transition: color 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -542,12 +567,14 @@
 .chip {
     display: inline-flex;
     align-items: center;
-    padding: 10px 14px;
+    padding: 9px 12px;
     border-radius: 999px;
+
     background: rgba(41, 66, 148, 0.08);
     border: 1px solid rgba(41, 66, 148, 0.16);
     color: var(--color-french-blue);
-    font-size: 0.90rem;
+
+    font-size: 0.88rem;
     font-weight: 650;
 
     transition:
@@ -556,126 +583,6 @@
         background-color 200ms cubic-bezier(0.22, 1, 0.36, 1),
         border-color 200ms cubic-bezier(0.22, 1, 0.36, 1),
         color 200ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-/* hover chip normal (si querés conservarlo) */
-@media (hover: hover) and (pointer: fine) {
-    .chip:hover {
-        transform: translateY(-1px);
-        background: rgba(41, 66, 148, 0.10);
-        border-color: rgba(41, 66, 148, 0.22);
-        box-shadow: var(--shadow-md);
-    }
-}
-
-/* Process */
-.processGrid {
-    margin-top: var(--space-12);
-    max-width: 1040px;
-    margin-left: auto;
-    margin-right: auto;
-
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--space-6);
-
-    @media (min-width: 768px) {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-}
-
-.processCard {
-    position: relative;
-    text-align: left;
-    padding: 18px 16px;
-    border-radius: 20px;
-    background: rgba(255, 255, 255, 0.72);
-    border: 1px solid var(--border, rgba(41, 66, 148, 0.14));
-    box-shadow: var(--shadow-lg);
-}
-
-.processStep {
-    width: 44px;
-    height: 44px;
-    border-radius: 14px;
-    background: linear-gradient(135deg, var(--color-french-blue) 0%, var(--color-light-blue) 100%);
-    display: grid;
-    place-items: center;
-    color: #fff;
-    font-weight: 900;
-    font-size: 0.95rem;
-    box-shadow: 0 14px 34px rgba(41, 66, 148, 0.18);
-    margin-bottom: 14px;
-}
-
-.processTitle {
-    margin: 0 0 8px;
-    font-size: 1.02rem;
-    font-weight: 800;
-    color: var(--color-gray-900);
-    letter-spacing: -0.02em;
-}
-
-.processDesc {
-    margin: 0;
-    color: var(--text-2);
-    line-height: 1.65;
-    font-size: 0.95rem;
-}
-
-/* FAQ */
-.faqWrap {
-    max-width: 820px;
-    margin: var(--space-12) auto 0;
-    display: grid;
-    gap: 12px;
-}
-
-.faqItem {
-    background: rgba(255, 255, 255, 0.82);
-    border: 1px solid rgba(19, 15, 58, 0.10);
-    border-radius: 18px;
-    padding: 16px 18px;
-    box-shadow: 0 14px 40px rgba(19, 15, 58, 0.10);
-}
-
-.faqSummary {
-    cursor: pointer;
-    font-weight: 800;
-    color: var(--text);
-    font-size: 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    list-style: none;
-}
-
-.faqSummary::-webkit-details-marker {
-    display: none;
-}
-
-/* chevron */
-.faqSummary::after {
-    content: "";
-    width: 10px;
-    height: 10px;
-    border-right: 2px solid rgba(41, 66, 148, 0.75);
-    border-bottom: 2px solid rgba(41, 66, 148, 0.75);
-    transform: rotate(45deg);
-    transition: transform 180ms cubic-bezier(0.4, 0, 0.2, 1);
-    flex-shrink: 0;
-}
-
-.faqItem[open] .faqSummary::after {
-    transform: rotate(-135deg);
-}
-
-.faqAnswer {
-    margin: 12px 0 0;
-    color: var(--color-gray-600);
-    line-height: 1.65;
-    font-size: 0.95rem;
 }
 
 .cta {

@@ -32,10 +32,14 @@ export default function EmpresaPage() {
                 </h1>
 
                 <p className={styles.heroText}>
-                  Somos un equipo de profesionales con trayectoria en banca
-                  corporativa, mercados financieros y consultoría empresarial.
-                  Diseñamos soluciones ejecutables para operar con claridad
-                  incluso en contextos volátiles.
+                  En Value Latam ayudamos a las empresas a ordenar su estrategia
+                  financiera y acceder al capital para crecer. Analizamos la
+                  estructura financiera, identificamos oportunidades en el
+                  sistema financiero y el mercado de capitales, y estructuramos
+                  operaciones concretas para obtener financiamiento, invertir
+                  excedentes o mejorar la liquidez. Operamos principalmente en
+                  el mercado de capitales, combinando instrumentos financieros
+                  con líneas de organismos de financiamiento.
                 </p>
               </div>
 
@@ -69,24 +73,26 @@ export default function EmpresaPage() {
           <div className={styles.aboutGrid}>
             <div>
               <SectionTitle
-                subtitle="Quiénes somos"
-                title="Value Latam"
-                highlight="Value"
+                subtitle="Marco regulatorio"
+                title="Transparencia y cumplimiento"
+                highlight="cumplimiento"
               />
+
               <div className={styles.aboutText}>
                 <p>
-                  Value Latam es una consultora financiera que acompaña a PyMEs
-                  y empresas medianas y grandes (MeGRAs) en decisiones de
-                  financiamiento, inversiones, gestión de liquidez y comercio
-                  exterior.
+                  Value Latam ofrece servicios de consultoría financiera
+                  estratégica, análisis y estructuración de financiamiento y
+                  canalización de operaciones en el mercado de capitales a
+                  través de agentes registrados.
                 </p>
+
                 <p>
-                  Nuestro enfoque es entender tu operación, ordenar prioridades
-                  y construir alternativas con costos, plazos y riesgos claros.
+                  <strong>AP CNV Mat. N° 2651</strong>
                 </p>
+
                 <p>
-                  Trabajamos con metodología transparente y acompañamiento
-                  end-to-end: diagnóstico, estrategia, ejecución y seguimiento.
+                  Actividad encuadrada en la <strong>Ley 26.831</strong> y
+                  normas de la <strong>Comisión Nacional de Valores</strong>.
                 </p>
               </div>
             </div>

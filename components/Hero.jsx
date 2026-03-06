@@ -24,19 +24,22 @@ export default function Hero() {
               <span className={styles.badgeIcon} aria-hidden="true">
                 ⚡
               </span>
-              Soluciones on-demand para PyMEs y MeGRAs
+              Estrategia financiera, financiamiento e inversión para empresas
             </div>
 
             <h1 className={reveal(styles.title, styles.d2)}>
-              Soluciones financieras que{" "}
-              <span className={styles.accent}>impulsan</span> a las empresas
+              Agentes regulados en{" "}
+              <span className={styles.accent}>mercado </span> de capitales
             </h1>
 
             <p className={reveal(styles.subtitle, styles.d3)}>
-              Financiamiento, inversiones y gestión de liquidez, y comercio
-              exterior. Consultoría integral on demand para PyMEs y empresas
-              medianas y grandes (MeGRAs), con acompañamiento end-to-end junto a
-              tu equipo.
+              En Value Latam brindamos consultoría especializada en
+              estructuración de financiamiento. Canalizamos operaciones a través
+              de ALyCs, SGRs, bancos y entidades financieras para acceder a
+              capital, optimizar liquidez y estructurar inversiones de manera
+              eficiente. Nuestro enfoque combina sistema financiero, mercado de
+              capitales y consultoría estratégica para elegir el instrumento
+              adecuado en el momento correcto.
             </p>
 
             <div className={reveal(styles.ctas, styles.d4)}>
