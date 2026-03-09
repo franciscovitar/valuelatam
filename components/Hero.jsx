@@ -24,22 +24,17 @@ export default function Hero() {
               <span className={styles.badgeIcon} aria-hidden="true">
                 ⚡
               </span>
-              Estrategia financiera, financiamiento e inversión para empresas
+Estrategia financiera para empresas: financiamiento, liquidez e inversión
             </div>
 
             <h1 className={reveal(styles.title, styles.d2)}>
-              Agentes regulados en{" "}
-              <span className={styles.accent}>mercado </span> de capitales
+Las mejores  <span className={styles.accent}>soluciones financieras </span>  para tu empresa, en un solo lugar
             </h1>
 
             <p className={reveal(styles.subtitle, styles.d3)}>
-              En Value Latam brindamos consultoría especializada en
-              estructuración de financiamiento. Canalizamos operaciones a través
-              de ALyCs, SGRs, bancos y entidades financieras para acceder a
-              capital, optimizar liquidez y estructurar inversiones de manera
-              eficiente. Nuestro enfoque combina sistema financiero, mercado de
-              capitales y consultoría estratégica para elegir el instrumento
-              adecuado en el momento correcto.
+Accedé al financiamiento mas competitivo, gestioná tus excedentes con los
+mejores instrumentos del mercado y simplificá tus pagos al exterior desde un
+solo lugar
             </p>
 
             <div className={reveal(styles.ctas, styles.d4)}>

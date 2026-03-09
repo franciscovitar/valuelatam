@@ -9,12 +9,12 @@ import Image from "next/image";
 import foto from "../../../public/exterior.jpg";
 
 export const metadata = {
-  title: "Comercio Exterior | Value Latam",
+  title: "Pagos Internacionales | Value Latam",
   description:
     "Transferencias internacionales, pagos eficientes y financiación competitiva para import/export.",
 };
 
-export default function ComercioExteriorPage() {
+export default function PagosInternacionalesPage() {
   return (
     <div className={styles.page}>
       {/* Hero */}
@@ -28,15 +28,12 @@ export default function ComercioExteriorPage() {
                 </span>
 
                 <h1 className={styles.heroTitle}>
-                  Comercio{" "}
-                  <span className={styles.heroHighlight}>Exterior</span>
+                  Pagos{" "}
+                  <span className={styles.heroHighlight}>Internacionales</span>
                 </h1>
 
                 <p className={styles.heroText}>
-                  Simplificamos transferencias y pagos internacionales y
-                  acercamos financiamiento competitivo para
-                  importación/exportación con ejecución ágil.
-                </p>
+              Simplificamos transferencias y pagos internacionales y acercamos herramientas financieras competitivas para importaciones, con ejecución ágil y eficiente. </p>
               </div>
 
               <div className={styles.heroCta}>

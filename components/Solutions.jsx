@@ -22,8 +22,8 @@ export default function Solutions() {
       <Container>
         <SectionTitle
           subtitle="Soluciones integrales"
-          title="Qué hacemos"
-          highlight="hacemos"
+          title="SOLUCIONES FINANCIERAS PARA EMPRESAS "
+          highlight="FINANCIERAS"
           centered
         />
 

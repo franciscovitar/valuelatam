@@ -31,9 +31,7 @@ export default function InversionesLiquidezPage() {
                 </h1>
 
                 <p className={styles.heroText}>
-                  Gestionamos inversiones y liquidez con foco en renta fija,
-                  diversificación y cobertura, según horizonte y perfil de
-                  riesgo de tu empresa.
+                 Diseñamos estrategias de inversión y gestión de liquidez para empresas que buscan optimizar sus excedentes financieros según su horizonte, necesidades de caja y contexto de mercado.
                 </p>
               </div>
 

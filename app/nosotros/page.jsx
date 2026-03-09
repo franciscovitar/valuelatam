@@ -13,10 +13,9 @@ export const metadata = {
     "Conocé nuestro equipo senior, nuestra metodología de trabajo y por qué Value Latam es un partner financiero para empresas.",
 };
 
-export default function EmpresaPage() {
+export default function Nosotros() {
   return (
     <div className={styles.page}>
-      {/* Hero */}
       {/* Hero */}
       <section className={styles.hero}>
         <Container>
