@@ -21,25 +21,28 @@ export default function Hero() {
           {/* Left Content */}
           <div className={styles.left}>
             <div className={reveal(styles.badge, styles.d1)}>
-              <span className={styles.badgeIcon} aria-hidden="true">
+              {/* <span className={styles.badgeIcon} aria-hidden="true">
                 ⚡
-              </span>
-Estrategia financiera para empresas: financiamiento, liquidez e inversión
+              </span> */}
+              Estrategia financiera para empresas: financiamiento, liquidez e
+              inversión
             </div>
 
             <h1 className={reveal(styles.title, styles.d2)}>
-Las mejores  <span className={styles.accent}>soluciones financieras </span>  para tu empresa, en un solo lugar
+              Las mejores{" "}
+              <span className={styles.accent}>soluciones financieras </span>{" "}
+              para tu empresa, en un solo lugar
             </h1>
 
             <p className={reveal(styles.subtitle, styles.d3)}>
-Accedé al financiamiento mas competitivo, gestioná tus excedentes con los
-mejores instrumentos del mercado y simplificá tus pagos al exterior desde un
-solo lugar
+              Accedé al financiamiento mas competitivo, gestioná tus excedentes
+              con los mejores instrumentos del mercado y simplificá tus pagos al
+              exterior desde un solo lugar
             </p>
 
             <div className={reveal(styles.ctas, styles.d4)}>
               <Button href="/contacto" size="lg">
-                Agendar una llamada
+                Agendar una reunión
               </Button>
               <Button href="#soluciones" variant="ghost" size="lg">
                 Ver soluciones

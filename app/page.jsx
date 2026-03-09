@@ -18,11 +18,11 @@ export default function Page() {
       <Solutions />
       {/* <Steps /> */}
 
-      <ResearchBlock />
-      <CaseStudies />
-      <WhyUs />
+      {/* <ResearchBlock /> */}
+      {/* <CaseStudies /> */}
+      {/* <WhyUs /> */}
       <TeamPreview />
-      <FAQ />
+      {/* <FAQ /> */}
       <CTAContact />
     </>
   );

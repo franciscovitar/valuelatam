@@ -92,7 +92,13 @@ export default function HeroVisual() {
 
           <div className={styles.metric}>
             <span className={styles.metricValue}>Partners </span>
-            <span className={styles.metricLabel}>Bancos · ALyCs · SGRs</span>
+            <span className={styles.metricLabel}>
+              Balanz Capital S.A.
+              <br />
+              Adcap Grupo Financiero
+              <br />
+              SGR y entidades financieras
+            </span>
           </div>
         </motion.article>
 

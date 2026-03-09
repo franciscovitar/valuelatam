@@ -878,3 +878,250 @@
     border-radius: 999px;
     padding: 12px 18px;
 }
+
+
+/* =========================
+   ECOSYSTEM / APPROACH
+========================= */
+.ecosystem {
+    position: relative;
+    padding: 86px 0;
+    background:
+        radial-gradient(900px circle at 10% 8%, rgba(113, 184, 227, 0.10) 0%, transparent 55%),
+        radial-gradient(900px circle at 92% 20%, rgba(41, 66, 148, 0.08) 0%, transparent 60%),
+        linear-gradient(180deg, #ffffff 0%, var(--color-gray-50, #f7f8fb) 100%);
+    border-top: 1px solid rgba(19, 15, 58, 0.06);
+}
+
+.ecosystemGrid {
+    margin-top: var(--space-12);
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 22px;
+    align-items: stretch;
+
+    @media (min-width: 900px) {
+        grid-template-columns: 1.15fr 1fr 1fr;
+    }
+}
+
+.ecoCard {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    height: 100%;
+    border-radius: 24px;
+    padding: clamp(22px, 2vw, 28px);
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+    backdrop-filter: blur(10px);
+    transition:
+        transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1),
+        border-color 260ms cubic-bezier(0.22, 1, 0.36, 1);
+
+    will-change: transform;
+
+    >* {
+        position: relative;
+        z-index: 1;
+    }
+
+    &::before {
+        content: "";
+        position: absolute;
+        left: 16px;
+        right: 16px;
+        top: 0;
+        height: 2px;
+        border-radius: 999px;
+        z-index: 1;
+        transition: opacity 280ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    &::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        pointer-events: none;
+        z-index: 0;
+        opacity: 0;
+        transform: translateY(8px);
+        transition:
+            opacity 280ms cubic-bezier(0.22, 1, 0.36, 1),
+            transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        &:hover {
+            transform: translateY(-2px);
+            box-shadow:
+                0 1px 0 rgba(255, 255, 255, 0.10) inset,
+                var(--shadow-xl);
+        }
+
+        &:hover::after {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+}
+
+/* CARD BLANCA */
+.ecoCardWhite {
+    background: rgba(255, 255, 255, 0.86);
+    border: 1px solid rgba(41, 66, 148, 0.14);
+
+    &::before {
+        background: linear-gradient(90deg,
+                rgba(41, 66, 148, 0),
+                rgba(41, 66, 148, 0.45),
+                rgba(113, 184, 227, 0.35),
+                rgba(41, 66, 148, 0));
+        opacity: 0.52;
+    }
+
+    &::after {
+        background: linear-gradient(135deg, var(--ink-deep) 0%, var(--ink) 100%);
+    }
+
+    .ecoTag {
+        background: rgba(41, 66, 148, 0.06);
+        border: 1px solid rgba(41, 66, 148, 0.12);
+        color: var(--color-french-blue, #294294);
+    }
+
+    .ecoTitle {
+        color: var(--text-2);
+    }
+
+    .ecoText {
+        color: var(--text-2);
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        &:hover {
+            border-color: rgba(113, 184, 227, 0.22);
+        }
+
+        &:hover::before {
+            opacity: 0.22;
+        }
+
+        &:hover .ecoTag {
+            background: rgba(255, 255, 255, 0.10);
+            border-color: rgba(255, 255, 255, 0.18);
+            color: rgba(255, 255, 255, 0.92);
+        }
+
+        &:hover .ecoTitle {
+            color: #fff;
+        }
+
+        &:hover .ecoText {
+            color: rgba(255, 255, 255, 0.88);
+        }
+    }
+}
+
+/* CARD DEL MEDIO INVERTIDA */
+.ecoCardInverted {
+    background: linear-gradient(135deg, var(--ink-deep) 0%, var(--ink) 100%);
+    border: 1px solid rgba(113, 184, 227, 0.18);
+
+    &::before {
+        background: linear-gradient(90deg,
+                rgba(255, 255, 255, 0),
+                rgba(255, 255, 255, 0.30),
+                rgba(113, 184, 227, 0.38),
+                rgba(255, 255, 255, 0));
+        opacity: 0.46;
+    }
+
+    &::after {
+        background:
+            radial-gradient(700px circle at 12% 8%, rgba(113, 184, 227, 0.10) 0%, transparent 48%),
+            rgba(255, 255, 255, 0.96);
+    }
+
+    .ecoTag {
+        background: rgba(255, 255, 255, 0.10);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        color: rgba(255, 255, 255, 0.92);
+    }
+
+    .ecoTitle {
+        color: #fff;
+    }
+
+    .ecoText {
+        color: rgba(255, 255, 255, 0.86);
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        &:hover {
+            background: rgba(255, 255, 255, 0.86);
+            border: 1px solid rgba(41, 66, 148, 0.14);
+        }
+
+        &:hover::before {
+            opacity: 0.55;
+        }
+
+        &:hover .ecoTag {
+            background: rgba(41, 66, 148, 0.06);
+            border-color: rgba(41, 66, 148, 0.12);
+            color: var(--color-french-blue, #294294);
+        }
+
+        &:hover .ecoTitle {
+            color: var(--text-2);
+        }
+
+        &:hover .ecoText {
+            color: var(--text-2);
+        }
+    }
+}
+
+.ecoTag {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    min-height: 28px;
+    padding: 0 12px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition:
+        background-color 260ms cubic-bezier(0.22, 1, 0.36, 1),
+        border-color 260ms cubic-bezier(0.22, 1, 0.36, 1),
+        color 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ecoTitle {
+    margin: 0;
+    font-size: 1.18rem;
+    font-weight: 800;
+    line-height: 1.22;
+    letter-spacing: -0.025em;
+    transition: color 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ecoBody {
+    display: grid;
+    gap: 12px;
+    align-content: start;
+    flex: 1;
+}
+
+.ecoText {
+    margin: 0;
+    line-height: 1.68;
+    font-size: 0.96rem;
+    transition: color 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}

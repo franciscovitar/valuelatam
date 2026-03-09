@@ -21,7 +21,7 @@ export default function Solutions() {
 
       <Container>
         <SectionTitle
-          subtitle="Soluciones integrales"
+          subtitle="Que hacemos"
           title="SOLUCIONES FINANCIERAS PARA EMPRESAS "
           highlight="FINANCIERAS"
           centered
@@ -39,7 +39,6 @@ export default function Solutions() {
                 className={`${styles.card} fade-in-up ${isVisible ? "visible" : ""}`}
                 style={{ transitionDelay: `${index * 80}ms` }}
               >
-                {/* Top row: pill + arrow */}
                 <div className={styles.topRow}>
                   <span className={styles.pill}>
                     {solution.kicker ?? solution.title}
@@ -50,10 +49,8 @@ export default function Solutions() {
                   </span>
                 </div>
 
-                {/* Big text (description) */}
                 <p className={styles.headline}>{solution.description}</p>
 
-                {/* Image */}
                 <div className={styles.media} aria-hidden="true">
                   <Image
                     src={imgSrc}
@@ -67,6 +64,17 @@ export default function Solutions() {
               </Link>
             );
           })}
+        </div>
+
+        <div className={styles.regulatoryNote}>
+          <p className={styles.regulatoryKicker}>Mención regulatoria</p>
+
+          <p className={styles.regulatoryText}>
+            Value Latam canaliza operaciones en el mercado de capitales a través
+            de agentes registrados.
+          </p>
+
+          <p className={styles.regulatoryMat}>AP CNV Mat. N° 2651.</p>
         </div>
       </Container>
     </section>

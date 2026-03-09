@@ -13,6 +13,31 @@ export const metadata = {
     "Conocé nuestro equipo senior, nuestra metodología de trabajo y por qué Value Latam es un partner financiero para empresas.",
 };
 
+const ecosystemCards = [
+  {
+    variant: "default",
+    title: "El único ecosistema de financiamiento empresarial en un solo lugar",
+    paragraphs: [
+      "En Value Latam reunimos en un solo lugar alternativas provenientes del mercado de capitales, entidades financieras, bancos, Sociedades de Garantía Recíproca (SGR) y soluciones de leasing. Esto permite analizar distintas opciones y estructurar la alternativa de financiamiento más conveniente para cada empresa.",
+    ],
+  },
+  {
+    variant: "featured",
+    title:
+      "No solo te acercamos las herramientas. Te acompañamos en todo el proceso.",
+    paragraphs: [
+      "En Value Latam analizamos la estructura financiera de cada empresa, evaluamos las alternativas disponibles y estructuramos la estrategia más conveniente. Luego acompañamos todo el proceso de implementación hasta concretar la operación.",
+    ],
+  },
+  {
+    variant: "default",
+    title: "Una experiencia simple, segura y 100% digital",
+    paragraphs: [
+      "En Value Latam nuestra prioridad es que cada empresa pueda acceder a soluciones financieras de forma ágil, con procesos claros, documentación ordenada y seguimiento permanente. Contamos con una responsable dedicada al proceso de onboarding, que acompaña a cada cliente en la organización de la información y en cada etapa inicial, asegurando que la operación avance de forma ordenada y eficiente. Trabajamos con herramientas digitales que permiten simplificar la gestión y acelerar cada etapa del proceso.",
+    ],
+  },
+];
+
 export default function Nosotros() {
   return (
     <div className={styles.page}>
@@ -65,9 +90,47 @@ export default function Nosotros() {
           </div>
         </Container>
       </section>
+      <section className={styles.ecosystem}>
+        <Container>
+          <SectionTitle
+            subtitle="Nuestro enfoque"
+            title="Cómo acompañamos a las empresas"
+            highlight="acompañamos"
+            centered
+          />
 
+          <div className={styles.ecosystemGrid}>
+            {ecosystemCards.map((item, index) => (
+              <article
+                key={item.title}
+                className={`${styles.ecoCard} ${
+                  index === 1 ? styles.ecoCardInverted : styles.ecoCardWhite
+                }`}
+              >
+                <span className={styles.ecoTag}>
+                  {index === 0
+                    ? "Ecosistema"
+                    : index === 1
+                      ? "Acompañamiento"
+                      : "Experiencia digital"}
+                </span>
+
+                <h3 className={styles.ecoTitle}>{item.title}</h3>
+
+                <div className={styles.ecoBody}>
+                  {item.paragraphs.map((paragraph) => (
+                    <p key={paragraph} className={styles.ecoText}>
+                      {paragraph}
+                    </p>
+                  ))}
+                </div>
+              </article>
+            ))}
+          </div>
+        </Container>
+      </section>
       {/* About */}
-      <section className={styles.about}>
+      {/* <section className={styles.about}>
         <Container>
           <div className={styles.aboutGrid}>
             <div>
@@ -124,7 +187,7 @@ export default function Nosotros() {
             </aside>
           </div>
         </Container>
-      </section>
+      </section> */}
 
       {/* Why choose us */}
       <section className={styles.why}>
@@ -139,9 +202,9 @@ export default function Nosotros() {
           <div className={styles.whyGrid}>
             {whyUs.map((item) => (
               <div key={item.title} className={styles.whyCard}>
-                <div className={styles.whyIcon} aria-hidden="true">
+                {/* <div className={styles.whyIcon} aria-hidden="true">
                   {item.icon}
-                </div>
+                </div> */}
                 <h3 className={styles.whyTitle}>{item.title}</h3>
                 <p className={styles.whyDesc}>{item.description}</p>
               </div>

@@ -31,7 +31,9 @@ export default function InversionesLiquidezPage() {
                 </h1>
 
                 <p className={styles.heroText}>
-                 Diseñamos estrategias de inversión y gestión de liquidez para empresas que buscan optimizar sus excedentes financieros según su horizonte, necesidades de caja y contexto de mercado.
+                  Diseñamos estrategias de inversión y gestión de liquidez para
+                  empresas que buscan optimizar sus excedentes financieros según
+                  su horizonte, necesidades de caja y contexto de mercado.
                 </p>
               </div>
 
@@ -109,6 +111,14 @@ export default function InversionesLiquidezPage() {
                 </span>
               ))}
             </div>
+          </div>
+
+          <div className={styles.legalNote}>
+            <p className={styles.legalText}>
+              Las operaciones en el mercado de capitales se canalizan a través
+              de agentes registrados ante la Comisión Nacional de Valores.
+            </p>
+            <p className={styles.legalMat}>AP CNV Mat. N° 2651.</p>
           </div>
         </Container>
       </section>

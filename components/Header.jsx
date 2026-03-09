@@ -223,7 +223,7 @@ export default function Header() {
           {/* CTA */}
           <div className={styles.cta}>
             <Button href="/contacto" size="sm">
-              Agendar una llamada
+              Agendar una reunión
             </Button>
           </div>
 
