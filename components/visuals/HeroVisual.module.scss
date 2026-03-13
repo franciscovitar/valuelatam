@@ -68,33 +68,6 @@
     opacity: 0.8;
 }
 
-/* ===== Dock Cards (premium, consistentes) ===== */
-
-// .cardRow {
-//     position: absolute;
-//     left: 18px;
-//     right: 18px;
-//     bottom: 0;
-//     z-index: 6;
-
-//     /* más “dock”, menos flotación */
-//     transform: translateY(-10px);
-
-//     display: flex;
-//     gap: 12px;
-//     overflow-x: auto;
-//     padding-bottom: 8px;
-//     scroll-snap-type: x mandatory;
-//     -webkit-overflow-scrolling: touch;
-
-//     @media (min-width: 1024px) {
-//         display: grid;
-//         grid-template-columns: 1.35fr 1fr 1fr;
-//         gap: 14px;
-//         overflow: visible;
-//     }
-// }
-
 /* ===== Dock Cards (minimal + aire) ===== */
 
 .cardRow {
@@ -128,25 +101,29 @@
     border: 1px solid var(--border, rgba(41, 66, 148, 0.14));
     border-radius: 20px;
 
-    padding: 16px 16px 14px;
     box-shadow: var(--shadow-lg);
     backdrop-filter: blur(12px);
-
-    display: grid;
-    gap: 14px;
-
-    min-height: 116px;
-    flex: 0 0 260px;
 
     transition:
         transform 180ms cubic-bezier(0.4, 0, 0.2, 1),
         box-shadow 180ms cubic-bezier(0.4, 0, 0.2, 1),
         border-color 180ms cubic-bezier(0.4, 0, 0.2, 1);
 
+    min-height: 116px;
+    flex: 0 0 260px;
+
+    /* ✅ SOLO TÍTULO: centrado y compacto */
+    display: grid;
+    place-items: center;
+    text-align: center;
+    gap: 8px;
+    padding: 14px 14px 12px;
+
     @media (hover: hover) and (pointer: fine) {
         &:hover {
             border-color: rgba(41, 66, 148, 0.22);
             box-shadow: var(--shadow-xl);
+            transform: translateY(-2px);
         }
     }
 }
@@ -159,16 +136,10 @@
     }
 }
 
-/* header ultra limpio */
-.cardHeader {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
+/* Icono mini (para que no se vean vacías) */
 .cardIcon {
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
     border-radius: 12px;
     display: grid;
     place-items: center;
@@ -179,35 +150,36 @@
     font-size: 14px;
 }
 
-.cardKicker {
-    font-size: 10px;
-    font-weight: 900;
-    color: var(--text-2);
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    line-height: 1;
-}
-
 /* métrica protagonista */
 .metric {
     display: grid;
     gap: 6px;
+    justify-items: center;
 }
 
 .metricValue {
-    font-size: 1.2rem;
-    font-weight: 950;
+    font-size: 1.02rem;
+    /* ✅ más chico */
+    font-weight: 900;
     color: var(--primary);
     letter-spacing: -0.02em;
-    line-height: 1;
-}
+    line-height: 1.05;
 
-.metricLabel {
-    font-size: 9px;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    line-height: 1.2;
+    /* ✅ mini detalle para que no se vea vacío */
+    &::after {
+        content: "";
+        display: block;
+        width: 34px;
+        height: 2px;
+        margin: 8px auto 0;
+        border-radius: 999px;
+        background: linear-gradient(90deg,
+                rgba(41, 66, 148, 0),
+                rgba(41, 66, 148, 0.35),
+                rgba(113, 184, 227, 0.35),
+                rgba(41, 66, 148, 0));
+        opacity: 0.9;
+    }
 }
 
 /* =========================================================
@@ -215,7 +187,7 @@
    Desktop (>=1024px): NO CAMBIAR NADA.
 ========================================================= */
 
-/* 1) En pantallas chicas: ocultarlas (se ve feo apilado) */
+/* 1) En pantallas chicas: ocultarlas */
 @media (max-width: 520px) {
     .cardRow {
         display: none !important;
@@ -231,7 +203,7 @@
     }
 }
 
-/* 2) En tablet y desktop: siempre 3 en línea, SIN scroll */
+/* 2) Tablet: siempre 3 en línea, SIN scroll */
 @media (min-width: 520px) and (max-width: 1023px) {
     .cardRow {
         display: grid !important;
@@ -248,14 +220,12 @@
 
     .card {
         flex: initial !important;
-        /* mata el carrusel */
         width: 100% !important;
         min-width: 0 !important;
 
-        /* compactamos un toque para que entren bien */
         padding: 12px 12px 10px !important;
-        min-height: 104px !important;
-        gap: 10px !important;
+        min-height: 96px !important;
+        gap: 8px !important;
         border-radius: 18px !important;
     }
 
@@ -266,6 +236,11 @@
     }
 
     .metricValue {
-        font-size: 1.05rem !important;
+        font-size: 0.98rem !important;
+    }
+
+    .metricValue::after {
+        width: 28px !important;
+        margin-top: 6px !important;
     }
 }

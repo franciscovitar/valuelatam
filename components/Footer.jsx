@@ -22,18 +22,16 @@ export default function Footer() {
               </div>
               <span className={styles.logoText}>Value Latam</span>
             </Link>
-
             <p className={styles.description}>
               Consultoría financiera integral para empresas. Experiencia senior
               para ejecutar con claridad en contextos volátiles.
             </p>
-
             <div className={styles.contact}>
               <p>
                 <strong>Email:</strong> info@valuelatam.com
               </p>
               <p>
-                <strong>WhatsApp:</strong> +54 9 11 1234-5678
+                <strong>WhatsApp:</strong> +54 9 11 3000-4720
               </p>
             </div>
           </div>
@@ -85,7 +83,7 @@ export default function Footer() {
                 </li>
                 <li>
                   <a
-                    href="https://wa.me/5491112345678"
+                    href="https://wa.me/5491130004720"
                     target="_blank"
                     rel="noopener noreferrer"
                   >

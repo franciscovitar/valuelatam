@@ -51,12 +51,16 @@ export default function Hero() {
 
             <div className={reveal(styles.social, styles.d5)}>
               <span className={styles.socialText}>
-                Alianzas estratégicas con
+                Trabajamos con el ecosistema del mercado de capitales
               </span>
               <div className={styles.partners}>
-                <span className={styles.partner}>Balanz Capital S.A.</span>
+                <span className={styles.partner}>Balanz Capital S.A. </span>
                 <span className={styles.divider}>·</span>
                 <span className={styles.partner}>Adcap Grupo Financiero</span>
+                <span className={styles.divider}>·</span>
+                <span className={styles.partner}>
+                  SGR y entidades financieras{" "}
+                </span>
               </div>
             </div>
           </div>

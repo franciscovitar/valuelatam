@@ -11,28 +11,22 @@ export default function HeroVisual() {
     hidden: {},
     visible: {
       transition: {
-        staggerChildren: 0.06, // ✅ antes 0.12
-        delayChildren: 0.02, // ✅ antes 0.05
+        staggerChildren: 0.06,
+        delayChildren: 0.02,
       },
     },
   };
 
   const card = {
-    hidden: { opacity: 0, y: 10, scale: 0.99 }, // ✅ menos salto
+    hidden: { opacity: 0, y: 10, scale: 0.99 },
     visible: {
       opacity: 1,
       y: 0,
       scale: 1,
-      transition: { duration: 0.28, ease: [0.22, 1, 0.36, 1] }, // ✅ más rápido
+      transition: { duration: 0.28, ease: [0.22, 1, 0.36, 1] },
     },
   };
 
-  const floating = (delay = 0) => ({
-    y: reduceMotion ? 0 : [0, -6, 0],
-    transition: reduceMotion
-      ? { duration: 0 }
-      : { duration: 3.6, repeat: Infinity, ease: "easeInOut", delay },
-  });
   return (
     <motion.div
       className={styles.container}
@@ -41,39 +35,32 @@ export default function HeroVisual() {
       animate="visible"
       aria-hidden="true"
     >
-      {/* ✅ FOTO SOLO EN EL FRAME */}
+      {/* FOTO SOLO EN EL FRAME */}
       <div className={styles.frame}>
         <div
           className={styles.heroImage}
           style={{
             backgroundImage: `url(${foto.src})`,
-            backgroundPosition: "50% 18%", // probá 12%–25% según tu foto
+            backgroundPosition: "50% 18%",
           }}
         />
         <div className={styles.decorativeGrid} />
         <div className={styles.glowEffect} />
       </div>
 
-      {/* ✅ CARDS AFUERA DEL FRAME (flotando) */}
-      {/* ✅ CARDS (dock premium) */}
+      {/* CARDS (dock) */}
       <div className={styles.cardRow}>
-        {/* Card 1 */}
         {/* Card 1 */}
         <motion.article
           className={`${styles.card} ${styles.cardWide}`}
           variants={card}
           whileHover={reduceMotion ? undefined : { y: -2 }}
         >
-          <header className={styles.cardHeader}>
+          <div className={styles.metric}>
             <span className={styles.cardIcon} aria-hidden="true">
               💼
             </span>
-            <span className={styles.cardKicker}>EXPERIENCIA</span>
-          </header>
-
-          <div className={styles.metric}>
-            <span className={styles.metricValue}>+15 años</span>
-            <span className={styles.metricLabel}>Banca & capitales</span>
+            <span className={styles.metricValue}>Financiamiento</span>
           </div>
         </motion.article>
 
@@ -83,22 +70,11 @@ export default function HeroVisual() {
           variants={card}
           whileHover={reduceMotion ? undefined : { y: -2 }}
         >
-          <header className={styles.cardHeader}>
-            <span className={styles.cardIcon} aria-hidden="true">
-              👥
-            </span>
-            <span className={styles.cardKicker}>ECOSISTEMA</span>
-          </header>
-
           <div className={styles.metric}>
-            <span className={styles.metricValue}>Partners </span>
-            <span className={styles.metricLabel}>
-              Balanz Capital S.A.
-              <br />
-              Adcap Grupo Financiero
-              <br />
-              SGR y entidades financieras
+            <span className={styles.cardIcon} aria-hidden="true">
+              📈
             </span>
+            <span className={styles.metricValue}>Inversión</span>
           </div>
         </motion.article>
 
@@ -108,16 +84,11 @@ export default function HeroVisual() {
           variants={card}
           whileHover={reduceMotion ? undefined : { y: -2 }}
         >
-          <header className={styles.cardHeader}>
-            <span className={styles.cardIcon} aria-hidden="true">
-              🕒
-            </span>
-            <span className={styles.cardKicker}>EJECUCIÓN</span>
-          </header>
-
           <div className={styles.metric}>
-            <span className={styles.metricValue}>End-to-end</span>
-            <span className={styles.metricLabel}>Estrategia → acción</span>
+            <span className={styles.cardIcon} aria-hidden="true">
+              💳
+            </span>
+            <span className={styles.metricValue}>Pagos</span>
           </div>
         </motion.article>
       </div>

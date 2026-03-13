@@ -241,7 +241,7 @@ export default function CTAContact() {
             </div>
 
             <Button
-              href="https://wa.me/5491112345678"
+              href="https://wa.me/5491130004720"
               target="_blank"
               rel="noopener noreferrer"
               variant="ghost"
