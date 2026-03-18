@@ -104,7 +104,13 @@ export default function ContactoPage() {
                   <div className={styles.heroInfoText}>
                     <p className={styles.heroInfoLabel}>Teléfono</p>
                     <p className={styles.heroInfoValue}>
-                      <a href="tel:+5491112345678">+54 9 11 1234-5678</a>
+                      <a
+                        href="https://wa.me/5491130004720"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        +54 9 11 3000-4720
+                      </a>
                     </p>
                   </div>
                 </div>
@@ -278,7 +284,7 @@ export default function ContactoPage() {
                 <div className={styles.calloutText}>
                   Escribinos por WhatsApp o completá el formulario.{" "}
                   <a
-                    href="https://wa.me/5491112345678"
+                    href="https://wa.me/5491130004720"
                     target="_blank"
                     rel="noopener noreferrer"
                   >

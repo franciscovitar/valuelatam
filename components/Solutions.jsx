@@ -56,8 +56,9 @@ export default function Solutions() {
                     src={imgSrc}
                     alt=""
                     fill
-                    sizes="(min-width: 1024px) 360px, (min-width: 768px) 45vw, 100vw"
-                    className={styles.mediaImg}
+                    className={`${styles.mediaImg} ${
+                      index === solutions.length - 1 ? styles.mediaImgLast : ""
+                    }`}
                     priority={index < 3}
                   />
                 </div>
