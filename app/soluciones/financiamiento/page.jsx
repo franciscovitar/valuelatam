@@ -19,50 +19,23 @@ export default function FinanciamientoPage() {
       {/* Hero */}
       <section className={styles.hero}>
         <Container>
-          <div className={styles.heroGrid}>
-            <div className={styles.heroTop}>
-              <div className={styles.heroContent}>
-                <span className={styles.heroPill}>Solución integral</span>
+          <div className={styles.heroInner}>
+            <span className={styles.heroPill}>Solución integral</span>
 
-                <h1 className={styles.heroTitle}>
-                  Financiamiento empresarial{" "}
-                  <span className={styles.heroHighlight}>adaptado</span> a tu
-                  necesidad
-                </h1>
+            <h1 className={styles.heroTitle}>
+              Financiamiento empresarial{" "}
+              <span className={styles.heroHighlight}>adaptado</span> a tu
+              necesidad
+            </h1>
 
-                <p className={styles.heroText}>
-                  Accedé a alternativas de financiamiento con acompañamiento
-                  integral: diagnóstico, estructuración y ejecución, alineado a
-                  tu operación y flujos.
-                </p>
-              </div>
-
-              <div className={styles.heroCta}>
-                <div className={styles.heroCtas}>
-                  <Button href="/contacto" size="lg" className={styles.heroBtn}>
-                    Solicitar análisis
-                    <span className={styles.heroBtnIcon} aria-hidden="true">
-                      ↗
-                    </span>
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            <div className={styles.heroMedia} aria-hidden="true">
-              <Image
-                className={styles.heroImage}
-                src={foto}
-                alt=""
-                width={1400}
-                height={700}
-                priority
-              />
-            </div>
+            <p className={styles.heroText}>
+              Accedé a alternativas de financiamiento con acompañamiento
+              integral: diagnóstico, estructuración y ejecución, alineado a tu
+              operación y flujos.
+            </p>
           </div>
         </Container>
       </section>
-
       {/* Services */}
       <section id="servicios" className={styles.sectionGray}>
         <Container>

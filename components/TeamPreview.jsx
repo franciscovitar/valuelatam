@@ -15,8 +15,8 @@ export default function TeamPreview() {
       <Container>
         <SectionTitle
           subtitle="Nuestro equipo"
-          title="Experiencia senior a tu servicio"
-          highlight="senior"
+          title="Experiencia a tu servicio"
+          highlight="Experiencia"
           centered
         />
 

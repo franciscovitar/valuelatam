@@ -19,55 +19,19 @@ export default function InversionesLiquidezPage() {
       {/* Hero */}
       <section className={styles.hero}>
         <Container>
-          <div className={styles.heroGrid}>
-            <div className={styles.heroTop}>
-              <div className={styles.heroContent}>
-                <span className={styles.heroPill}>Gestión profesional</span>
+          <div className={styles.heroInner}>
+            <span className={styles.heroPill}>Gestión profesional</span>
 
-                <h1 className={styles.heroTitle}>
-                  Inversiones &amp;{" "}
-                  <span className={styles.heroHighlight}>Gestión</span> de
-                  Liquidez
-                </h1>
+            <h1 className={styles.heroTitle}>
+              Inversiones &amp;{" "}
+              <span className={styles.heroHighlight}>Gestión</span> de Liquidez
+            </h1>
 
-                <p className={styles.heroText}>
-                  Diseñamos estrategias de inversión y gestión de liquidez para
-                  empresas que buscan optimizar sus excedentes financieros según
-                  su horizonte, necesidades de caja y contexto de mercado.
-                </p>
-              </div>
-
-              <div className={styles.heroCta}>
-                <div className={styles.heroCtas}>
-                  <Button href="/contacto" size="lg" className={styles.heroBtn}>
-                    Consultar estrategia
-                    <span className={styles.heroBtnIcon} aria-hidden="true">
-                      ↗
-                    </span>
-                  </Button>
-
-                  {/* <Button
-                    href="#servicios"
-                    variant="ghost"
-                    size="lg"
-                    className={styles.heroBtnGhost}
-                  >
-                    Ver servicios →
-                  </Button> */}
-                </div>
-              </div>
-            </div>
-
-            <div className={styles.heroMedia} aria-hidden="true">
-              <Image
-                className={styles.heroImage}
-                src={foto}
-                alt=""
-                width={1400}
-                height={700}
-                priority
-              />
-            </div>
+            <p className={styles.heroText}>
+              Diseñamos estrategias de inversión y gestión de liquidez para
+              empresas que buscan optimizar sus excedentes financieros según su
+              horizonte, necesidades de caja y contexto de mercado.
+            </p>
           </div>
         </Container>
       </section>

@@ -4,37 +4,21 @@
 
 /* HERO */
 .hero {
-    padding: 174px 0 148px;
+    padding: 168px 0 70px;
     background: linear-gradient(135deg,
             var(--color-gray-50) 0%,
-            rgba(113, 184, 227, 0.1) 50%,
+            rgba(113, 184, 227, 0.10) 50%,
             var(--color-gray-50) 100%);
 
     @media (max-width: 640px) {
-        padding: 110px 0 60px;
+        padding: 110px 0 44px;
     }
 }
 
-.heroGrid {
-    display: grid;
-    gap: 18px;
-}
-
-.heroTop {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 16px;
-
-    @media (max-width: 900px) {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 14px;
-    }
-}
-
-.heroContent {
-    max-width: 920px;
+.heroInner {
+    max-width: 860px;
+    margin: 0 auto;
+    text-align: center;
 }
 
 .heroPill {
@@ -45,18 +29,18 @@
     padding: 0 12px;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.65);
-    border: 1px solid rgba(19, 15, 58, 0.1);
+    border: 1px solid rgba(19, 15, 58, 0.10);
     font-weight: 700;
-    font-size: 0.7rem;
+    font-size: 0.70rem;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--color-gray-800, #1b1f2a);
 }
 
 .heroTitle {
-    margin: 12px 0 10px;
-    font-size: clamp(30px, 3.2vw, 46px);
-    line-height: 1.08;
+    margin: 14px 0 12px;
+    font-size: clamp(30px, 3.4vw, 48px);
+    line-height: 1.06;
     letter-spacing: -0.03em;
     color: var(--ink);
     font-weight: 800;
@@ -67,59 +51,20 @@
 }
 
 .heroText {
-    margin: 0;
+    margin: 0 auto;
+    max-width: 68ch;
     font-size: 1rem;
     color: var(--text-2);
     line-height: 1.65;
-    max-width: 74ch;
 }
 
-.heroCta {
-    padding-top: 2px;
 
-    @media (max-width: 900px) {
-        padding-top: 0;
-    }
-}
 
-.heroBtn {
-    border-radius: 999px !important;
-    padding-left: 18px !important;
-    padding-right: 18px !important;
-}
 
-.heroBtnIcon {
-    width: 34px;
-    height: 34px;
-    border-radius: 999px;
-    display: grid;
-    place-items: center;
-    background: rgba(255, 255, 255, 0.14);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    line-height: 1;
-    font-size: 0.95rem;
-}
 
-.heroMedia {
-    width: 100%;
-    margin: 14px auto 0;
-    border-radius: 22px;
-    overflow: hidden;
-    background: rgba(113, 184, 227, 0.1);
-    border: 1px solid var(--border, rgba(41, 66, 148, 0.14));
-    box-shadow: 0 14px 40px rgba(19, 15, 58, 0.12);
-}
 
-.heroImage {
-    width: 100%;
-    max-height: 250px;
-    object-fit: cover;
-    transform: scale(1.005);
 
-    @media (min-width: 1024px) {
-        max-height: 460px;
-    }
-}
+
 
 /* ABOUT */
 .about {

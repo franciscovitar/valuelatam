@@ -1,45 +1,26 @@
-/* app/soluciones/financiamiento/Solucion.module.scss */
-
 .page {
     background: var(--color-gray-50);
 }
 
+/* HERO */
 .hero {
-    padding: 184px 0 148px;
+    padding: 168px 0 70px;
     background: linear-gradient(135deg,
             var(--color-gray-50) 0%,
             rgba(113, 184, 227, 0.10) 50%,
             var(--color-gray-50) 100%);
 
     @media (max-width: 640px) {
-        padding: 110px 0 60px;
+        padding: 110px 0 44px;
     }
 }
 
-.heroGrid {
-    display: grid;
-    gap: 18px;
+.heroInner {
+    max-width: 860px;
+    margin: 0 auto;
+    text-align: center;
 }
 
-/* TOP: contenido + CTA */
-.heroTop {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 16px;
-
-    @media (max-width: 900px) {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 14px;
-    }
-}
-
-.heroContent {
-    max-width: 720px;
-}
-
-/* Pill */
 .heroPill {
     display: inline-flex;
     align-items: center;
@@ -56,11 +37,10 @@
     color: var(--color-gray-800, #1b1f2a);
 }
 
-/* Title */
 .heroTitle {
-    margin: 12px 0 10px;
-    font-size: clamp(30px, 3.2vw, 46px);
-    line-height: 1.08;
+    margin: 14px 0 12px;
+    font-size: clamp(30px, 3.4vw, 48px);
+    line-height: 1.06;
     letter-spacing: -0.03em;
     color: var(--ink);
     font-weight: 800;
@@ -71,89 +51,11 @@
 }
 
 .heroText {
-    margin: 0;
+    margin: 0 auto;
+    max-width: 68ch;
     font-size: 1rem;
     color: var(--text-2);
     line-height: 1.65;
-    // max-width: 66ch;
-}
-
-/* CTA */
-.heroCta {
-    padding-top: 2px;
-
-    @media (max-width: 900px) {
-        padding-top: 0;
-        width: 100%;
-    }
-}
-
-.heroCtas {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    flex-wrap: wrap;
-
-    @media (max-width: 900px) {
-        width: 100%;
-    }
-}
-
-/* Primary pill button */
-.heroBtn {
-    border-radius: 999px !important;
-    padding-left: 18px !important;
-    padding-right: 18px !important;
-
-    &:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 14px 34px rgba(45, 35, 86, 0.22);
-    }
-}
-
-.heroBtnIcon {
-    width: 34px;
-    height: 34px;
-    border-radius: 999px;
-    display: grid;
-    place-items: center;
-    background: rgba(255, 255, 255, 0.14);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    line-height: 1;
-    font-size: 0.95rem;
-}
-
-.heroBtnGhost {
-    border-radius: 999px;
-    padding: 10px 14px;
-}
-
-/* Imagen */
-.heroMedia {
-    // width: min(1040px, 100%);
-    /* evita que quede “gigante” */
-    width: 100%;
-    margin: 14px auto 0;
-    /* lo centra y reduce aire */
-    border-radius: 22px;
-    overflow: hidden;
-
-    background: rgba(113, 184, 227, 0.10);
-    border: 1px solid var(--border, rgba(41, 66, 148, 0.14));
-    box-shadow: var(--shadow-lg);
-}
-
-.heroImage {
-    width: 100%;
-    max-height: 250px;
-    /* más bajo */
-    object-fit: cover;
-    transform: scale(1.005);
-
-    @media (min-width: 1024px) {
-        max-height: 470px;
-        /* antes 420px era enorme */
-    }
 }
 
 /* Sections */
@@ -166,11 +68,15 @@
 }
 
 .sectionGray {
-    padding: 84px 0;
+    padding: 72px 0 84px;
     background:
         radial-gradient(900px circle at 85% 15%, rgba(41, 66, 148, 0.10) 0%, transparent 55%),
         linear-gradient(180deg, var(--color-gray-50, #f7f8fb) 0%, #ffffff 100%);
     border-top: 1px solid rgba(19, 15, 58, 0.06);
+
+    @media (max-width: 640px) {
+        padding: 24px 0 56px;
+    }
 }
 
 /* =========================

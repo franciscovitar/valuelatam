@@ -2,8 +2,6 @@ import Container from "../../components/ui/Container";
 import SectionTitle from "../../components/ui/SectionTitle";
 import Button from "../../components/ui/Button";
 import styles from "./Corporativo.module.scss";
-import Image from "next/image";
-import foto from "../../public/empresa.jpg";
 
 export const metadata = {
   title: "Corporativo | Value Latam",
@@ -68,48 +66,23 @@ export default function CorporativoPage() {
       {/* Hero */}
       <section className={styles.hero}>
         <Container>
-          <div className={styles.heroGrid}>
-            <div className={styles.heroTop}>
-              <div className={styles.heroContent}>
-                <span className={styles.heroPill}>Corporativo</span>
+          <div className={styles.heroInner}>
+            <span className={styles.heroPill}>Corporativo</span>
+            <h1 className={styles.heroTitle}>
+              Soluciones financieras para el{" "}
+              <span className={styles.heroHighlight}>
+                desarrollo y expansión
+              </span>{" "}
+              de tu negocio
+            </h1>
 
-                <h1 className={styles.heroTitle}>
-                  Soluciones financieras para el{" "}
-                  <span className={styles.heroHighlight}>
-                    desarrollo y expansión
-                  </span>{" "}
-                  de tu negocio
-                </h1>
-
-                <p className={styles.heroText}>
-                  En Value Latam acompañamos a las empresas en el diseño de
-                  estrategias financieras, el desarrollo de soluciones de
-                  financiamiento para su cadena de valor y la implementación de
-                  herramientas tecnológicas que permiten ampliar su capacidad
-                  financiera.
-                </p>
-              </div>
-
-              <div className={styles.heroCta}>
-                <Button href="/contacto" size="md" className={styles.heroBtn}>
-                  Agendar una llamada
-                  <span className={styles.heroBtnIcon} aria-hidden="true">
-                    ↗
-                  </span>
-                </Button>
-              </div>
-            </div>
-
-            <div className={styles.heroMedia} aria-hidden="true">
-              <Image
-                className={styles.heroImage}
-                src={foto}
-                alt=""
-                width={1400}
-                height={700}
-                priority
-              />
-            </div>
+            <p className={styles.heroText}>
+              En Value Latam acompañamos a las empresas en el diseño de
+              estrategias financieras, el desarrollo de soluciones de
+              financiamiento para su cadena de valor y la implementación de
+              herramientas tecnológicas que permiten ampliar su capacidad
+              financiera.
+            </p>
           </div>
         </Container>
       </section>

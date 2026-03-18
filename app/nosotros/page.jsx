@@ -5,7 +5,7 @@ import Button from "../../components/ui/Button";
 import styles from "./Empresa.module.scss";
 import { team, whyUs } from "../../lib/data";
 import Image from "next/image";
-import foto from "../../public/empresa.jpg";
+import foto from "../../public/nosotros.jpeg";
 
 export const metadata = {
   title: "Empresa | Value Latam",
@@ -104,7 +104,7 @@ export default function Nosotros() {
               <article
                 key={item.title}
                 className={`${styles.ecoCard} ${
-                  index === 1 ? styles.ecoCardInverted : styles.ecoCardWhite
+                  index === 1 ? styles.ecoCardWhite : styles.ecoCardWhite
                 }`}
               >
                 <span className={styles.ecoTag}>
@@ -218,9 +218,9 @@ export default function Nosotros() {
       <section id="equipo" className={styles.team}>
         <Container>
           <SectionTitle
-            subtitle="Nuestro equipo"
-            title="Profesionales senior"
-            highlight="senior"
+            subtitle=""
+            title="Nuestro equipo"
+            highlight="equipo"
             centered
           />
 

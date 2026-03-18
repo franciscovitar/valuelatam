@@ -3,9 +3,7 @@
     min-height: 100dvh;
     display: flex;
     align-items: center;
-
     padding: 118px 0 var(--space-20);
-
     overflow: hidden;
     isolation: isolate;
     background-color: var(--bg, var(--color-gray-50));
@@ -17,28 +15,20 @@
     background-position: center;
 }
 
-// .hero :global(.highlight)::after {
-//     display: none !important;
-// }
-
-// .hero :global(.highlight) {
-//     color: var(--primary);
-// }
-
 .hero::before {
     content: "";
     position: absolute;
     inset: -18%;
     z-index: 0;
     pointer-events: none;
-
-    /* Burbujas + velos */
     background:
         radial-gradient(900px circle at 14% 18%, rgba(113, 184, 227, 0.16) 0%, transparent 60%),
         radial-gradient(780px circle at 86% 20%, rgba(41, 66, 148, 0.12) 0%, transparent 62%),
         radial-gradient(900px circle at 55% 92%, rgba(45, 35, 86, 0.10) 0%, transparent 66%),
-        linear-gradient(135deg, rgba(255, 255, 255, 0.70) 0%, rgba(255, 255, 255, 0.35) 40%, rgba(255, 255, 255, 0.0) 100%);
-
+        linear-gradient(135deg,
+            rgba(255, 255, 255, 0.70) 0%,
+            rgba(255, 255, 255, 0.35) 40%,
+            rgba(255, 255, 255, 0) 100%);
     filter: blur(2px);
     opacity: 1;
 }
@@ -58,25 +48,18 @@
 .content {
     position: relative;
     z-index: 3;
-
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--space-12);
-    align-items: center;
     width: 100%;
-
-    @media (min-width: 1024px) {
-        grid-template-columns: 1.05fr 0.95fr;
-        gap: var(--space-16);
-    }
+    display: flex;
+    justify-content: flex-start;
 }
 
 .left {
     display: flex;
     flex-direction: column;
     gap: var(--space-5);
+    width: 100%;
+    max-width: 980px;
 }
-
 
 .accent {
     color: var(--primary);
@@ -92,32 +75,26 @@
     bottom: -0.12em;
     height: 2px;
     border-radius: 999px;
-    background: linear-gradient(90deg,
-            rgba(113, 184, 227, 0.9),
-            rgba(41, 66, 148, 0.35));
+    background: linear-gradient(90deg, rgba(113, 184, 227, 0.9), rgba(41, 66, 148, 0.35));
     opacity: 0.9;
 }
-
 
 .badge {
     display: inline-flex;
     align-items: center;
     gap: var(--space-2);
     padding: var(--space-2) var(--space-4);
-
     background: rgba(255, 255, 255, 0.55);
     border: 1px solid var(--border, rgba(41, 66, 148, 0.16));
     border-radius: var(--radius-full);
-
     color: var(--ink, var(--color-intense-blue));
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-medium);
     width: fit-content;
-
     backdrop-filter: blur(14px);
     box-shadow: var(--shadow-sm);
-
-    transition: transform var(--transition-normal, 250ms) ease,
+    transition:
+        transform var(--transition-normal, 250ms) ease,
         background-color var(--transition-normal, 250ms) ease,
         border-color var(--transition-normal, 250ms) ease;
 
@@ -134,37 +111,30 @@
     font-size: var(--font-size-lg);
 }
 
-/* === HERO TYPO (Work Sans friendly) === */
+/* === HERO TYPO === */
 .title {
-    /* antes: font-size-4xl/5xl => demasiado */
-    font-size: clamp(2.05rem, 2.1vw + 1.15rem, 3.35rem);
+    font-size: clamp(2.2rem, 2.5vw + 1rem, 4rem);
     font-weight: 700;
     line-height: 1.03;
     letter-spacing: -0.035em;
     color: var(--ink, var(--color-gray-900));
     margin: 0;
-
-    max-width: 17ch;
-    /* ✅ evita pared gigante */
+    max-width: 23ch;
+    /* un poco más abierto que antes */
 }
 
 .subtitle {
     font-size: 15px;
-    line-height: 1.65;
+    line-height: 1.7;
     color: var(--text-2, var(--color-gray-600));
-    // max-width: 52ch;
-
-    @media (max-width: 1024px) {
-        max-width: 52ch;
-    }
+    max-width: 64ch;
 }
-
 
 .ctas {
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-3);
-    margin-top: var(--space-4);
+    margin-top: var(--space-5);
 
     @media (max-width: 640px) {
         flex-direction: column;
@@ -178,6 +148,7 @@
     gap: var(--space-2);
     padding-top: var(--space-6);
     border-top: 1px solid var(--border, rgba(41, 66, 148, 0.12));
+    max-width: 720px;
 }
 
 .socialText {
@@ -206,12 +177,9 @@
     font-size: var(--font-size-sm);
 }
 
+/* Lo dejo por compatibilidad, aunque ya no se use */
 .right {
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: auto;
+    display: none;
 }
 
 /* Reveal delays */
@@ -255,9 +223,7 @@
 .orb1 {
     width: 220px;
     height: 220px;
-    background: radial-gradient(circle,
-            rgba(113, 184, 227, 0.22) 0%,
-            transparent 70%);
+    background: radial-gradient(circle, rgba(113, 184, 227, 0.22) 0%, transparent 70%);
     top: 10%;
     right: 9%;
     animation-delay: 0s;
@@ -266,9 +232,7 @@
 .orb2 {
     width: 360px;
     height: 360px;
-    background: radial-gradient(circle,
-            rgba(41, 66, 148, 0.14) 0%,
-            transparent 72%);
+    background: radial-gradient(circle, rgba(41, 66, 148, 0.14) 0%, transparent 72%);
     bottom: 6%;
     left: 2%;
     animation-delay: 2s;
@@ -277,9 +241,7 @@
 .orb3 {
     width: 180px;
     height: 180px;
-    background: radial-gradient(circle,
-            rgba(45, 35, 86, 0.12) 0%,
-            transparent 72%);
+    background: radial-gradient(circle, rgba(45, 35, 86, 0.12) 0%, transparent 72%);
     top: 52%;
     left: 18%;
     animation-delay: 4s;
@@ -301,28 +263,65 @@
     }
 }
 
-/* Mobile */
+/* Tablet / mobile */
 @media (max-width: 1024px) {
     .hero {
         min-height: auto;
-        padding: 110px 0 var(--space-16);
+        padding: 110px 0;
     }
 
     .content {
-        text-align: center;
+        justify-content: flex-start;
     }
 
     .left {
-        align-items: center;
-        text-align: center;
+        max-width: 100%;
+    }
+
+    .title {
+        max-width: 15ch;
+        font-size: clamp(2rem, 7vw, 3.1rem);
+    }
+
+    .subtitle {
+        max-width: 56ch;
     }
 
     .social {
-        align-items: center;
-        text-align: center;
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 640px) {
+    .hero {
+        padding: 122px 0;
     }
 
-    .right {
-        min-height: 420px;
+    .left {
+        gap: var(--space-4);
+    }
+
+    .title {
+        max-width: 100%;
+        font-size: clamp(1.95rem, 8vw, 2.7rem);
+    }
+
+    .subtitle {
+        font-size: 14px;
+        line-height: 1.68;
+    }
+
+    .badge {
+        font-size: 12px;
+        padding: 10px 14px;
+    }
+
+    .partners {
+        gap: 6px 10px;
+    }
+
+    .partner,
+    .divider {
+        font-size: 13px;
     }
 }

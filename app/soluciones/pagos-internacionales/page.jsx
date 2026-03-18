@@ -20,53 +20,19 @@ export default function PagosInternacionalesPage() {
       {/* Hero */}
       <section className={styles.hero}>
         <Container>
-          <div className={styles.heroGrid}>
-            <div className={styles.heroTop}>
-              <div className={styles.heroContent}>
-                <span className={styles.heroPill}>
-                  Operaciones internacionales
-                </span>
+          <div className={styles.heroInner}>
+            <span className={styles.heroPill}>Operaciones internacionales</span>
 
-                <h1 className={styles.heroTitle}>
-                  Pagos{" "}
-                  <span className={styles.heroHighlight}>Internacionales</span>
-                </h1>
+            <h1 className={styles.heroTitle}>
+              Pagos{" "}
+              <span className={styles.heroHighlight}>Internacionales</span>
+            </h1>
 
-                <p className={styles.heroText}>
-              Simplificamos transferencias y pagos internacionales y acercamos herramientas financieras competitivas para importaciones, con ejecución ágil y eficiente. </p>
-              </div>
-
-              <div className={styles.heroCta}>
-                <div className={styles.heroCtas}>
-                  <Button href="/contacto" size="lg" className={styles.heroBtn}>
-                    Consultar servicios
-                    <span className={styles.heroBtnIcon} aria-hidden="true">
-                      ↗
-                    </span>
-                  </Button>
-
-                  {/* <Button
-                    href="#servicios"
-                    variant="ghost"
-                    size="lg"
-                    className={styles.heroBtnGhost}
-                  >
-                    Ver servicios →
-                  </Button> */}
-                </div>
-              </div>
-            </div>
-
-            <div className={styles.heroMedia} aria-hidden="true">
-              <Image
-                className={styles.heroImage}
-                src={foto}
-                alt=""
-                width={1400}
-                height={700}
-                priority
-              />
-            </div>
+            <p className={styles.heroText}>
+              Simplificamos transferencias y pagos internacionales y acercamos
+              herramientas financieras competitivas para importaciones, con
+              ejecución ágil y eficiente.{" "}
+            </p>
           </div>
         </Container>
       </section>

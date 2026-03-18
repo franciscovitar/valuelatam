@@ -7,7 +7,7 @@
 /* HERO — versión más delicada */
 
 .hero {
-    padding: 174px 0 148px;
+    padding: 124px 0 148px;
     /* antes estaba muy alto */
     background: linear-gradient(135deg,
             var(--color-gray-50) 0%,
@@ -129,14 +129,15 @@
 
 .heroImage {
     width: 100%;
-    max-height: 250px;
-    /* más bajo */
+    max-height: 490px;
     object-fit: cover;
+    object-position: center 40%;
+
     transform: scale(1.005);
 
-    @media (min-width: 1024px) {
-        max-height: 460px;
-        /* antes 420px era enorme */
+    @media (max-width: 1024px) {
+
+        max-height: 250px;
     }
 }
 
@@ -491,7 +492,7 @@
     position: absolute;
     inset: 0;
     background-size: cover;
-    background-position: center;
+    background-position: center 05%;
 
     transform: scale(1.02);
     filter: saturate(1.05) contrast(1.04) brightness(0.92);
