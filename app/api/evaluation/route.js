@@ -62,7 +62,7 @@ export async function POST(request) {
 
     const { data, error } = await resend.emails.send({
       from: "Value Latam Evaluación <onboarding@resend.dev>",
-      to: ["franvitar15@gmail.com"],
+      to: ["info@valuelatam.com"],
       replyTo: email,
       subject: `Nueva evaluación financiera - ${empresa}`,
       text,

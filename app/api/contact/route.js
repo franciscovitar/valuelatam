@@ -16,7 +16,7 @@ export async function POST(req) {
 
     await resend.emails.send({
       from: "ValueLatam Formulario <onboarding@resend.dev>",
-      to: ["franvitar15@gmail.com"],
+      to: ["info@valuelatam.com"],
       replyTo: email,
       subject: `Nuevo contacto (${objetivo}) - ${empresa}`,
       text: [
