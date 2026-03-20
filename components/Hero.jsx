@@ -83,23 +83,36 @@ export default function Hero() {
               </span>
 
               <div className={styles.partners}>
-                {partnerLogos.map((logo) => (
-                  <div
-                    key={logo.alt}
-                    className={`${styles.partnerLogo} ${
-                      logo.variant === "app"
-                        ? styles.partnerLogoApp
-                        : styles.partnerLogoWordmark
-                    }`}
-                  >
-                    <img
-                      src={logo.src}
-                      alt={logo.alt}
-                      className={`${styles.partnerLogoImg} ${logo.className}`}
-                      loading="lazy"
-                    />
-                  </div>
-                ))}
+                <div className={styles.partnersRow}>
+                  {partnerLogos.slice(0, 2).map((logo) => (
+                    <div
+                      key={logo.alt}
+                      className={`${styles.partnerLogo} ${styles.partnerLogoApp}`}
+                    >
+                      <img
+                        src={logo.src}
+                        alt={logo.alt}
+                        className={styles.partnerLogoImg}
+                        loading="lazy"
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div className={styles.partnersRow}>
+                  {partnerLogos.slice(2).map((logo) => (
+                    <div
+                      key={logo.alt}
+                      className={`${styles.partnerLogo} ${styles.partnerLogoWordmark}`}
+                    >
+                      <img
+                        src={logo.src}
+                        alt={logo.alt}
+                        className={`${styles.partnerLogoImg} ${logo.className}`}
+                        loading="lazy"
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
