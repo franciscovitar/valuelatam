@@ -5,6 +5,38 @@ import Button from "./ui/Button";
 import styles from "./Hero.module.scss";
 import { useReveal } from "../lib/useReveal";
 
+const partnerLogos = [
+  {
+    src: "/adcap.jpg",
+    alt: "Adcap",
+    className: styles.logoAdcap,
+    variant: "app",
+  },
+  {
+    src: "/balanz.jpg",
+    alt: "Balanz",
+    className: styles.logoBalanz,
+    variant: "app",
+  },
+  {
+    src: "/trend.jpg",
+    alt: "Trend SGR",
+    className: styles.logoTrend,
+    variant: "wordmark",
+  },
+  {
+    src: "/argenpymes.jpg",
+    alt: "Argenpymes",
+    className: styles.logoArgenpymes,
+    variant: "wordmark",
+  },
+  {
+    src: "/acindar.png",
+    alt: "Acindar Pymes",
+    className: styles.logoAcindar,
+    variant: "wordmark",
+  },
+];
 export default function Hero() {
   const { ref, isVisible } = useReveal();
 
@@ -51,13 +83,23 @@ export default function Hero() {
               </span>
 
               <div className={styles.partners}>
-                <span className={styles.partner}>Balanz Capital S.A.</span>
-                <span className={styles.divider}>·</span>
-                <span className={styles.partner}>Adcap Grupo Financiero</span>
-                <span className={styles.divider}>·</span>
-                <span className={styles.partner}>
-                  SGR y entidades financieras
-                </span>
+                {partnerLogos.map((logo) => (
+                  <div
+                    key={logo.alt}
+                    className={`${styles.partnerLogo} ${
+                      logo.variant === "app"
+                        ? styles.partnerLogoApp
+                        : styles.partnerLogoWordmark
+                    }`}
+                  >
+                    <img
+                      src={logo.src}
+                      alt={logo.alt}
+                      className={`${styles.partnerLogoImg} ${logo.className}`}
+                      loading="lazy"
+                    />
+                  </div>
+                ))}
               </div>
             </div>
           </div>

@@ -401,53 +401,136 @@
 }
 
 
-
 .regulatoryNote {
     position: relative;
     z-index: 1;
 
-    margin: 34px auto 0;
-    max-width: 880px;
-    text-align: center;
+    margin: 26px auto 0;
+    // width: min(100%, 1080px);
+    padding: 18px 22px 0;
+    border-radius: 20px;
 
-    padding: 22px 24px;
-    border-radius: 22px;
-
-    background: rgba(255, 255, 255, 0.634);
-    // border: 1px solid rgba(94, 94, 94, 0.1);
+    background: rgba(255, 255, 255, 0.66);
     box-shadow:
-        0 1px 0 rgba(255, 255, 255, 0.55) inset,
-        0 18px 56px rgba(16, 24, 40, 0.06);
+        0 1px 0 rgba(255, 255, 255, 0.52) inset,
+        0 14px 42px rgba(16, 24, 40, 0.05);
 
     backdrop-filter: blur(10px);
 
+
     @media (max-width: 767px) {
-        margin-top: 26px;
-        padding: 18px 16px;
-        border-radius: 18px;
+        margin-top: 18px;
+        padding: 14px 14px;
+        border-radius: 16px;
     }
 }
 
 .regulatoryKicker {
     margin: 0 0 8px;
-    font-size: 0.74rem;
+    font-size: 0.9rem;
     font-weight: 800;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--color-french-blue, #294294);
+    text-align: center;
 }
 
-.regulatoryText {
+.regulatoryContent {
+    display: grid;
     margin: 0;
+    // gap: 8px;
+}
+
+.regulatoryText,
+.regulatoryMat {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.5;
     color: var(--text-2);
-    font-size: 0.96rem;
-    line-height: 1.65;
+    text-wrap: pretty;
 }
 
 .regulatoryMat {
-    margin: 8px 0 0;
     color: var(--ink-deep);
-    font-size: 0.94rem;
     font-weight: 700;
-    line-height: 1.5;
+    line-height: 1.52;
+}
+
+.regulatoryLogos {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 34px;
+    margin-top: 5px;
+    padding-top: 5px;
+    border-top: 1px solid rgba(41, 66, 148, 0.10);
+}
+
+.regulatoryLogoLink {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    min-width: 0;
+    height: auto;
+    transition: opacity 220ms ease, transform 220ms ease;
+}
+
+.regulatoryLogo {
+    display: block;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    object-position: center;
+}
+
+/* Ajustes finos por logo */
+.logoCnv {
+    height: 100px;
+}
+
+.logoByma {
+    height: 100px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .regulatoryLogoLink:hover {
+        opacity: 0.82;
+        transform: translateY(-1px);
+    }
+}
+
+@media (max-width: 767px) {
+    .regulatoryKicker {
+        margin-bottom: 17px;
+        font-size: 0.9rem;
+    }
+
+    .regulatoryContent {
+        gap: 7px;
+    }
+
+    .regulatoryText,
+    .regulatoryMat {
+        font-size: 0.81rem;
+        text-align: justify;
+        line-height: 1.48;
+    }
+
+    .regulatoryLogos {
+        gap: 1px;
+        margin-top: 10px;
+        padding-top: 9px;
+    }
+
+    .logoCnv {
+        height: 88px;
+    }
+
+    .logoByma {
+        height: 87px;
+    }
 }
