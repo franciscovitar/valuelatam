@@ -104,6 +104,7 @@ export default function Footer() {
             </p>
 
             <div className={styles.social} aria-label="Redes">
+              {/* LinkedIn */}
               <a
                 href="https://www.linkedin.com/in/value-latam-a60a3137b/"
                 target="_blank"
@@ -122,6 +123,26 @@ export default function Footer() {
                 </svg>
               </a>
 
+              {/* Instagram */}
+              <a
+                href="https://www.instagram.com/value.latam/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.socialLink}
+                aria-label="Instagram"
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path d="M7.75 2C4.57 2 2 4.57 2 7.75v8.5C2 19.43 4.57 22 7.75 22h8.5C19.43 22 22 19.43 22 16.25v-8.5C22 4.57 19.43 2 16.25 2h-8.5zm0 2h8.5C18.22 4 20 5.78 20 7.75v8.5c0 1.97-1.78 3.75-3.75 3.75h-8.5C5.78 20 4 18.22 4 16.25v-8.5C4 5.78 5.78 4 7.75 4zm8.75 1.5a1 1 0 100 2 1 1 0 000-2zM12 7a5 5 0 100 10 5 5 0 000-10zm0 2a3 3 0 110 6 3 3 0 010-6z" />
+                </svg>
+              </a>
+
+              {/* Email */}
               <a
                 href="mailto:info@valuelatam.com"
                 className={styles.socialLink}
