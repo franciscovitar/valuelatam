@@ -307,9 +307,10 @@
       <div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
         <button class="btn btn-primary" onclick="openModal('op')">+ Nueva Operación</button>
       </div>
+      <div id="ops-resumen"></div>
       <div class="table-card">
         <div class="table-header"><div><div class="table-title">Operaciones Activas</div><div class="table-sub">Préstamos, leasing, descubiertos</div></div></div>
-        <table><thead><tr><th>Entidad</th><th>Tipo</th><th>Monto Orig.</th><th>Saldo Rest.</th><th>Desembolso</th><th>Plazo</th><th>TNA</th><th>Tipo Tasa</th><th>Garantía</th><th>Estado</th><th></th></tr></thead>
+        <table><thead><tr><th>Entidad</th><th>Tipo</th><th>Monto Orig.</th><th>Saldo Rest.</th><th>TNA Efectiva</th><th>vs Mercado</th><th>Semáforo</th><th>Tipo Tasa</th><th>Desembolso</th><th>Plazo</th><th>Estado</th><th></th></tr></thead>
         <tbody id="tabla-operaciones"><tr><td colspan="11"><div class="empty"><div class="empty-icon">◎</div><div class="empty-text">Sin operaciones</div></div></td></tr></tbody></table>
       </div>
     </div>
@@ -438,7 +439,7 @@ let empresaData = {};
 let entidades = [];
 let operaciones = [];
 let cuotas = [];
-let tnaRef = 60, badlarRef = 0, tamarRef = 0; // se actualizan desde Firestore global
+let tnaRef = 60, badlarRef = 0, tamarRef = 0, umbralAmarillo = 3, umbralRojo = 8; // se actualizan desde Firestore global
 
 // =================== AUTH ===================
 auth.onAuthStateChanged(async user => {
@@ -471,6 +472,8 @@ async function loadGlobalTNA() {
       if(d.tnaRef) tnaRef=d.tnaRef;
       if(d.badlar) badlarRef=d.badlar;
       if(d.tamar) tamarRef=d.tamar;
+      if(d.umbralAmarillo!=null) umbralAmarillo=d.umbralAmarillo;
+      if(d.umbralRojo!=null) umbralRojo=d.umbralRojo;
     }
   } catch(e) {}
   const el=document.getElementById('tna-mercado-display');
@@ -708,13 +711,66 @@ function renderEntidades(){
   }).join('');
 }
 
+function getTNAEfectivaOp(op){
+  const tipo=op.tipoTasa||'fija';
+  if(tipo==='badlar') return badlarRef+(parseFloat(op.spread)||0);
+  if(tipo==='tamar') return tamarRef+(parseFloat(op.spread)||0);
+  return parseFloat(op.tna)||0;
+}
+function getSemaforoOp(tnaEfectiva){
+  const diff=tnaEfectiva-tnaRef;
+  if(diff>umbralRojo) return {color:'var(--red)',dot:'🔴',label:'Cara',diff};
+  if(diff>umbralAmarillo) return {color:'var(--yellow)',dot:'🟡',label:'Revisar',diff};
+  return {color:'var(--green)',dot:'🟢',label:'OK',diff};
+}
+function getAhorroMensual(op){
+  const tnaEfectiva=getTNAEfectivaOp(op);
+  const diff=tnaEfectiva-tnaRef;
+  if(diff<=umbralAmarillo) return 0;
+  const saldo=cuotas.filter(c=>c.opId===op.id&&c.estado!=='pagada').reduce((s,c)=>s+(c.capital||0),0);
+  return saldo*(diff/100/12);
+}
 function renderOperaciones(){
   const tbody=document.getElementById('tabla-operaciones');
   if(!operaciones.length){tbody.innerHTML='<tr><td colspan="11"><div class="empty"><div class="empty-icon">◎</div><div class="empty-text">Sin operaciones</div></div></td></tr>';return;}
+  // Resumen alerta
+  const ahorroTotal=operaciones.reduce((s,op)=>s+getAhorroMensual(op),0);
+  const opsCara=operaciones.filter(op=>getSemaforoOp(getTNAEfectivaOp(op)).label!=='OK');
+  const resumenEl=document.getElementById('ops-resumen');
+  if(resumenEl){
+    if(opsCara.length>0){
+      resumenEl.innerHTML=`<div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:10px 14px;font-size:.75rem;color:var(--red);margin-bottom:12px;display:flex;justify-content:space-between;">
+        <span>⚠ ${opsCara.length} operación(es) por encima del mercado</span>
+        ${ahorroTotal>0?`<span style="font-family:var(--mono);">Ahorro potencial: <strong>${fmt(ahorroTotal)}/mes</strong></span>`:''}
+      </div>`;
+    } else if(operaciones.length>0){
+      resumenEl.innerHTML=`<div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:10px 14px;font-size:.75rem;color:var(--green);margin-bottom:12px;">✓ Todas las operaciones están alineadas con el mercado (TNA: ${tnaRef.toFixed(1)}%)</div>`;
+    } else { resumenEl.innerHTML=''; }
+  }
+
   tbody.innerHTML=operaciones.map(op=>{
     const pend=cuotas.filter(c=>c.opId===op.id&&c.estado!=='pagada');
-    const saldo=pend.reduce((s,c)=>s+c.capital,0);
-    return`<tr><td class="td-bold">${op.entidadNombre}</td><td>${op.tipo}</td><td class="td-mono">${fmt(op.monto)}</td><td class="td-mono" style="color:var(--accent)">${fmt(saldo)}</td><td class="td-mono">${fmtDate(op.desembolso)}</td><td class="td-mono">${op.plazo}m</td><td class="td-mono" style="color:var(--yellow)">${fmtN(op.tna,2)}%</td><td>${op.tipoTasa}</td><td style="font-size:.7rem;color:var(--text3)">${op.garantia}</td><td>${pend.length>0?`<span class="dot dot-green"></span><span style="font-size:.72rem">Activa (${pend.length})</span>`:`<span class="dot dot-yellow"></span><span style="font-size:.72rem">Finalizada</span>`}</td><td><button class="btn btn-danger btn-sm" onclick="eliminarOperacion('${op.id}')">✕</button></td></tr>`;
+    const saldo=pend.reduce((s,c)=>s+(c.capital||0),0);
+    const tnaEfectiva=getTNAEfectivaOp(op);
+    const sem=getSemaforoOp(tnaEfectiva);
+    const diffStr=(sem.diff>=0?'+':'')+fmtN(sem.diff,1)+'pp';
+    const tasaLabel=op.tipoTasa==='badlar'?`BADLAR+${fmtN(op.spread||0,1)}%`:op.tipoTasa==='tamar'?`TAMAR+${fmtN(op.spread||0,1)}%`:op.tipoTasa||'Fija';
+    const ahorro=getAhorroMensual(op);
+    const refinBadge=ahorro>0?`<span class="kpi-badge badge-blue" title="Ahorro potencial: ${fmt(ahorro)}/mes" style="cursor:help;">💡 Refinanciar</span>`:'';
+    return`<tr>
+      <td class="td-bold">${op.entidadNombre}</td>
+      <td>${op.tipo}</td>
+      <td class="td-mono">${fmt(op.monto)}</td>
+      <td class="td-mono" style="color:var(--accent)">${fmt(saldo)}</td>
+      <td class="td-mono" style="color:${sem.color};font-weight:600;">${fmtN(tnaEfectiva,2)}%</td>
+      <td class="td-mono" style="color:${sem.color};">${diffStr}</td>
+      <td style="white-space:nowrap;"><span style="font-size:1rem;">${sem.dot}</span> <span class="kpi-badge" style="background:${sem.color}22;color:${sem.color};">${sem.label}</span>${refinBadge}</td>
+      <td style="font-size:.72rem;">${tasaLabel}</td>
+      <td class="td-mono">${fmtDate(op.desembolso)}</td>
+      <td class="td-mono">${op.plazo}m</td>
+      <td>${pend.length>0?`<span class="dot dot-green"></span><span style="font-size:.72rem">Activa (${pend.length})</span>`:`<span class="dot dot-yellow"></span><span style="font-size:.72rem">Finalizada</span>`}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="eliminarOperacion('${op.id}')">✕</button></td>
+    </tr>`;
   }).join('');
 }
 
