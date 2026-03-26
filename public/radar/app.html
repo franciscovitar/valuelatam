@@ -407,10 +407,16 @@
       <div class="form-group"><label>Frecuencia</label><select id="op-frecuencia" onchange="previewCuotas()"><option value="1">Mensual</option><option value="2">Bimestral</option><option value="3">Trimestral</option><option value="6">Semestral</option></select></div>
       <div class="form-group"><label>TNA (%)</label><input type="number" id="op-tna" step="0.01" oninput="previewCuotas()"></div>
       <div class="form-group"><label>Tipo de Tasa</label><select id="op-tipo-tasa"><option>Fija</option><option>Variable</option><option>TAMAR + spread</option><option>BADLAR + spread</option></select></div>
+      <div class="form-group"><label>Sistema de Amortización</label>
+        <select id="op-amortizacion" onchange="previewCuotas()">
+          <option value="frances">Francés (cuota fija)</option>
+          <option value="aleman">Alemán (capital fijo)</option>
+        </select>
+      </div>
       <div class="form-group full"><label>Garantía</label><input type="text" id="op-garantia" placeholder="Sin garantía, SGR, hipoteca…"></div>
     </div>
     <div id="preview-wrap" style="margin-top:16px;display:none;">
-      <div style="font-family:var(--mono);font-size:.62rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Preview · Amortización Francesa</div>
+      <div style="font-family:var(--mono);font-size:.62rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;" id="preview-label">Preview · Amortización Francesa</div>
       <table style="font-size:.72rem;"><thead><tr><th>#</th><th>Fecha</th><th>Capital</th><th>Interés</th><th>Total</th><th>Saldo</th></tr></thead>
       <tbody id="preview-cuotas"></tbody></table>
       <div id="preview-more" style="text-align:center;padding:8px;font-size:.7rem;color:var(--text3);"></div>
@@ -525,18 +531,29 @@ function closeModal(type){
 }
 document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');}));
 
-// =================== AMORTIZACIÓN FRANCESA ===================
+// =================== GENERACIÓN DE CUOTAS (FRANCÉS / ALEMÁN) ===================
 function generarCuotas(op){
   const cuotasOp=[];
   const monto=parseFloat(op.monto),plazo=parseInt(op.plazo),frecuencia=parseInt(op.frecuencia||1);
   const tna=parseFloat(op.tna)/100,periodos=Math.ceil(plazo/frecuencia),tpm=tna/(12/frecuencia);
-  let cuotaFija=tpm===0?monto/periodos:monto*tpm*Math.pow(1+tpm,periodos)/(Math.pow(1+tpm,periodos)-1);
+  const sistema=op.amortizacion||'frances';
   let saldo=monto,fechaBase=new Date(op.primeraCuota+'T00:00:00');
-  for(let i=1;i<=periodos;i++){
-    const interes=saldo*tpm,capital=cuotaFija-interes;
-    saldo=Math.max(0,saldo-capital);
-    cuotasOp.push({opId:op.id,numero:i,fecha:fechaBase.toISOString().slice(0,10),capital,interes,total:cuotaFija,saldo,estado:calcEstadoCuota(fechaBase.toISOString().slice(0,10))});
-    const nf=new Date(fechaBase);nf.setMonth(nf.getMonth()+frecuencia);fechaBase=nf;
+  if(sistema==='aleman'){
+    const capitalFijo=monto/periodos;
+    for(let i=1;i<=periodos;i++){
+      const interes=saldo*tpm,total=capitalFijo+interes;
+      saldo=Math.max(0,saldo-capitalFijo);
+      cuotasOp.push({opId:op.id,numero:i,fecha:fechaBase.toISOString().slice(0,10),capital:capitalFijo,interes,total,saldo,estado:calcEstadoCuota(fechaBase.toISOString().slice(0,10))});
+      const nf=new Date(fechaBase);nf.setMonth(nf.getMonth()+frecuencia);fechaBase=nf;
+    }
+  } else {
+    const cuotaFija=tpm===0?monto/periodos:monto*tpm*Math.pow(1+tpm,periodos)/(Math.pow(1+tpm,periodos)-1);
+    for(let i=1;i<=periodos;i++){
+      const interes=saldo*tpm,capital=cuotaFija-interes;
+      saldo=Math.max(0,saldo-capital);
+      cuotasOp.push({opId:op.id,numero:i,fecha:fechaBase.toISOString().slice(0,10),capital,interes,total:cuotaFija,saldo,estado:calcEstadoCuota(fechaBase.toISOString().slice(0,10))});
+      const nf=new Date(fechaBase);nf.setMonth(nf.getMonth()+frecuencia);fechaBase=nf;
+    }
   }
   return cuotasOp;
 }
@@ -566,7 +583,7 @@ async function guardarOperacion(){
   if(isNaN(tna)){toast('Ingresá la TNA','red');return;}
   if(!primeraCuota){toast('Ingresá fecha de primera cuota','red');return;}
   const ent=entidades.find(e=>e.id===entId);
-  const op={entidadId:entId,entidadNombre:ent?ent.nombre:'Desconocida',tipo:document.getElementById('op-tipo').value,monto,plazo,tna,desembolso:document.getElementById('op-desembolso').value,primeraCuota,frecuencia:parseInt(document.getElementById('op-frecuencia').value)||1,tipoTasa:document.getElementById('op-tipo-tasa').value,garantia:document.getElementById('op-garantia').value||'Sin garantía',activa:true,creado:firebase.firestore.FieldValue.serverTimestamp()};
+  const op={entidadId:entId,entidadNombre:ent?ent.nombre:'Desconocida',tipo:document.getElementById('op-tipo').value,monto,plazo,tna,desembolso:document.getElementById('op-desembolso').value,primeraCuota,frecuencia:parseInt(document.getElementById('op-frecuencia').value)||1,tipoTasa:document.getElementById('op-tipo-tasa').value,amortizacion:document.getElementById('op-amortizacion')?.value||'frances',garantia:document.getElementById('op-garantia').value||'Sin garantía',activa:true,creado:firebase.firestore.FieldValue.serverTimestamp()};
   const opRef=await col('operaciones').add(op);
   op.id=opRef.id;operaciones.push(op);
   // Actualizar entidad
@@ -626,8 +643,11 @@ function previewCuotas(){
   const tna=parseFloat(document.getElementById('op-tna').value);
   const pc=document.getElementById('op-primera-cuota').value;
   const frec=parseInt(document.getElementById('op-frecuencia').value)||1;
+  const amort=document.getElementById('op-amortizacion')?.value||'frances';
   if(!monto||!plazo||isNaN(tna)||!pc){document.getElementById('preview-wrap').style.display='none';return;}
-  const tmp=generarCuotas({id:'tmp',monto,plazo,tna,primeraCuota:pc,frecuencia:frec});
+  const tmp=generarCuotas({id:'tmp',monto,plazo,tna,primeraCuota:pc,frecuencia:frec,amortizacion:amort});
+  const lbl=document.getElementById('preview-label');
+  if(lbl)lbl.textContent='Preview · Amortización '+(amort==='aleman'?'Alemana (cuota decreciente)':'Francesa (cuota fija)');
   document.getElementById('preview-wrap').style.display='block';
   document.getElementById('preview-cuotas').innerHTML=tmp.slice(0,5).map(c=>`<tr><td class="td-mono">${c.numero}</td><td class="td-mono">${fmtDate(c.fecha)}</td><td class="td-mono">${fmt(c.capital)}</td><td class="td-mono" style="color:var(--text3)">${fmt(c.interes)}</td><td class="td-mono td-bold">${fmt(c.total)}</td><td class="td-mono" style="color:var(--text3)">${fmt(c.saldo)}</td></tr>`).join('');
   document.getElementById('preview-more').textContent=tmp.length>5?`+ ${tmp.length-5} cuotas más`:'';
