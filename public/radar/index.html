@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Value Latam Radar – Acceso</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0a0c10;--surface:#111418;--surface2:#181c22;
+    --border:#252b35;--text:#e8eaed;--text2:#8a9ab0;--text3:#4a5568;
+    --accent:#3b82f6;--accent2:#1d4ed8;--red:#ef4444;--green:#10b981;
+    --mono:'DM Mono',monospace;--sans:'DM Sans',sans-serif;--display:'Syne',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;display:flex;align-items:center;justify-content:center;}
+
+  /* BG GRID */
+  body::before{
+    content:'';position:fixed;inset:0;
+    background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);
+    background-size:40px 40px;opacity:.3;pointer-events:none;
+  }
+
+  .login-wrap{width:420px;position:relative;z-index:1;}
+
+  .brand{text-align:center;margin-bottom:36px;}
+  .brand-logo{
+    font-family:var(--display);font-size:1.8rem;font-weight:800;letter-spacing:-.5px;
+  }
+  .brand-logo span{color:var(--accent);}
+  .brand-sub{font-family:var(--mono);font-size:.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:2px;margin-top:4px;}
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:32px;
+    box-shadow:0 24px 64px rgba(0,0,0,.4);
+  }
+  .card-title{font-family:var(--display);font-size:1.1rem;font-weight:700;margin-bottom:6px;}
+  .card-sub{font-size:.78rem;color:var(--text3);margin-bottom:24px;}
+
+  .form-group{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+  label{font-family:var(--mono);font-size:.62rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;}
+  input{
+    background:var(--surface2);border:1px solid var(--border);color:var(--text);
+    padding:10px 13px;border-radius:8px;font-size:.85rem;font-family:var(--sans);outline:none;transition:border .15s;
+  }
+  input:focus{border-color:var(--accent);}
+
+  .btn{
+    width:100%;padding:11px;border-radius:8px;font-size:.85rem;font-weight:600;
+    cursor:pointer;border:none;font-family:var(--display);letter-spacing:.3px;
+    transition:all .15s;margin-top:6px;
+  }
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-primary:hover{background:var(--accent2);}
+  .btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+
+  .divider{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--text3);font-size:.7rem;font-family:var(--mono);}
+  .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border);}
+
+  .btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border);}
+  .btn-ghost:hover{background:var(--surface2);color:var(--text);}
+
+  .error{
+    background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);
+    color:var(--red);padding:10px 13px;border-radius:8px;
+    font-size:.78rem;margin-bottom:12px;display:none;
+  }
+  .success{
+    background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);
+    color:var(--green);padding:10px 13px;border-radius:8px;
+    font-size:.78rem;margin-bottom:12px;display:none;
+  }
+
+  .toggle{text-align:center;margin-top:16px;font-size:.75rem;color:var(--text3);}
+  .toggle a{color:var(--accent);cursor:pointer;text-decoration:none;}
+  .toggle a:hover{text-decoration:underline;}
+
+  .loading{display:none;text-align:center;padding:8px;font-size:.75rem;color:var(--text3);font-family:var(--mono);}
+  .spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;margin-right:6px;vertical-align:middle;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .forgot{text-align:right;margin-top:-8px;margin-bottom:12px;}
+  .forgot a{font-size:.7rem;color:var(--text3);cursor:pointer;}
+  .forgot a:hover{color:var(--accent);}
+</style>
+</head>
+<body>
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+
+<div class="login-wrap">
+  <div class="brand">
+    <div class="brand-logo">Value Latam <span>Radar</span></div>
+    <div class="brand-sub">Dashboard Financiero Empresarial</div>
+  </div>
+
+  <!-- LOGIN -->
+  <div class="card" id="card-login">
+    <div class="card-title">Ingresá a tu cuenta</div>
+    <div class="card-sub">Accedé a tu dashboard de financiamiento</div>
+    <div class="error" id="login-error"></div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="login-email" placeholder="empresa@mail.com" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="form-group">
+      <label>Contraseña</label>
+      <input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="forgot"><a onclick="showForgot()">¿Olvidaste tu contraseña?</a></div>
+    <div class="loading" id="login-loading"><span class="spinner"></span>Verificando...</div>
+    <button class="btn btn-primary" id="btn-login" onclick="doLogin()">Ingresar</button>
+    <div class="toggle">¿No tenés cuenta? <a onclick="showRegister()">Registrate</a></div>
+  </div>
+
+  <!-- REGISTRO -->
+  <div class="card" id="card-register" style="display:none;">
+    <div class="card-title">Crear cuenta</div>
+    <div class="card-sub">Ingresá los datos de tu empresa</div>
+    <div class="error" id="reg-error"></div>
+    <div class="form-group">
+      <label>Nombre de la empresa</label>
+      <input type="text" id="reg-empresa" placeholder="Acme S.A.">
+    </div>
+    <div class="form-group">
+      <label>CUIT</label>
+      <input type="text" id="reg-cuit" placeholder="30-12345678-9">
+    </div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="reg-email" placeholder="empresa@mail.com">
+    </div>
+    <div class="form-group">
+      <label>Contraseña</label>
+      <input type="password" id="reg-pass" placeholder="Mínimo 6 caracteres">
+    </div>
+    <div class="loading" id="reg-loading"><span class="spinner"></span>Creando cuenta...</div>
+    <button class="btn btn-primary" id="btn-reg" onclick="doRegister()">Crear cuenta</button>
+    <div class="toggle">¿Ya tenés cuenta? <a onclick="showLogin()">Ingresá</a></div>
+  </div>
+
+  <!-- RECUPERAR PASSWORD -->
+  <div class="card" id="card-forgot" style="display:none;">
+    <div class="card-title">Recuperar contraseña</div>
+    <div class="card-sub">Te enviamos un email para resetearla</div>
+    <div class="error" id="forgot-error"></div>
+    <div class="success" id="forgot-ok"></div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="forgot-email" placeholder="empresa@mail.com">
+    </div>
+    <button class="btn btn-primary" onclick="doForgot()">Enviar email</button>
+    <div class="toggle"><a onclick="showLogin()">← Volver al login</a></div>
+  </div>
+</div>
+
+<script>
+function showLogin() {
+  document.getElementById('card-login').style.display='block';
+  document.getElementById('card-register').style.display='none';
+  document.getElementById('card-forgot').style.display='none';
+}
+function showRegister() {
+  document.getElementById('card-login').style.display='none';
+  document.getElementById('card-register').style.display='block';
+  document.getElementById('card-forgot').style.display='none';
+}
+function showForgot() {
+  document.getElementById('card-login').style.display='none';
+  document.getElementById('card-register').style.display='none';
+  document.getElementById('card-forgot').style.display='block';
+}
+
+function setLoading(id, on) {
+  document.getElementById(id).style.display = on ? 'block' : 'none';
+}
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg; el.style.display = 'block';
+  setTimeout(()=>el.style.display='none', 5000);
+}
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  if(!email||!pass) { showError('login-error','Completá todos los campos'); return; }
+  document.getElementById('btn-login').disabled = true;
+  setLoading('login-loading', true);
+  try {
+    await auth.signInWithEmailAndPassword(email, pass);
+    // Redirect handled by onAuthStateChanged
+  } catch(e) {
+    setLoading('login-loading', false);
+    document.getElementById('btn-login').disabled = false;
+    const msgs = {
+      'auth/user-not-found': 'No existe una cuenta con ese email',
+      'auth/wrong-password': 'Contraseña incorrecta',
+      'auth/invalid-email': 'Email inválido',
+      'auth/too-many-requests': 'Demasiados intentos. Intentá más tarde'
+    };
+    showError('login-error', msgs[e.code]||'Error al ingresar. Verificá tus datos.');
+  }
+}
+
+async function doRegister() {
+  const empresa = document.getElementById('reg-empresa').value.trim();
+  const cuit = document.getElementById('reg-cuit').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const pass = document.getElementById('reg-pass').value;
+  if(!empresa||!email||!pass) { showError('reg-error','Completá todos los campos'); return; }
+  if(pass.length < 6) { showError('reg-error','La contraseña debe tener al menos 6 caracteres'); return; }
+  document.getElementById('btn-reg').disabled = true;
+  setLoading('reg-loading', true);
+  try {
+    const cred = await auth.createUserWithEmailAndPassword(email, pass);
+    await db.collection('empresas').doc(cred.user.uid).set({
+      nombre: empresa, cuit, email,
+      creado: firebase.firestore.FieldValue.serverTimestamp(),
+      tnaRef: 60
+    });
+    // onAuthStateChanged redirige
+  } catch(e) {
+    setLoading('reg-loading', false);
+    document.getElementById('btn-reg').disabled = false;
+    const msgs = {
+      'auth/email-already-in-use': 'Ya existe una cuenta con ese email',
+      'auth/weak-password': 'La contraseña es muy débil',
+      'auth/invalid-email': 'Email inválido'
+    };
+    showError('reg-error', msgs[e.code]||'Error al registrar. Intentá de nuevo.');
+  }
+}
+
+async function doForgot() {
+  const email = document.getElementById('forgot-email').value.trim();
+  if(!email) { showError('forgot-error','Ingresá tu email'); return; }
+  try {
+    await auth.sendPasswordResetEmail(email);
+    const ok = document.getElementById('forgot-ok');
+    ok.textContent = 'Email enviado. Revisá tu bandeja.';
+    ok.style.display = 'block';
+  } catch(e) {
+    showError('forgot-error','No encontramos ese email');
+  }
+}
+
+auth.onAuthStateChanged(async user => {
+  if(user) {
+    // Verificar si es admin
+    if(user.email === ADMIN_EMAIL) {
+      window.location.href = 'admin.html';
+    } else {
+      window.location.href = 'app.html';
+    }
+  }
+});
+</script>
+</body>
+</html>

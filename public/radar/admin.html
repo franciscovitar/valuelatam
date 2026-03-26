@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Value Latam Radar – Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0a0c10;--surface:#111418;--surface2:#181c22;--surface3:#1f242d;--border:#252b35;--border2:#2e3540;--text:#e8eaed;--text2:#8a9ab0;--text3:#4a5568;--accent:#3b82f6;--accent2:#1d4ed8;--green:#10b981;--red:#ef4444;--yellow:#f59e0b;--purple:#8b5cf6;--mono:'DM Mono',monospace;--sans:'DM Sans',sans-serif;--display:'Syne',sans-serif;}
+  *{margin:0;padding:0;box-sizing:border-box;}html{font-size:14px;}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden;}
+  #loading-screen{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;}
+  .spinner{width:32px;height:32px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading-text{font-family:var(--mono);font-size:.7rem;color:var(--text3);letter-spacing:1px;}
+
+  .app{display:flex;min-height:100vh;}
+  .sidebar{width:220px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:100;}
+  .main{margin-left:220px;flex:1;display:flex;flex-direction:column;min-height:100vh;}
+  .topbar{height:56px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:90;}
+  .content{padding:28px;flex:1;}
+
+  .logo{padding:20px 20px 16px;border-bottom:1px solid var(--border);}
+  .logo-text{font-family:var(--display);font-size:1.1rem;font-weight:800;letter-spacing:-.5px;}
+  .logo-text span{color:var(--accent);}
+  .logo-badge{display:inline-block;background:rgba(139,92,246,.2);color:var(--purple);font-size:.6rem;font-family:var(--mono);padding:2px 6px;border-radius:4px;margin-top:4px;letter-spacing:1px;}
+  .nav{padding:12px 0;flex:1;}
+  .nav-section{font-family:var(--mono);font-size:.62rem;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;padding:14px 20px 6px;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:8px 20px;cursor:pointer;color:var(--text2);font-size:.82rem;border-left:2px solid transparent;transition:all .15s;}
+  .nav-item:hover{color:var(--text);background:var(--surface2);}
+  .nav-item.active{color:var(--accent);background:rgba(59,130,246,.08);border-left-color:var(--accent);font-weight:500;}
+  .sidebar-bottom{padding:16px 20px;border-top:1px solid var(--border);}
+
+  .page-title{font-family:var(--display);font-size:1rem;font-weight:700;}
+  .topbar-actions{display:flex;align-items:center;gap:12px;}
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:7px;font-size:.78rem;font-weight:500;cursor:pointer;border:none;transition:all .15s;font-family:var(--sans);}
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-primary:hover{background:var(--accent2);}
+  .btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border);}
+  .btn-ghost:hover{background:var(--surface2);color:var(--text);}
+  .btn-sm{padding:5px 10px;font-size:.72rem;}
+  .btn-success{background:rgba(16,185,129,.15);color:var(--green);border:1px solid rgba(16,185,129,.3);}
+  .btn-success:hover{background:var(--green);color:#fff;}
+
+  .panel{display:none;}.panel.active{display:block;}
+
+  .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
+  .kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;position:relative;overflow:hidden;}
+  .kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+  .kpi-card.blue::before{background:linear-gradient(90deg,var(--accent),var(--purple));}
+  .kpi-card.green::before{background:linear-gradient(90deg,var(--green),#06b6d4);}
+  .kpi-card.yellow::before{background:linear-gradient(90deg,var(--yellow),var(--accent));}
+  .kpi-card.purple::before{background:linear-gradient(90deg,var(--purple),var(--accent));}
+  .kpi-label{font-family:var(--mono);font-size:.62rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+  .kpi-value{font-family:var(--mono);font-size:1.8rem;font-weight:500;color:var(--text);letter-spacing:-1px;}
+  .kpi-sub{font-size:.7rem;color:var(--text2);margin-top:4px;}
+
+  .table-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px;}
+  .table-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);}
+  .table-title{font-family:var(--display);font-size:.88rem;font-weight:700;}
+  .table-sub{font-size:.7rem;color:var(--text3);margin-top:2px;font-family:var(--mono);}
+  table{width:100%;border-collapse:collapse;}
+  th{background:var(--surface2);color:var(--text3);font-family:var(--mono);font-size:.62rem;text-transform:uppercase;letter-spacing:1px;padding:10px 16px;text-align:left;border-bottom:1px solid var(--border);font-weight:400;}
+  td{padding:11px 16px;border-bottom:1px solid var(--border);font-size:.78rem;color:var(--text2);vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:rgba(255,255,255,.015);}
+  .td-mono{font-family:var(--mono);font-size:.75rem;}
+  .td-bold{color:var(--text);font-weight:500;}
+
+  .badge{display:inline-flex;align-items:center;gap:3px;font-size:.65rem;padding:2px 6px;border-radius:4px;font-family:var(--mono);}
+  .badge-green{background:rgba(16,185,129,.15);color:var(--green);}
+  .badge-blue{background:rgba(59,130,246,.15);color:var(--accent);}
+  .badge-yellow{background:rgba(245,158,11,.15);color:var(--yellow);}
+  .badge-purple{background:rgba(139,92,246,.15);color:var(--purple);}
+  .badge-red{background:rgba(239,68,68,.15);color:var(--red);}
+
+  /* TNA GLOBAL CARD */
+  .tna-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px;}
+  .tna-card-title{font-family:var(--display);font-size:1rem;font-weight:700;margin-bottom:6px;}
+  .tna-card-sub{font-size:.75rem;color:var(--text3);margin-bottom:20px;}
+  .tna-input-row{display:flex;align-items:center;gap:16px;}
+  .tna-big{font-family:var(--mono);font-size:3rem;font-weight:500;color:var(--yellow);letter-spacing:-2px;margin-bottom:16px;}
+  input[type=number],input[type=text],select{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 11px;border-radius:7px;font-size:.8rem;font-family:var(--sans);outline:none;transition:border .15s;}
+  input:focus,select:focus{border-color:var(--accent);}
+  .tna-slider{-webkit-appearance:none;width:300px;height:6px;border-radius:3px;background:var(--surface3);outline:none;border:none;padding:0;}
+  .tna-slider::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--yellow);cursor:pointer;box-shadow:0 0 8px rgba(245,158,11,.4);}
+  .last-update{font-family:var(--mono);font-size:.65rem;color:var(--text3);margin-top:8px;}
+
+  /* CLIENTE DETAIL */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;align-items:center;justify-content:center;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:28px;width:740px;max-height:90vh;overflow-y:auto;position:relative;}
+  .modal-close{position:absolute;top:16px;right:16px;background:none;border:none;color:var(--text3);cursor:pointer;font-size:1rem;padding:4px 8px;border-radius:6px;}
+  .modal-close:hover{background:var(--surface2);color:var(--text);}
+  .modal-title{font-family:var(--display);font-size:1.1rem;font-weight:700;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);}
+
+  .mini-kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;}
+  .mini-kpi-item{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;}
+  .mini-kpi-label{font-family:var(--mono);font-size:.58rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
+  .mini-kpi-value{font-family:var(--mono);font-size:1rem;color:var(--text);}
+
+  /* NOTAS */
+  .nota-row{display:flex;gap:10px;margin-bottom:12px;}
+  textarea{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 11px;border-radius:7px;font-size:.8rem;font-family:var(--sans);outline:none;resize:vertical;width:100%;}
+  textarea:focus{border-color:var(--accent);}
+  .nota-item{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:8px;}
+  .nota-fecha{font-family:var(--mono);font-size:.62rem;color:var(--text3);margin-bottom:4px;}
+  .nota-texto{font-size:.78rem;color:var(--text2);}
+
+  .toast{position:fixed;bottom:24px;right:24px;z-index:9999;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:12px 18px;font-size:.8rem;color:var(--text);display:flex;align-items:center;gap:10px;box-shadow:0 8px 32px rgba(0,0,0,.4);transform:translateY(100px);opacity:0;transition:all .3s;}
+  .toast.show{transform:translateY(0);opacity:1;}
+  .empty{text-align:center;padding:40px 20px;color:var(--text3);}
+  .empty-icon{font-size:2rem;margin-bottom:10px;opacity:.3;}
+  .empty-text{font-size:.8rem;}
+  ::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+  label{font-family:var(--mono);font-size:.62rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:5px;}
+  .form-group{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+  .form-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border);}
+</style>
+</head>
+<body>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+
+<div id="loading-screen">
+  <div class="spinner"></div>
+  <div class="loading-text">Cargando panel admin...</div>
+</div>
+
+<div class="app" id="app" style="display:none;">
+
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-text">Value Latam <span>Radar</span></div>
+    <div class="logo-badge">ADMIN PANEL</div>
+  </div>
+  <nav class="nav">
+    <div class="nav-section">Panel</div>
+    <div class="nav-item active" onclick="showTab('overview',this)"><span>◈</span> Overview</div>
+    <div class="nav-item" onclick="showTab('clientes',this)"><span>⬡</span> Clientes</div>
+    <div class="nav-item" onclick="showTab('tna',this)"><span>↕</span> TNA Global</div>
+  </nav>
+  <div class="sidebar-bottom">
+    <div style="font-family:var(--mono);font-size:.65rem;color:var(--text3);margin-bottom:8px;">ADMIN</div>
+    <div style="font-size:.78rem;color:var(--text2);margin-bottom:10px;" id="admin-email">—</div>
+    <button class="btn btn-ghost btn-sm" onclick="doLogout()" style="width:100%;justify-content:center;">Cerrar sesión</button>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div class="page-title" id="page-title">Overview General</div>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost btn-sm" onclick="loadClientes()">↺ Actualizar</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- OVERVIEW -->
+    <div class="panel active" id="panel-overview">
+      <div class="kpi-grid">
+        <div class="kpi-card blue"><div class="kpi-label">Total Clientes</div><div class="kpi-value" id="ov-clientes">0</div><div class="kpi-sub">Empresas registradas</div></div>
+        <div class="kpi-card green"><div class="kpi-label">Deuda Total Sistema</div><div class="kpi-value" id="ov-deuda" style="font-size:1.2rem;">$0</div><div class="kpi-sub">Suma de todos los clientes</div></div>
+        <div class="kpi-card yellow"><div class="kpi-label">TNA Ref. Global</div><div class="kpi-value" id="ov-tna">—%</div><div class="kpi-sub">Actualizada por vos</div></div>
+        <div class="kpi-card purple"><div class="kpi-label">Operaciones Activas</div><div class="kpi-value" id="ov-ops">0</div><div class="kpi-sub">En todo el sistema</div></div>
+      </div>
+      <div class="table-card">
+        <div class="table-header"><div><div class="table-title">Resumen por Cliente</div><div class="table-sub">Vista consolidada de todos los clientes</div></div></div>
+        <table>
+          <thead><tr><th>Empresa</th><th>CUIT</th><th>Email</th><th>Deuda Total</th><th>Ops. Activas</th><th>TNA Prom.</th><th>Próx. Vto.</th><th>Registrado</th><th></th></tr></thead>
+          <tbody id="tabla-overview"><tr><td colspan="9"><div class="empty"><div class="empty-icon">⬡</div><div class="empty-text">Cargando clientes...</div></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- CLIENTES -->
+    <div class="panel" id="panel-clientes">
+      <div class="table-card">
+        <div class="table-header">
+          <div><div class="table-title">Gestión de Clientes</div><div class="table-sub">Accedé a los datos de cada empresa</div></div>
+          <button class="btn btn-primary btn-sm" onclick="openNuevoCliente()">+ Crear Cliente</button>
+        </div>
+        <table>
+          <thead><tr><th>Empresa</th><th>CUIT</th><th>Email</th><th>Registrado</th><th>Estado</th><th></th></tr></thead>
+          <tbody id="tabla-clientes"><tr><td colspan="6"><div class="empty"><div class="empty-icon">⬡</div><div class="empty-text">Sin clientes</div></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TNA GLOBAL -->
+    <div class="panel" id="panel-tna">
+      <div class="tna-card">
+        <div class="tna-card-title">TNA de Referencia Global</div>
+        <div class="tna-card-sub">Este valor se actualiza para TODOS los clientes automáticamente. Usalo como benchmark de mercado.</div>
+        <div class="tna-big" id="tna-display">— %</div>
+        <div class="tna-input-row">
+          <input type="range" class="tna-slider" id="tna-slider" min="0" max="200" step="0.5" oninput="updateTNADisplay()">
+          <input type="number" id="tna-input" style="width:90px;" step="0.5" oninput="updateTNAFromInput()">
+          <span style="color:var(--text3);font-size:.8rem;">%</span>
+          <button class="btn btn-success" onclick="guardarTNA()">✓ Guardar y publicar</button>
+        </div>
+        <div class="last-update" id="last-update">Última actualización: —</div>
+      </div>
+      <div class="table-card">
+        <div class="table-header"><div><div class="table-title">Historial de Cambios TNA</div><div class="table-sub">Últimas actualizaciones publicadas</div></div></div>
+        <table><thead><tr><th>Fecha</th><th>TNA</th><th>Admin</th></tr></thead>
+        <tbody id="tabla-historial-tna"></tbody></table>
+      </div>
+    </div>
+
+  </div>
+</main>
+</div>
+
+<!-- MODAL DETALLE CLIENTE -->
+<div class="modal-overlay" id="modal-cliente">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('cliente')">✕</button>
+    <div class="modal-title" id="modal-cliente-title">Detalle Cliente</div>
+    <div class="mini-kpi" id="cliente-kpis"></div>
+
+    <div style="margin-bottom:16px;">
+      <div style="font-family:var(--mono);font-size:.62rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Operaciones Activas</div>
+      <table style="font-size:.75rem;"><thead><tr><th>Entidad</th><th>Tipo</th><th>Monto</th><th>TNA</th><th>Saldo Rest.</th></tr></thead>
+      <tbody id="modal-ops"></tbody></table>
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <div style="font-family:var(--mono);font-size:.62rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Notas de Relevamiento</div>
+      <div id="notas-list" style="margin-bottom:10px;"></div>
+      <div class="nota-row">
+        <textarea id="nueva-nota" rows="3" placeholder="Agregá una nota de relevamiento..."></textarea>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="guardarNota()">+ Agregar nota</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NUEVO CLIENTE -->
+<div class="modal-overlay" id="modal-nuevo-cliente">
+  <div class="modal" style="width:480px;">
+    <button class="modal-close" onclick="closeModal('nuevo-cliente')">✕</button>
+    <div class="modal-title">➕ Crear Cliente</div>
+    <div style="font-size:.78rem;color:var(--text3);margin-bottom:16px;">Creá la cuenta de un cliente para que pueda acceder al sistema.</div>
+    <div class="form-group"><label>Nombre de la Empresa</label><input type="text" id="nc-nombre" placeholder="Acme S.A."></div>
+    <div class="form-group"><label>CUIT</label><input type="text" id="nc-cuit" placeholder="30-12345678-9"></div>
+    <div class="form-group"><label>Email</label><input type="email" id="nc-email" placeholder="contacto@empresa.com"></div>
+    <div class="form-group"><label>Contraseña inicial</label><input type="text" id="nc-pass" placeholder="Mínimo 6 caracteres"></div>
+    <div id="nc-error" style="color:var(--red);font-size:.75rem;margin-top:8px;display:none;"></div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeModal('nuevo-cliente')">Cancelar</button>
+      <button class="btn btn-primary" onclick="crearCliente()">Crear Cliente</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let allClientes = [];
+let clienteActivo = null;
+let tnaActual = 60;
+
+// AUTH CHECK
+auth.onAuthStateChanged(async user => {
+  if(!user){ window.location.href='index.html'; return; }
+  if(user.email !== ADMIN_EMAIL){ window.location.href='app.html'; return; }
+  document.getElementById('admin-email').textContent = user.email;
+  await loadTNA();
+  await loadClientes();
+  document.getElementById('loading-screen').style.display='none';
+  document.getElementById('app').style.display='flex';
+});
+
+function doLogout(){ auth.signOut().then(()=>window.location.href='index.html'); }
+
+// NAV
+const titles={overview:'Overview General',clientes:'Gestión de Clientes',tna:'TNA de Referencia Global'};
+function showTab(name,el){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  if(el)el.classList.add('active');
+  document.getElementById('page-title').textContent=titles[name]||name;
+}
+
+function closeModal(t){ document.getElementById('modal-'+t).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');}));
+
+// UTILS
+function fmt(n){if(!n||isNaN(n))return'$0';return'$'+Math.round(n).toLocaleString('es-AR');}
+function fmtN(n,d=2){if(n===undefined||isNaN(n))return'—';return n.toFixed(d).replace('.',',');}
+function fmtDate(d){if(!d)return'—';try{return new Date(d+'T00:00:00').toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});}catch{return d;}}
+function fmtTs(ts){if(!ts)return'—';const d=ts.toDate?ts.toDate():new Date(ts);return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});}
+function today(){return new Date().toISOString().slice(0,10);}
+function daysBetween(a,b){return Math.round((new Date(b)-new Date(a))/(1000*60*60*24));}
+function toast(msg,type='green'){const t=document.getElementById('toast');t.innerHTML=`<span style="color:var(--${type})">●</span> ${msg}`;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+
+// TNA GLOBAL
+async function loadTNA(){
+  try{
+    const doc=await db.collection('config').doc('global').get();
+    if(doc.exists){tnaActual=doc.data().tnaRef||60;renderTNAPanel(doc.data());}
+    else{tnaActual=60;renderTNAPanel({tnaRef:60});}
+  }catch(e){tnaActual=60;renderTNAPanel({tnaRef:60});}
+}
+
+function renderTNAPanel(data){
+  const tna=data.tnaRef||60;
+  document.getElementById('tna-display').textContent=tna.toFixed(1)+' %';
+  document.getElementById('tna-slider').value=tna;
+  document.getElementById('tna-input').value=tna;
+  document.getElementById('ov-tna').textContent=tna.toFixed(1)+'%';
+  if(data.updatedAt){document.getElementById('last-update').textContent='Última actualización: '+fmtTs(data.updatedAt)+(data.updatedBy?' · '+data.updatedBy:'');}
+}
+
+function updateTNADisplay(){
+  const v=parseFloat(document.getElementById('tna-slider').value)||0;
+  document.getElementById('tna-input').value=v;
+  document.getElementById('tna-display').textContent=v.toFixed(1)+' %';
+}
+function updateTNAFromInput(){
+  const v=parseFloat(document.getElementById('tna-input').value)||0;
+  document.getElementById('tna-slider').value=v;
+  document.getElementById('tna-display').textContent=v.toFixed(1)+' %';
+}
+
+async function guardarTNA(){
+  const v=parseFloat(document.getElementById('tna-input').value);
+  if(isNaN(v)||v<0){toast('TNA inválida','red');return;}
+  const data={tnaRef:v,updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:auth.currentUser?.email};
+  await db.collection('config').doc('global').set(data,{merge:true});
+  // Guardar historial
+  await db.collection('config').doc('global').collection('historial').add({...data,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+  tnaActual=v;
+  document.getElementById('tna-display').textContent=v.toFixed(1)+' %';
+  document.getElementById('ov-tna').textContent=v.toFixed(1)+'%';
+  toast(`TNA actualizada a ${v.toFixed(1)}% para todos los clientes`);
+  loadHistorialTNA();
+}
+
+async function loadHistorialTNA(){
+  const snap=await db.collection('config').doc('global').collection('historial').orderBy('updatedAt','desc').limit(20).get();
+  const tbody=document.getElementById('tabla-historial-tna');
+  if(snap.empty){tbody.innerHTML='<tr><td colspan="3" style="text-align:center;color:var(--text3);padding:20px;">Sin historial</td></tr>';return;}
+  tbody.innerHTML=snap.docs.map(d=>{const dd=d.data();return`<tr><td class="td-mono">${fmtTs(dd.updatedAt)}</td><td class="td-mono" style="color:var(--yellow)">${(dd.tnaRef||0).toFixed(1)}%</td><td style="font-size:.72rem;color:var(--text3)">${dd.updatedBy||'—'}</td></tr>`;}).join('');
+}
+
+// CLIENTES
+async function loadClientes(){
+  const snap=await db.collection('empresas').get();
+  allClientes=[];
+  for(const doc of snap.docs){
+    const emp={id:doc.id,...doc.data()};
+    // Cargar operaciones y cuotas para stats
+    const [opSnap,cuotaSnap]=await Promise.all([
+      db.collection('empresas').doc(doc.id).collection('operaciones').get(),
+      db.collection('empresas').doc(doc.id).collection('cuotas').get(),
+    ]);
+    emp.operaciones=opSnap.docs.map(d=>({id:d.id,...d.data()}));
+    emp.cuotas=cuotaSnap.docs.map(d=>({id:d.id,...d.data()}));
+    allClientes.push(emp);
+  }
+  renderOverview();
+  renderClientes();
+  loadHistorialTNA();
+}
+
+function getClienteStats(emp){
+  const cuotasPend=emp.cuotas.filter(c=>c.estado!=='pagada');
+  const deuda=cuotasPend.reduce((s,c)=>s+(c.capital||0),0);
+  const opsAct=emp.operaciones.filter(op=>emp.cuotas.some(c=>c.opId===op.id&&c.estado!=='pagada'));
+  let tnaP=0,totS=0;
+  opsAct.forEach(op=>{const s=emp.cuotas.filter(c=>c.opId===op.id&&c.estado!=='pagada').reduce((a,c)=>a+(c.capital||0),0);tnaP+=op.tna*s;totS+=s;});
+  const tna=totS>0?tnaP/totS:0;
+  const prox=[...emp.cuotas].filter(c=>c.estado!=='pagada').sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||''))[0];
+  return{deuda,opsAct:opsAct.length,tna,proxFecha:prox?.fecha,proxMonto:prox?.total};
+}
+
+function renderOverview(){
+  const stats=allClientes.map(e=>getClienteStats(e));
+  document.getElementById('ov-clientes').textContent=allClientes.length;
+  document.getElementById('ov-deuda').textContent=fmt(stats.reduce((s,st)=>s+st.deuda,0));
+  document.getElementById('ov-ops').textContent=stats.reduce((s,st)=>s+st.opsAct,0);
+  const tbody=document.getElementById('tabla-overview');
+  if(!allClientes.length){tbody.innerHTML='<tr><td colspan="9"><div class="empty"><div class="empty-icon">⬡</div><div class="empty-text">Sin clientes registrados</div></div></td></tr>';return;}
+  tbody.innerHTML=allClientes.map((emp,i)=>{
+    const st=stats[i];
+    return`<tr>
+      <td class="td-bold">${emp.nombre||'—'}</td>
+      <td class="td-mono" style="font-size:.7rem;color:var(--text3)">${emp.cuit||'—'}</td>
+      <td style="font-size:.72rem;color:var(--text2)">${emp.email||'—'}</td>
+      <td class="td-mono" style="color:var(--accent)">${fmt(st.deuda)}</td>
+      <td class="td-mono">${st.opsAct}</td>
+      <td class="td-mono" style="color:var(--yellow)">${st.tna>0?fmtN(st.tna,1)+'%':'—'}</td>
+      <td class="td-mono" style="font-size:.7rem">${st.proxFecha?fmtDate(st.proxFecha):'—'}</td>
+      <td class="td-mono" style="font-size:.7rem;color:var(--text3)">${fmtTs(emp.creado)}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="abrirCliente('${emp.id}')">Ver detalle →</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderClientes(){
+  const tbody=document.getElementById('tabla-clientes');
+  if(!allClientes.length){tbody.innerHTML='<tr><td colspan="6"><div class="empty"><div class="empty-icon">⬡</div><div class="empty-text">Sin clientes</div></div></td></tr>';return;}
+  tbody.innerHTML=allClientes.map(emp=>`<tr>
+    <td class="td-bold">${emp.nombre||'—'}</td>
+    <td class="td-mono" style="font-size:.7rem;color:var(--text3)">${emp.cuit||'—'}</td>
+    <td style="font-size:.72rem">${emp.email||'—'}</td>
+    <td class="td-mono" style="font-size:.7rem;color:var(--text3)">${fmtTs(emp.creado)}</td>
+    <td><span class="badge badge-green">● Activo</span></td>
+    <td style="display:flex;gap:6px;">
+      <button class="btn btn-ghost btn-sm" onclick="abrirCliente('${emp.id}')">Ver →</button>
+    </td>
+  </tr>`).join('');
+}
+
+// DETALLE CLIENTE
+async function abrirCliente(id){
+  const emp=allClientes.find(e=>e.id===id);
+  if(!emp)return;
+  clienteActivo=emp;
+  const st=getClienteStats(emp);
+  document.getElementById('modal-cliente-title').textContent=emp.nombre||'Cliente';
+  document.getElementById('cliente-kpis').innerHTML=`
+    <div class="mini-kpi-item"><div class="mini-kpi-label">Deuda Total</div><div class="mini-kpi-value">${fmt(st.deuda)}</div></div>
+    <div class="mini-kpi-item"><div class="mini-kpi-label">Ops. Activas</div><div class="mini-kpi-value">${st.opsAct}</div></div>
+    <div class="mini-kpi-item"><div class="mini-kpi-label">TNA Promedio</div><div class="mini-kpi-value" style="color:var(--yellow)">${st.tna>0?fmtN(st.tna,1)+'%':'—'}</div></div>`;
+  // Ops
+  const opsAct=emp.operaciones.filter(op=>emp.cuotas.some(c=>c.opId===op.id&&c.estado!=='pagada'));
+  document.getElementById('modal-ops').innerHTML=!opsAct.length
+    ?'<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:16px;">Sin operaciones activas</td></tr>'
+    :opsAct.map(op=>{const saldo=emp.cuotas.filter(c=>c.opId===op.id&&c.estado!=='pagada').reduce((s,c)=>s+(c.capital||0),0);return`<tr><td class="td-bold">${op.entidadNombre||'—'}</td><td>${op.tipo||'—'}</td><td class="td-mono">${fmt(op.monto)}</td><td class="td-mono" style="color:var(--yellow)">${fmtN(op.tna,2)}%</td><td class="td-mono" style="color:var(--accent)">${fmt(saldo)}</td></tr>`;}).join('');
+  // Notas
+  await loadNotas(id);
+  document.getElementById('modal-cliente').classList.add('open');
+}
+
+async function loadNotas(clienteId){
+  const snap=await db.collection('empresas').doc(clienteId).collection('notas').orderBy('fecha','desc').limit(20).get();
+  const div=document.getElementById('notas-list');
+  if(snap.empty){div.innerHTML='<div style="font-size:.75rem;color:var(--text3);margin-bottom:8px;">Sin notas todavía.</div>';return;}
+  div.innerHTML=snap.docs.map(d=>{const dd=d.data();return`<div class="nota-item"><div class="nota-fecha">${fmtTs(dd.fecha)} · ${dd.autor||'admin'}</div><div class="nota-texto">${dd.texto}</div></div>`;}).join('');
+}
+
+async function guardarNota(){
+  if(!clienteActivo)return;
+  const texto=document.getElementById('nueva-nota').value.trim();
+  if(!texto){toast('Escribí una nota','red');return;}
+  await db.collection('empresas').doc(clienteActivo.id).collection('notas').add({texto,fecha:firebase.firestore.FieldValue.serverTimestamp(),autor:auth.currentUser?.email});
+  document.getElementById('nueva-nota').value='';
+  await loadNotas(clienteActivo.id);
+  toast('Nota guardada');
+}
+
+// NUEVO CLIENTE
+function openNuevoCliente(){ document.getElementById('modal-nuevo-cliente').classList.add('open'); }
+
+async function crearCliente(){
+  const nombre=document.getElementById('nc-nombre').value.trim();
+  const cuit=document.getElementById('nc-cuit').value.trim();
+  const email=document.getElementById('nc-email').value.trim();
+  const pass=document.getElementById('nc-pass').value;
+  const errEl=document.getElementById('nc-error');
+  if(!nombre||!email||!pass){errEl.textContent='Completá todos los campos obligatorios';errEl.style.display='block';return;}
+  if(pass.length<6){errEl.textContent='La contraseña debe tener al menos 6 caracteres';errEl.style.display='block';return;}
+  try{
+    // Crear usuario usando Admin SDK no está disponible en el cliente, así que usamos una firebase function workaround
+    // Alternativa: crear cuenta secundaria y guardar datos
+    const secondary=firebase.initializeApp(firebase.app().options,'secondary_'+Date.now());
+    const secAuth=secondary.auth();
+    const cred=await secAuth.createUserWithEmailAndPassword(email,pass);
+    await db.collection('empresas').doc(cred.user.uid).set({nombre,cuit,email,creado:firebase.firestore.FieldValue.serverTimestamp(),tnaRef:tnaActual});
+    await secAuth.signOut();
+    closeModal('nuevo-cliente');
+    await loadClientes();
+    toast(`Cliente "${nombre}" creado correctamente`);
+  }catch(e){
+    const msgs={'auth/email-already-in-use':'Ese email ya tiene una cuenta','auth/weak-password':'Contraseña muy débil','auth/invalid-email':'Email inválido'};
+    errEl.textContent=msgs[e.code]||'Error al crear cliente: '+e.message;
+    errEl.style.display='block';
+  }
+}
+</script>
+</body>
+</html>
