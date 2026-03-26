@@ -248,7 +248,37 @@
 
       </div>
 
-      <div class="info-bar">⚡ Cuando actualizás BADLAR o TAMAR, las cuotas futuras de todas las operaciones con esa tasa se recalculan automáticamente para todos los clientes.</div>
+      <!-- UMBRALES SEMÁFORO -->
+      <div class="tna-card" style="margin-bottom:0;">
+        <div class="tna-card-title">Umbrales del Semáforo</div>
+        <div class="tna-card-sub">Configurá cuántos pp por encima del mercado activan cada alerta en la tabla de operaciones.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px;">
+          <div>
+            <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <span style="width:12px;height:12px;border-radius:50%;background:var(--yellow);display:inline-block;"></span>
+              Amarillo: más de
+            </label>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <input type="number" id="umbral-amarillo" value="3" min="0" max="50" step="0.5" style="width:80px;" oninput="updateUmbralPreview()">
+              <span style="color:var(--text3);font-size:.8rem;">pp sobre mercado</span>
+            </div>
+          </div>
+          <div>
+            <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <span style="width:12px;height:12px;border-radius:50%;background:var(--red);display:inline-block;"></span>
+              Rojo: más de
+            </label>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <input type="number" id="umbral-rojo" value="8" min="0" max="50" step="0.5" style="width:80px;" oninput="updateUmbralPreview()">
+              <span style="color:var(--text3);font-size:.8rem;">pp sobre mercado</span>
+            </div>
+          </div>
+        </div>
+        <div id="umbral-preview" style="font-family:var(--mono);font-size:.65rem;color:var(--text3);margin-top:10px;"></div>
+        <button class="btn btn-success btn-sm" onclick="guardarUmbrales()" style="margin-top:12px;">✓ Guardar umbrales</button>
+      </div>
+
+      <div class="info-bar" style="margin-top:20px;">⚡ Cuando actualizás BADLAR o TAMAR, las cuotas futuras de todas las operaciones con esa tasa se recalculan automáticamente para todos los clientes.</div>
 
       <div class="table-card">
         <div class="table-header"><div><div class="table-title">Tasas Actuales del Sistema</div><div class="table-sub">Resumen publicado</div></div></div>
@@ -387,7 +417,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-let allClientes=[], clienteActivo=null, tnaActual=60, badlarActual=0, tamarActual=0;
+let allClientes=[], clienteActivo=null, tnaActual=60, badlarActual=0, tamarActual=0, umbralAmarillo=3, umbralRojo=8;
 
 auth.onAuthStateChanged(async user=>{
   if(!user){window.location.href='index.html';return;}
@@ -434,6 +464,10 @@ async function loadTNA(){
     if(doc.exists){
       const d=doc.data();
       tnaActual=d.tnaRef||60; badlarActual=d.badlar||0; tamarActual=d.tamar||0;
+      umbralAmarillo=d.umbralAmarillo??3; umbralRojo=d.umbralRojo??8;
+      if(document.getElementById('umbral-amarillo'))document.getElementById('umbral-amarillo').value=umbralAmarillo;
+      if(document.getElementById('umbral-rojo'))document.getElementById('umbral-rojo').value=umbralRojo;
+      updateUmbralPreview();
       renderTNAPanel(d);
     } else renderTNAPanel({tnaRef:60,badlar:0,tamar:0});
   }catch(e){renderTNAPanel({tnaRef:60,badlar:0,tamar:0});}
@@ -503,6 +537,48 @@ async function guardarTamar(){
 }
 
 // RECALCULAR CUOTAS FUTURAS para todas las operaciones con tasa variable
+function updateUmbralPreview(){
+  const a=parseFloat(document.getElementById('umbral-amarillo')?.value)||3;
+  const r=parseFloat(document.getElementById('umbral-rojo')?.value)||8;
+  const prev=document.getElementById('umbral-preview');
+  if(prev)prev.textContent=`🟢 Hasta +${a}pp → Verde · 🟡 Entre +${a} y +${r}pp → Amarillo · 🔴 Más de +${r}pp → Rojo`;
+}
+async function guardarUmbrales(){
+  const a=parseFloat(document.getElementById('umbral-amarillo')?.value)||3;
+  const r=parseFloat(document.getElementById('umbral-rojo')?.value)||8;
+  if(a>=r){toast('El umbral rojo debe ser mayor al amarillo','red');return;}
+  await db.collection('config').doc('global').set({umbralAmarillo:a,umbralRojo:r},{merge:true});
+  umbralAmarillo=a;umbralRojo=r;
+  toast(`Umbrales guardados: amarillo >+${a}pp, rojo >+${r}pp`);
+}
+
+function getTNAEfectivaOp(op){
+  // Calcula la TNA efectiva real de una operación según su tipo de tasa
+  const tipo=op.tipoTasa||'fija';
+  if(tipo==='badlar') return badlarActual+(parseFloat(op.spread)||0);
+  if(tipo==='tamar') return tamarActual+(parseFloat(op.spread)||0);
+  return parseFloat(op.tna)||0;
+}
+
+function getSemaforoOp(tnaEfectiva){
+  const diff=tnaEfectiva-tnaActual;
+  if(diff>umbralRojo) return {color:'var(--red)',dot:'🔴',label:'Cara',diff};
+  if(diff>umbralAmarillo) return {color:'var(--yellow)',dot:'🟡',label:'Revisar',diff};
+  return {color:'var(--green)',dot:'🟢',label:'OK',diff};
+}
+
+function getAhorroMensual(op){
+  // Ahorro potencial si refinancia al mercado
+  const tnaEfectiva=getTNAEfectivaOp(op);
+  const diff=tnaEfectiva-tnaActual;
+  if(diff<=umbralAmarillo) return 0;
+  const cuotas=clienteActivo?.cuotas||[];
+  const saldo=cuotas.filter(c=>c.opId===op.id&&c.estado!=='pagada').reduce((s,c)=>s+(c.capital||0),0);
+  if(saldo<=0) return 0;
+  // Ahorro mensual = diferencia de interés sobre saldo
+  return saldo*(diff/100/12);
+}
+
 async function recalcularCuotasVariables(tipoTasa, nuevaTasa){
   toast(`Recalculando cuotas ${tipoTasa.toUpperCase()}...`,'yellow');
   let totalOps=0;
@@ -723,14 +799,59 @@ function htmlEntidades(){
 
 function htmlOperaciones(){
   const ops=clienteActivo?.operaciones||[], cuotas=clienteActivo?.cuotas||[];
-  let html=`<div style="display:flex;justify-content:flex-end;margin-bottom:12px;"><button class="btn btn-primary btn-sm" onclick="openModalOp()">+ Nueva Operación</button></div>`;
+
+  // Calcular ahorro potencial total
+  const ahorroTotal=ops.reduce((s,op)=>s+getAhorroMensual(op),0);
+  const opsCara=ops.filter(op=>getSemaforoOp(getTNAEfectivaOp(op)).label!=='OK');
+
+  let resumen='';
+  if(ops.length>0){
+    if(opsCara.length>0){
+      resumen=`<div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:10px 14px;font-size:.75rem;color:var(--red);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">
+        <span>⚠ ${opsCara.length} operación(es) por encima del mercado</span>
+        ${ahorroTotal>0?`<span style="font-family:var(--mono);">Ahorro potencial: <strong>${fmt(ahorroTotal)}/mes</strong></span>`:''}
+      </div>`;
+    } else {
+      resumen=`<div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:10px 14px;font-size:.75rem;color:var(--green);margin-bottom:12px;">✓ Todas las operaciones están alineadas con el mercado (TNA mercado: ${tnaActual.toFixed(1)}%)</div>`;
+    }
+  }
+
+  let html=`<div style="display:flex;justify-content:flex-end;margin-bottom:12px;"><button class="btn btn-primary btn-sm" onclick="openModalOp()">+ Nueva Operación</button></div>${resumen}`;
   if(!ops.length) return html+'<div class="empty"><div class="empty-icon">◎</div><div class="empty-text">Sin operaciones. Cargá la primera.</div></div>';
-  html+=`<table><thead><tr><th>Entidad</th><th>Tipo</th><th>Monto</th><th>Saldo Rest.</th><th>TNA</th><th>Plazo</th><th>Tipo Tasa</th><th></th></tr></thead><tbody>`;
+
+  html+=`<table><thead><tr>
+    <th>Entidad</th><th>Tipo</th><th>Monto</th><th>Saldo Rest.</th>
+    <th>TNA Efectiva</th><th>vs Mercado</th><th>Semáforo</th>
+    <th>Tipo Tasa</th><th>Amort.</th><th>Plazo</th><th></th>
+  </tr></thead><tbody>`;
+
   ops.forEach(op=>{
     const saldo=cuotas.filter(c=>c.opId===op.id&&c.estado!=='pagada').reduce((s,c)=>s+(c.capital||0),0);
     const amortLabel=op.amortizacion==='aleman'?'Alemán':'Francés';
-    const tasaLabel=op.tipoTasa==='badlar'?`BADLAR+${fmtN(op.spread||0,1)}%`:op.tipoTasa==='tamar'?`TAMAR+${fmtN(op.spread||0,1)}%`:op.tipoTasa||'Fija';
-    html+=`<tr><td class="td-bold">${op.entidadNombre}</td><td>${op.tipo}</td><td class="td-mono">${fmt(op.monto)}</td><td class="td-mono" style="color:var(--accent)">${fmt(saldo)}</td><td class="td-mono" style="color:var(--yellow)">${fmtN(op.tna,2)}%</td><td class="td-mono">${op.plazo}m</td><td style="font-size:.7rem">${tasaLabel}</td><td style="font-size:.7rem;color:var(--text3)">${amortLabel}</td><td style="display:flex;gap:4px;"><button class="btn btn-ghost btn-sm" onclick="abrirEditOperacion('${op.id}')">✏️</button><button class="btn btn-danger btn-sm" onclick="eliminarOpCliente('${op.id}')">✕</button></td></tr>`;
+    const tasaLabel=op.tipoTasa==='badlar'?`BADLAR+${fmtN(op.spread||0,1)}%`:op.tipoTasa==='tamar'?`TAMAR+${fmtN(op.spread||0,1)}%`:op.tipoTasa==='variable'?'Variable':'Fija';
+    const tnaEfectiva=getTNAEfectivaOp(op);
+    const sem=getSemaforoOp(tnaEfectiva);
+    const diffStr=(sem.diff>=0?'+':'')+fmtN(sem.diff,1)+'pp';
+    const ahorro=getAhorroMensual(op);
+    const refinBadge=ahorro>0?`<span class="badge" style="background:rgba(59,130,246,.15);color:var(--accent);margin-left:4px;cursor:help;" title="Ahorro potencial refinanciando a mercado: ${fmt(ahorro)}/mes">💡 Refinanciar</span>`:'';
+
+    html+=`<tr>
+      <td class="td-bold">${op.entidadNombre}</td>
+      <td style="font-size:.75rem">${op.tipo}</td>
+      <td class="td-mono">${fmt(op.monto)}</td>
+      <td class="td-mono" style="color:var(--accent)">${fmt(saldo)}</td>
+      <td class="td-mono" style="color:${sem.color};font-weight:600;">${fmtN(tnaEfectiva,2)}%</td>
+      <td class="td-mono" style="color:${sem.color};">${diffStr}</td>
+      <td style="white-space:nowrap;">
+        <span style="font-size:1rem;">${sem.dot}</span>
+        <span class="badge" style="background:${sem.color}22;color:${sem.color};margin-left:4px;">${sem.label}</span>
+        ${refinBadge}
+      </td>
+      <td style="font-size:.7rem">${tasaLabel}</td>
+      <td style="font-size:.7rem;color:var(--text3)">${amortLabel}</td>
+      <td class="td-mono">${op.plazo}m</td>
+      <td style="display:flex;gap:4px;"><button class="btn btn-ghost btn-sm" onclick="abrirEditOperacion('${op.id}')">✏️</button><button class="btn btn-danger btn-sm" onclick="eliminarOpCliente('${op.id}')">✕</button></td>
+    </tr>`;
   });
   return html+'</tbody></table>';
 }
