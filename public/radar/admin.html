@@ -6,20 +6,18 @@
 <title>Value Latam Radar – Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-  :root{--bg:#0a0c10;--surface:#111418;--surface2:#181c22;--surface3:#1f242d;--border:#252b35;--border2:#2e3540;--text:#e8eaed;--text2:#8a9ab0;--text3:#4a5568;--accent:#3b82f6;--accent2:#1d4ed8;--green:#10b981;--red:#ef4444;--yellow:#f59e0b;--purple:#8b5cf6;--mono:'DM Mono',monospace;--sans:'DM Sans',sans-serif;--display:'Syne',sans-serif;}
+  :root{--bg:#0a0c10;--surface:#111418;--surface2:#181c22;--surface3:#1f242d;--border:#252b35;--border2:#2e3540;--text:#e8eaed;--text2:#8a9ab0;--text3:#4a5568;--accent:#3b82f6;--accent2:#1d4ed8;--green:#10b981;--red:#ef4444;--yellow:#f59e0b;--purple:#8b5cf6;--cyan:#06b6d4;--mono:'DM Mono',monospace;--sans:'DM Sans',sans-serif;--display:'Syne',sans-serif;}
   *{margin:0;padding:0;box-sizing:border-box;}html{font-size:14px;}
   body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden;}
   #loading-screen{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;}
   .spinner{width:32px;height:32px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg)}}
   .loading-text{font-family:var(--mono);font-size:.7rem;color:var(--text3);letter-spacing:1px;}
-
   .app{display:flex;min-height:100vh;}
   .sidebar{width:220px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:100;}
   .main{margin-left:220px;flex:1;display:flex;flex-direction:column;min-height:100vh;}
   .topbar{height:56px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:90;}
   .content{padding:28px;flex:1;}
-
   .logo{padding:20px 20px 16px;border-bottom:1px solid var(--border);}
   .logo-text{font-family:var(--display);font-size:1.1rem;font-weight:800;letter-spacing:-.5px;}
   .logo-text span{color:var(--accent);}
@@ -30,31 +28,25 @@
   .nav-item:hover{color:var(--text);background:var(--surface2);}
   .nav-item.active{color:var(--accent);background:rgba(59,130,246,.08);border-left-color:var(--accent);font-weight:500;}
   .sidebar-bottom{padding:16px 20px;border-top:1px solid var(--border);}
-
   .page-title{font-family:var(--display);font-size:1rem;font-weight:700;}
   .topbar-actions{display:flex;align-items:center;gap:12px;}
   .btn{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:7px;font-size:.78rem;font-weight:500;cursor:pointer;border:none;transition:all .15s;font-family:var(--sans);}
-  .btn-primary{background:var(--accent);color:#fff;}
-  .btn-primary:hover{background:var(--accent2);}
-  .btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border);}
-  .btn-ghost:hover{background:var(--surface2);color:var(--text);}
+  .btn-primary{background:var(--accent);color:#fff;}.btn-primary:hover{background:var(--accent2);}
+  .btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border);}.btn-ghost:hover{background:var(--surface2);color:var(--text);}
   .btn-sm{padding:5px 10px;font-size:.72rem;}
-  .btn-success{background:rgba(16,185,129,.15);color:var(--green);border:1px solid rgba(16,185,129,.3);}
-  .btn-success:hover{background:var(--green);color:#fff;}
-
+  .btn-success{background:rgba(16,185,129,.15);color:var(--green);border:1px solid rgba(16,185,129,.3);}.btn-success:hover{background:var(--green);color:#fff;}
+  .btn-danger{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.2);}.btn-danger:hover{background:var(--red);color:#fff;}
   .panel{display:none;}.panel.active{display:block;}
-
   .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
   .kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;position:relative;overflow:hidden;}
   .kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
   .kpi-card.blue::before{background:linear-gradient(90deg,var(--accent),var(--purple));}
-  .kpi-card.green::before{background:linear-gradient(90deg,var(--green),#06b6d4);}
+  .kpi-card.green::before{background:linear-gradient(90deg,var(--green),var(--cyan));}
   .kpi-card.yellow::before{background:linear-gradient(90deg,var(--yellow),var(--accent));}
   .kpi-card.purple::before{background:linear-gradient(90deg,var(--purple),var(--accent));}
   .kpi-label{font-family:var(--mono);font-size:.62rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
   .kpi-value{font-family:var(--mono);font-size:1.8rem;font-weight:500;color:var(--text);letter-spacing:-1px;}
   .kpi-sub{font-size:.7rem;color:var(--text2);margin-top:4px;}
-
   .table-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px;}
   .table-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);}
   .table-title{font-family:var(--display);font-size:.88rem;font-weight:700;}
@@ -66,56 +58,67 @@
   tr:hover td{background:rgba(255,255,255,.015);}
   .td-mono{font-family:var(--mono);font-size:.75rem;}
   .td-bold{color:var(--text);font-weight:500;}
-
-  .badge{display:inline-flex;align-items:center;gap:3px;font-size:.65rem;padding:2px 6px;border-radius:4px;font-family:var(--mono);}
+  .badge{display:inline-flex;align-items:center;font-size:.65rem;padding:2px 6px;border-radius:4px;font-family:var(--mono);}
   .badge-green{background:rgba(16,185,129,.15);color:var(--green);}
   .badge-blue{background:rgba(59,130,246,.15);color:var(--accent);}
   .badge-yellow{background:rgba(245,158,11,.15);color:var(--yellow);}
-  .badge-purple{background:rgba(139,92,246,.15);color:var(--purple);}
-  .badge-red{background:rgba(239,68,68,.15);color:var(--red);}
-
-  /* TNA GLOBAL CARD */
   .tna-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px;}
   .tna-card-title{font-family:var(--display);font-size:1rem;font-weight:700;margin-bottom:6px;}
   .tna-card-sub{font-size:.75rem;color:var(--text3);margin-bottom:20px;}
-  .tna-input-row{display:flex;align-items:center;gap:16px;}
   .tna-big{font-family:var(--mono);font-size:3rem;font-weight:500;color:var(--yellow);letter-spacing:-2px;margin-bottom:16px;}
-  input[type=number],input[type=text],select{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 11px;border-radius:7px;font-size:.8rem;font-family:var(--sans);outline:none;transition:border .15s;}
-  input:focus,select:focus{border-color:var(--accent);}
+  .tna-input-row{display:flex;align-items:center;gap:16px;}
   .tna-slider{-webkit-appearance:none;width:300px;height:6px;border-radius:3px;background:var(--surface3);outline:none;border:none;padding:0;}
-  .tna-slider::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--yellow);cursor:pointer;box-shadow:0 0 8px rgba(245,158,11,.4);}
+  .tna-slider::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--yellow);cursor:pointer;}
   .last-update{font-family:var(--mono);font-size:.65rem;color:var(--text3);margin-top:8px;}
-
-  /* CLIENTE DETAIL */
+  .relevamiento-wrap{display:grid;grid-template-columns:260px 1fr;min-height:600px;}
+  .cliente-list{border-right:1px solid var(--border);overflow-y:auto;max-height:700px;}
+  .cli-header{padding:12px 16px;font-family:var(--mono);font-size:.62rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border);background:var(--surface2);}
+  .cliente-list-item{padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:all .15s;}
+  .cliente-list-item:hover{background:var(--surface2);}
+  .cliente-list-item.active{background:rgba(59,130,246,.08);border-left:2px solid var(--accent);}
+  .cli-nombre{font-size:.82rem;font-weight:500;color:var(--text);}
+  .cli-sub{font-size:.68rem;color:var(--text3);font-family:var(--mono);margin-top:2px;}
+  .relevamiento-detail{padding:24px;overflow-y:auto;max-height:700px;}
+  .rel-empty{display:flex;align-items:center;justify-content:center;height:300px;color:var(--text3);font-size:.82rem;flex-direction:column;gap:8px;}
+  .inner-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:20px;}
+  .inner-tab{padding:8px 16px;font-size:.78rem;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;}
+  .inner-tab:hover{color:var(--text);}
+  .inner-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+  .inner-panel{display:none;}.inner-panel.active{display:block;}
+  .progress-bg{background:var(--surface3);border-radius:3px;height:5px;overflow:hidden;}
+  .progress-fill{height:100%;border-radius:3px;}
+  .pct-label{font-family:var(--mono);font-size:.62rem;color:var(--text3);margin-top:3px;}
+  .progress-wrap{width:80px;}
   .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;align-items:center;justify-content:center;}
   .modal-overlay.open{display:flex;}
-  .modal{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:28px;width:740px;max-height:90vh;overflow-y:auto;position:relative;}
+  .modal{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:28px;width:580px;max-height:90vh;overflow-y:auto;position:relative;}
+  .modal-wide{width:680px;}
   .modal-close{position:absolute;top:16px;right:16px;background:none;border:none;color:var(--text3);cursor:pointer;font-size:1rem;padding:4px 8px;border-radius:6px;}
   .modal-close:hover{background:var(--surface2);color:var(--text);}
   .modal-title{font-family:var(--display);font-size:1.1rem;font-weight:700;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);}
-
-  .mini-kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;}
-  .mini-kpi-item{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;}
-  .mini-kpi-label{font-family:var(--mono);font-size:.58rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
-  .mini-kpi-value{font-family:var(--mono);font-size:1rem;color:var(--text);}
-
-  /* NOTAS */
-  .nota-row{display:flex;gap:10px;margin-bottom:12px;}
-  textarea{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 11px;border-radius:7px;font-size:.8rem;font-family:var(--sans);outline:none;resize:vertical;width:100%;}
-  textarea:focus{border-color:var(--accent);}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .form-group{display:flex;flex-direction:column;gap:6px;}
+  .form-group.full{grid-column:1/-1;}
+  label{font-family:var(--mono);font-size:.62rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;display:block;}
+  input,select,textarea{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 11px;border-radius:7px;font-size:.8rem;font-family:var(--sans);outline:none;transition:border .15s;width:100%;}
+  input:focus,select:focus,textarea:focus{border-color:var(--accent);}
+  select option{background:var(--surface2);}
+  textarea{resize:vertical;}
+  .form-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border);}
   .nota-item{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:8px;}
   .nota-fecha{font-family:var(--mono);font-size:.62rem;color:var(--text3);margin-bottom:4px;}
   .nota-texto{font-size:.78rem;color:var(--text2);}
-
+  .mini-kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+  .mini-kpi-item{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;}
+  .mini-kpi-label{font-family:var(--mono);font-size:.58rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
+  .mini-kpi-value{font-family:var(--mono);font-size:1rem;color:var(--text);}
+  .info-bar{background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:8px;padding:8px 14px;font-size:.72rem;color:var(--accent);margin-bottom:16px;}
   .toast{position:fixed;bottom:24px;right:24px;z-index:9999;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:12px 18px;font-size:.8rem;color:var(--text);display:flex;align-items:center;gap:10px;box-shadow:0 8px 32px rgba(0,0,0,.4);transform:translateY(100px);opacity:0;transition:all .3s;}
   .toast.show{transform:translateY(0);opacity:1;}
   .empty{text-align:center;padding:40px 20px;color:var(--text3);}
   .empty-icon{font-size:2rem;margin-bottom:10px;opacity:.3;}
   .empty-text{font-size:.8rem;}
   ::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
-  label{font-family:var(--mono);font-size:.62rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:5px;}
-  .form-group{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
-  .form-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border);}
 </style>
 </head>
 <body>
@@ -124,13 +127,9 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
 
-<div id="loading-screen">
-  <div class="spinner"></div>
-  <div class="loading-text">Cargando panel admin...</div>
-</div>
+<div id="loading-screen"><div class="spinner"></div><div class="loading-text">Cargando panel admin...</div></div>
 
 <div class="app" id="app" style="display:none;">
-
 <aside class="sidebar">
   <div class="logo">
     <div class="logo-text">Value Latam <span>Radar</span></div>
@@ -140,10 +139,11 @@
     <div class="nav-section">Panel</div>
     <div class="nav-item active" onclick="showTab('overview',this)"><span>◈</span> Overview</div>
     <div class="nav-item" onclick="showTab('clientes',this)"><span>⬡</span> Clientes</div>
+    <div class="nav-item" id="nav-relevamiento" onclick="showTab('relevamiento',this)"><span>◎</span> Relevamiento</div>
     <div class="nav-item" onclick="showTab('tna',this)"><span>↕</span> TNA Global</div>
   </nav>
   <div class="sidebar-bottom">
-    <div style="font-family:var(--mono);font-size:.65rem;color:var(--text3);margin-bottom:8px;">ADMIN</div>
+    <div style="font-family:var(--mono);font-size:.65rem;color:var(--text3);margin-bottom:4px;">ADMIN</div>
     <div style="font-size:.78rem;color:var(--text2);margin-bottom:10px;" id="admin-email">—</div>
     <button class="btn btn-ghost btn-sm" onclick="doLogout()" style="width:100%;justify-content:center;">Cerrar sesión</button>
   </div>
@@ -156,7 +156,6 @@
       <button class="btn btn-ghost btn-sm" onclick="loadClientes()">↺ Actualizar</button>
     </div>
   </div>
-
   <div class="content">
 
     <!-- OVERVIEW -->
@@ -168,11 +167,9 @@
         <div class="kpi-card purple"><div class="kpi-label">Operaciones Activas</div><div class="kpi-value" id="ov-ops">0</div><div class="kpi-sub">En todo el sistema</div></div>
       </div>
       <div class="table-card">
-        <div class="table-header"><div><div class="table-title">Resumen por Cliente</div><div class="table-sub">Vista consolidada de todos los clientes</div></div></div>
-        <table>
-          <thead><tr><th>Empresa</th><th>CUIT</th><th>Email</th><th>Deuda Total</th><th>Ops. Activas</th><th>TNA Prom.</th><th>Próx. Vto.</th><th>Registrado</th><th></th></tr></thead>
-          <tbody id="tabla-overview"><tr><td colspan="9"><div class="empty"><div class="empty-icon">⬡</div><div class="empty-text">Cargando clientes...</div></div></td></tr></tbody>
-        </table>
+        <div class="table-header"><div><div class="table-title">Resumen por Cliente</div><div class="table-sub">Vista consolidada</div></div></div>
+        <table><thead><tr><th>Empresa</th><th>CUIT</th><th>Email</th><th>Deuda Total</th><th>Ops.</th><th>TNA Prom.</th><th>Próx. Vto.</th><th></th></tr></thead>
+        <tbody id="tabla-overview"><tr><td colspan="8"><div class="empty"><div class="empty-icon">⬡</div><div class="empty-text">Cargando...</div></div></td></tr></tbody></table>
       </div>
     </div>
 
@@ -180,21 +177,34 @@
     <div class="panel" id="panel-clientes">
       <div class="table-card">
         <div class="table-header">
-          <div><div class="table-title">Gestión de Clientes</div><div class="table-sub">Accedé a los datos de cada empresa</div></div>
-          <button class="btn btn-primary btn-sm" onclick="openNuevoCliente()">+ Crear Cliente</button>
+          <div><div class="table-title">Gestión de Clientes</div><div class="table-sub">Administrá las cuentas</div></div>
+          <button class="btn btn-primary btn-sm" onclick="openModal('nuevo-cliente')">+ Crear Cliente</button>
         </div>
-        <table>
-          <thead><tr><th>Empresa</th><th>CUIT</th><th>Email</th><th>Registrado</th><th>Estado</th><th></th></tr></thead>
-          <tbody id="tabla-clientes"><tr><td colspan="6"><div class="empty"><div class="empty-icon">⬡</div><div class="empty-text">Sin clientes</div></div></td></tr></tbody>
-        </table>
+        <table><thead><tr><th>Empresa</th><th>CUIT</th><th>Email</th><th>Registrado</th><th>Estado</th><th></th></tr></thead>
+        <tbody id="tabla-clientes"><tr><td colspan="6"><div class="empty"><div class="empty-icon">⬡</div><div class="empty-text">Sin clientes</div></div></td></tr></tbody></table>
       </div>
     </div>
 
-    <!-- TNA GLOBAL -->
+    <!-- RELEVAMIENTO -->
+    <div class="panel" id="panel-relevamiento">
+      <div class="info-bar">◎ Seleccioná un cliente para cargarle entidades, operaciones y notas de relevamiento.</div>
+      <div class="table-card" style="overflow:visible;">
+        <div class="relevamiento-wrap">
+          <div class="cliente-list" id="rel-cliente-list">
+            <div class="cli-header">Clientes</div>
+          </div>
+          <div class="relevamiento-detail" id="rel-detail">
+            <div class="rel-empty"><div style="font-size:2rem;opacity:.2;">◎</div><div>Seleccioná un cliente de la lista</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TNA -->
     <div class="panel" id="panel-tna">
       <div class="tna-card">
         <div class="tna-card-title">TNA de Referencia Global</div>
-        <div class="tna-card-sub">Este valor se actualiza para TODOS los clientes automáticamente. Usalo como benchmark de mercado.</div>
+        <div class="tna-card-sub">Este valor se actualiza para TODOS los clientes automáticamente.</div>
         <div class="tna-big" id="tna-display">— %</div>
         <div class="tna-input-row">
           <input type="range" class="tna-slider" id="tna-slider" min="0" max="200" step="0.5" oninput="updateTNADisplay()">
@@ -205,7 +215,7 @@
         <div class="last-update" id="last-update">Última actualización: —</div>
       </div>
       <div class="table-card">
-        <div class="table-header"><div><div class="table-title">Historial de Cambios TNA</div><div class="table-sub">Últimas actualizaciones publicadas</div></div></div>
+        <div class="table-header"><div><div class="table-title">Historial de Cambios TNA</div></div></div>
         <table><thead><tr><th>Fecha</th><th>TNA</th><th>Admin</th></tr></thead>
         <tbody id="tabla-historial-tna"></tbody></table>
       </div>
@@ -215,40 +225,17 @@
 </main>
 </div>
 
-<!-- MODAL DETALLE CLIENTE -->
-<div class="modal-overlay" id="modal-cliente">
-  <div class="modal">
-    <button class="modal-close" onclick="closeModal('cliente')">✕</button>
-    <div class="modal-title" id="modal-cliente-title">Detalle Cliente</div>
-    <div class="mini-kpi" id="cliente-kpis"></div>
-
-    <div style="margin-bottom:16px;">
-      <div style="font-family:var(--mono);font-size:.62rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Operaciones Activas</div>
-      <table style="font-size:.75rem;"><thead><tr><th>Entidad</th><th>Tipo</th><th>Monto</th><th>TNA</th><th>Saldo Rest.</th></tr></thead>
-      <tbody id="modal-ops"></tbody></table>
-    </div>
-
-    <div style="margin-bottom:16px;">
-      <div style="font-family:var(--mono);font-size:.62rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Notas de Relevamiento</div>
-      <div id="notas-list" style="margin-bottom:10px;"></div>
-      <div class="nota-row">
-        <textarea id="nueva-nota" rows="3" placeholder="Agregá una nota de relevamiento..."></textarea>
-      </div>
-      <button class="btn btn-primary btn-sm" onclick="guardarNota()">+ Agregar nota</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL NUEVO CLIENTE -->
+<!-- MODALES -->
 <div class="modal-overlay" id="modal-nuevo-cliente">
-  <div class="modal" style="width:480px;">
+  <div class="modal">
     <button class="modal-close" onclick="closeModal('nuevo-cliente')">✕</button>
     <div class="modal-title">➕ Crear Cliente</div>
-    <div style="font-size:.78rem;color:var(--text3);margin-bottom:16px;">Creá la cuenta de un cliente para que pueda acceder al sistema.</div>
-    <div class="form-group"><label>Nombre de la Empresa</label><input type="text" id="nc-nombre" placeholder="Acme S.A."></div>
-    <div class="form-group"><label>CUIT</label><input type="text" id="nc-cuit" placeholder="30-12345678-9"></div>
-    <div class="form-group"><label>Email</label><input type="email" id="nc-email" placeholder="contacto@empresa.com"></div>
-    <div class="form-group"><label>Contraseña inicial</label><input type="text" id="nc-pass" placeholder="Mínimo 6 caracteres"></div>
+    <div class="form-grid">
+      <div class="form-group full"><label>Nombre de la Empresa</label><input type="text" id="nc-nombre" placeholder="Acme S.A."></div>
+      <div class="form-group"><label>CUIT</label><input type="text" id="nc-cuit" placeholder="30-12345678-9"></div>
+      <div class="form-group"><label>Email</label><input type="email" id="nc-email" placeholder="contacto@empresa.com"></div>
+      <div class="form-group full"><label>Contraseña inicial</label><input type="text" id="nc-pass" placeholder="Mínimo 6 caracteres"></div>
+    </div>
     <div id="nc-error" style="color:var(--red);font-size:.75rem;margin-top:8px;display:none;"></div>
     <div class="form-actions">
       <button class="btn btn-ghost" onclick="closeModal('nuevo-cliente')">Cancelar</button>
@@ -257,96 +244,126 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="modal-ent">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('ent')">✕</button>
+    <div class="modal-title" id="modal-ent-title">➕ Nueva Entidad</div>
+    <div class="form-grid">
+      <div class="form-group full"><label>Nombre Entidad</label><input type="text" id="ent-nombre" placeholder="Banco Galicia, SGR Garantizar…"></div>
+      <div class="form-group"><label>Tipo</label><select id="ent-tipo"><option>Banco</option><option>SGR</option><option>ALyC</option><option>Mercado</option><option>Otro</option></select></div>
+      <div class="form-group"><label>Tipo de Línea</label><select id="ent-tipo-linea"><option>Rotativa</option><option>Puntual</option></select></div>
+      <div class="form-group"><label>Línea Total ($)</label><input type="number" id="ent-linea" placeholder="10000000"></div>
+      <div class="form-group"><label>Vencimiento Línea</label><input type="date" id="ent-vto"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeModal('ent')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarEntidad()">Guardar Entidad</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-op">
+  <div class="modal modal-wide">
+    <button class="modal-close" onclick="closeModal('op')">✕</button>
+    <div class="modal-title" id="modal-op-title">➕ Nueva Operación</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Entidad</label><select id="op-entidad"><option value="">— seleccioná —</option></select></div>
+      <div class="form-group"><label>Tipo de Operación</label><select id="op-tipo"><option>Préstamo</option><option>Leasing</option><option>Descubierto</option><option>Cheque descontado</option><option>Factura descontada</option><option>Obligación Negociable</option><option>Otro</option></select></div>
+      <div class="form-group"><label>Monto Original ($)</label><input type="number" id="op-monto" oninput="previewCuotas()"></div>
+      <div class="form-group"><label>Fecha Desembolso</label><input type="date" id="op-desembolso"></div>
+      <div class="form-group"><label>Plazo (meses)</label><input type="number" id="op-plazo" min="1" oninput="previewCuotas()"></div>
+      <div class="form-group"><label>Fecha Primera Cuota</label><input type="date" id="op-primera-cuota"></div>
+      <div class="form-group"><label>Frecuencia</label><select id="op-frecuencia" onchange="previewCuotas()"><option value="1">Mensual</option><option value="2">Bimestral</option><option value="3">Trimestral</option><option value="6">Semestral</option></select></div>
+      <div class="form-group"><label>TNA (%)</label><input type="number" id="op-tna" step="0.01" oninput="previewCuotas()"></div>
+      <div class="form-group"><label>Tipo de Tasa</label><select id="op-tipo-tasa"><option>Fija</option><option>Variable</option><option>TAMAR + spread</option><option>BADLAR + spread</option></select></div>
+      <div class="form-group full"><label>Garantía</label><input type="text" id="op-garantia" placeholder="Sin garantía, SGR, hipoteca…"></div>
+    </div>
+    <div id="preview-wrap" style="margin-top:16px;display:none;">
+      <div style="font-family:var(--mono);font-size:.62rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Preview · Amortización Francesa</div>
+      <table style="font-size:.72rem;"><thead><tr><th>#</th><th>Fecha</th><th>Capital</th><th>Interés</th><th>Total</th><th>Saldo</th></tr></thead>
+      <tbody id="preview-cuotas"></tbody></table>
+      <div id="preview-more" style="text-align:center;padding:8px;font-size:.7rem;color:var(--text3);"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeModal('op')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarOperacion()">Guardar y Generar Cuotas</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
-let allClientes = [];
-let clienteActivo = null;
-let tnaActual = 60;
+let allClientes=[], clienteActivo=null, tnaActual=60;
 
-// AUTH CHECK
-auth.onAuthStateChanged(async user => {
-  if(!user){ window.location.href='index.html'; return; }
-  if(user.email !== ADMIN_EMAIL){ window.location.href='app.html'; return; }
-  document.getElementById('admin-email').textContent = user.email;
-  await loadTNA();
-  await loadClientes();
+auth.onAuthStateChanged(async user=>{
+  if(!user){window.location.href='index.html';return;}
+  if(user.email!==ADMIN_EMAIL){window.location.href='app.html';return;}
+  document.getElementById('admin-email').textContent=user.email;
+  await loadTNA(); await loadClientes();
   document.getElementById('loading-screen').style.display='none';
   document.getElementById('app').style.display='flex';
 });
 
-function doLogout(){ auth.signOut().then(()=>window.location.href='index.html'); }
+function doLogout(){auth.signOut().then(()=>window.location.href='index.html');}
 
-// NAV
-const titles={overview:'Overview General',clientes:'Gestión de Clientes',tna:'TNA de Referencia Global'};
+const titles={overview:'Overview General',clientes:'Gestión de Clientes',relevamiento:'Relevamiento por Cliente',tna:'TNA de Referencia Global'};
 function showTab(name,el){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('panel-'+name).classList.add('active');
   if(el)el.classList.add('active');
   document.getElementById('page-title').textContent=titles[name]||name;
+  if(name==='tna')loadHistorialTNA();
 }
 
-function closeModal(t){ document.getElementById('modal-'+t).classList.remove('open'); }
+function openModal(t){document.getElementById('modal-'+t).classList.add('open');}
+function closeModal(t){
+  document.getElementById('modal-'+t).classList.remove('open');
+  document.querySelectorAll('#modal-'+t+' input,#modal-'+t+' select').forEach(i=>{if(i.tagName==='SELECT')i.selectedIndex=0;else i.value='';});
+}
 document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');}));
 
-// UTILS
 function fmt(n){if(!n||isNaN(n))return'$0';return'$'+Math.round(n).toLocaleString('es-AR');}
 function fmtN(n,d=2){if(n===undefined||isNaN(n))return'—';return n.toFixed(d).replace('.',',');}
 function fmtDate(d){if(!d)return'—';try{return new Date(d+'T00:00:00').toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});}catch{return d;}}
-function fmtTs(ts){if(!ts)return'—';const d=ts.toDate?ts.toDate():new Date(ts);return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});}
+function fmtTs(ts){if(!ts)return'—';try{const d=ts.toDate?ts.toDate():new Date(ts);return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});}catch{return'—';}}
 function today(){return new Date().toISOString().slice(0,10);}
 function daysBetween(a,b){return Math.round((new Date(b)-new Date(a))/(1000*60*60*24));}
+function calcEstado(fecha){const h=today();if(fecha<h)return'vencida';if(daysBetween(h,fecha)<=7)return'urgente';return'pendiente';}
+function colCli(id,sub){return db.collection('empresas').doc(id).collection(sub);}
 function toast(msg,type='green'){const t=document.getElementById('toast');t.innerHTML=`<span style="color:var(--${type})">●</span> ${msg}`;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
 
-// TNA GLOBAL
+// TNA
 async function loadTNA(){
-  try{
-    const doc=await db.collection('config').doc('global').get();
-    if(doc.exists){tnaActual=doc.data().tnaRef||60;renderTNAPanel(doc.data());}
-    else{tnaActual=60;renderTNAPanel({tnaRef:60});}
-  }catch(e){tnaActual=60;renderTNAPanel({tnaRef:60});}
+  try{const doc=await db.collection('config').doc('global').get();if(doc.exists){tnaActual=doc.data().tnaRef||60;renderTNAPanel(doc.data());}else renderTNAPanel({tnaRef:60});}catch(e){renderTNAPanel({tnaRef:60});}
 }
-
 function renderTNAPanel(data){
   const tna=data.tnaRef||60;
   document.getElementById('tna-display').textContent=tna.toFixed(1)+' %';
   document.getElementById('tna-slider').value=tna;
   document.getElementById('tna-input').value=tna;
   document.getElementById('ov-tna').textContent=tna.toFixed(1)+'%';
-  if(data.updatedAt){document.getElementById('last-update').textContent='Última actualización: '+fmtTs(data.updatedAt)+(data.updatedBy?' · '+data.updatedBy:'');}
+  if(data.updatedAt)document.getElementById('last-update').textContent='Última actualización: '+fmtTs(data.updatedAt);
 }
-
-function updateTNADisplay(){
-  const v=parseFloat(document.getElementById('tna-slider').value)||0;
-  document.getElementById('tna-input').value=v;
-  document.getElementById('tna-display').textContent=v.toFixed(1)+' %';
-}
-function updateTNAFromInput(){
-  const v=parseFloat(document.getElementById('tna-input').value)||0;
-  document.getElementById('tna-slider').value=v;
-  document.getElementById('tna-display').textContent=v.toFixed(1)+' %';
-}
-
+function updateTNADisplay(){const v=parseFloat(document.getElementById('tna-slider').value)||0;document.getElementById('tna-input').value=v;document.getElementById('tna-display').textContent=v.toFixed(1)+' %';}
+function updateTNAFromInput(){const v=parseFloat(document.getElementById('tna-input').value)||0;document.getElementById('tna-slider').value=v;document.getElementById('tna-display').textContent=v.toFixed(1)+' %';}
 async function guardarTNA(){
   const v=parseFloat(document.getElementById('tna-input').value);
   if(isNaN(v)||v<0){toast('TNA inválida','red');return;}
   const data={tnaRef:v,updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:auth.currentUser?.email};
   await db.collection('config').doc('global').set(data,{merge:true});
-  // Guardar historial
   await db.collection('config').doc('global').collection('historial').add({...data,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
-  tnaActual=v;
-  document.getElementById('tna-display').textContent=v.toFixed(1)+' %';
-  document.getElementById('ov-tna').textContent=v.toFixed(1)+'%';
-  toast(`TNA actualizada a ${v.toFixed(1)}% para todos los clientes`);
-  loadHistorialTNA();
+  tnaActual=v;document.getElementById('tna-display').textContent=v.toFixed(1)+' %';document.getElementById('ov-tna').textContent=v.toFixed(1)+'%';
+  toast(`TNA actualizada a ${v.toFixed(1)}%`);loadHistorialTNA();
 }
-
 async function loadHistorialTNA(){
-  const snap=await db.collection('config').doc('global').collection('historial').orderBy('updatedAt','desc').limit(20).get();
-  const tbody=document.getElementById('tabla-historial-tna');
-  if(snap.empty){tbody.innerHTML='<tr><td colspan="3" style="text-align:center;color:var(--text3);padding:20px;">Sin historial</td></tr>';return;}
-  tbody.innerHTML=snap.docs.map(d=>{const dd=d.data();return`<tr><td class="td-mono">${fmtTs(dd.updatedAt)}</td><td class="td-mono" style="color:var(--yellow)">${(dd.tnaRef||0).toFixed(1)}%</td><td style="font-size:.72rem;color:var(--text3)">${dd.updatedBy||'—'}</td></tr>`;}).join('');
+  try{
+    const snap=await db.collection('config').doc('global').collection('historial').orderBy('updatedAt','desc').limit(20).get();
+    const tbody=document.getElementById('tabla-historial-tna');
+    if(snap.empty){tbody.innerHTML='<tr><td colspan="3" style="text-align:center;color:var(--text3);padding:20px;">Sin historial</td></tr>';return;}
+    tbody.innerHTML=snap.docs.map(d=>{const dd=d.data();return`<tr><td class="td-mono">${fmtTs(dd.updatedAt)}</td><td class="td-mono" style="color:var(--yellow)">${(dd.tnaRef||0).toFixed(1)}%</td><td style="font-size:.72rem;color:var(--text3)">${dd.updatedBy||'—'}</td></tr>`;}).join('');
+  }catch(e){}
 }
 
 // CLIENTES
@@ -355,133 +372,277 @@ async function loadClientes(){
   allClientes=[];
   for(const doc of snap.docs){
     const emp={id:doc.id,...doc.data()};
-    // Cargar operaciones y cuotas para stats
-    const [opSnap,cuotaSnap]=await Promise.all([
-      db.collection('empresas').doc(doc.id).collection('operaciones').get(),
-      db.collection('empresas').doc(doc.id).collection('cuotas').get(),
-    ]);
-    emp.operaciones=opSnap.docs.map(d=>({id:d.id,...d.data()}));
-    emp.cuotas=cuotaSnap.docs.map(d=>({id:d.id,...d.data()}));
+    const [opS,cuS,entS]=await Promise.all([colCli(doc.id,'operaciones').get(),colCli(doc.id,'cuotas').get(),colCli(doc.id,'entidades').get()]);
+    emp.operaciones=opS.docs.map(d=>({id:d.id,...d.data()}));
+    emp.cuotas=cuS.docs.map(d=>({id:d.id,...d.data()}));
+    emp.entidades=entS.docs.map(d=>({id:d.id,...d.data()}));
     allClientes.push(emp);
   }
-  renderOverview();
-  renderClientes();
-  loadHistorialTNA();
+  renderOverview();renderClientes();renderRelevamientoList();
+  if(clienteActivo){clienteActivo=allClientes.find(e=>e.id===clienteActivo.id)||null;if(clienteActivo)renderDetalleCliente();}
 }
 
-function getClienteStats(emp){
-  const cuotasPend=emp.cuotas.filter(c=>c.estado!=='pagada');
-  const deuda=cuotasPend.reduce((s,c)=>s+(c.capital||0),0);
+function getStats(emp){
+  const pend=emp.cuotas.filter(c=>c.estado!=='pagada');
+  const deuda=pend.reduce((s,c)=>s+(c.capital||0),0);
   const opsAct=emp.operaciones.filter(op=>emp.cuotas.some(c=>c.opId===op.id&&c.estado!=='pagada'));
-  let tnaP=0,totS=0;
-  opsAct.forEach(op=>{const s=emp.cuotas.filter(c=>c.opId===op.id&&c.estado!=='pagada').reduce((a,c)=>a+(c.capital||0),0);tnaP+=op.tna*s;totS+=s;});
+  let tnaP=0,totS=0;opsAct.forEach(op=>{const s=emp.cuotas.filter(c=>c.opId===op.id&&c.estado!=='pagada').reduce((a,c)=>a+(c.capital||0),0);tnaP+=op.tna*s;totS+=s;});
   const tna=totS>0?tnaP/totS:0;
   const prox=[...emp.cuotas].filter(c=>c.estado!=='pagada').sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||''))[0];
-  return{deuda,opsAct:opsAct.length,tna,proxFecha:prox?.fecha,proxMonto:prox?.total};
+  return{deuda,opsAct:opsAct.length,tna,proxFecha:prox?.fecha};
 }
 
 function renderOverview(){
-  const stats=allClientes.map(e=>getClienteStats(e));
+  const stats=allClientes.map(e=>getStats(e));
   document.getElementById('ov-clientes').textContent=allClientes.length;
   document.getElementById('ov-deuda').textContent=fmt(stats.reduce((s,st)=>s+st.deuda,0));
   document.getElementById('ov-ops').textContent=stats.reduce((s,st)=>s+st.opsAct,0);
   const tbody=document.getElementById('tabla-overview');
-  if(!allClientes.length){tbody.innerHTML='<tr><td colspan="9"><div class="empty"><div class="empty-icon">⬡</div><div class="empty-text">Sin clientes registrados</div></div></td></tr>';return;}
-  tbody.innerHTML=allClientes.map((emp,i)=>{
-    const st=stats[i];
-    return`<tr>
-      <td class="td-bold">${emp.nombre||'—'}</td>
-      <td class="td-mono" style="font-size:.7rem;color:var(--text3)">${emp.cuit||'—'}</td>
-      <td style="font-size:.72rem;color:var(--text2)">${emp.email||'—'}</td>
-      <td class="td-mono" style="color:var(--accent)">${fmt(st.deuda)}</td>
-      <td class="td-mono">${st.opsAct}</td>
-      <td class="td-mono" style="color:var(--yellow)">${st.tna>0?fmtN(st.tna,1)+'%':'—'}</td>
-      <td class="td-mono" style="font-size:.7rem">${st.proxFecha?fmtDate(st.proxFecha):'—'}</td>
-      <td class="td-mono" style="font-size:.7rem;color:var(--text3)">${fmtTs(emp.creado)}</td>
-      <td><button class="btn btn-ghost btn-sm" onclick="abrirCliente('${emp.id}')">Ver detalle →</button></td>
-    </tr>`;
-  }).join('');
+  if(!allClientes.length){tbody.innerHTML='<tr><td colspan="8"><div class="empty"><div class="empty-icon">⬡</div><div class="empty-text">Sin clientes</div></div></td></tr>';return;}
+  tbody.innerHTML=allClientes.map((emp,i)=>{const st=stats[i];return`<tr><td class="td-bold">${emp.nombre||'—'}</td><td class="td-mono" style="font-size:.7rem;color:var(--text3)">${emp.cuit||'—'}</td><td style="font-size:.72rem">${emp.email||'—'}</td><td class="td-mono" style="color:var(--accent)">${fmt(st.deuda)}</td><td class="td-mono">${st.opsAct}</td><td class="td-mono" style="color:var(--yellow)">${st.tna>0?fmtN(st.tna,1)+'%':'—'}</td><td class="td-mono" style="font-size:.7rem">${st.proxFecha?fmtDate(st.proxFecha):'—'}</td><td><button class="btn btn-ghost btn-sm" onclick="irARelevamiento('${emp.id}')">Cargar datos →</button></td></tr>`;}).join('');
 }
 
 function renderClientes(){
   const tbody=document.getElementById('tabla-clientes');
   if(!allClientes.length){tbody.innerHTML='<tr><td colspan="6"><div class="empty"><div class="empty-icon">⬡</div><div class="empty-text">Sin clientes</div></div></td></tr>';return;}
-  tbody.innerHTML=allClientes.map(emp=>`<tr>
-    <td class="td-bold">${emp.nombre||'—'}</td>
-    <td class="td-mono" style="font-size:.7rem;color:var(--text3)">${emp.cuit||'—'}</td>
-    <td style="font-size:.72rem">${emp.email||'—'}</td>
-    <td class="td-mono" style="font-size:.7rem;color:var(--text3)">${fmtTs(emp.creado)}</td>
-    <td><span class="badge badge-green">● Activo</span></td>
-    <td style="display:flex;gap:6px;">
-      <button class="btn btn-ghost btn-sm" onclick="abrirCliente('${emp.id}')">Ver →</button>
-    </td>
-  </tr>`).join('');
+  tbody.innerHTML=allClientes.map(emp=>`<tr><td class="td-bold">${emp.nombre||'—'}</td><td class="td-mono" style="font-size:.7rem;color:var(--text3)">${emp.cuit||'—'}</td><td style="font-size:.72rem">${emp.email||'—'}</td><td class="td-mono" style="font-size:.7rem;color:var(--text3)">${fmtTs(emp.creado)}</td><td><span class="badge badge-green">● Activo</span></td><td><button class="btn btn-ghost btn-sm" onclick="irARelevamiento('${emp.id}')">Cargar datos →</button></td></tr>`).join('');
 }
 
-// DETALLE CLIENTE
-async function abrirCliente(id){
-  const emp=allClientes.find(e=>e.id===id);
-  if(!emp)return;
-  clienteActivo=emp;
-  const st=getClienteStats(emp);
-  document.getElementById('modal-cliente-title').textContent=emp.nombre||'Cliente';
-  document.getElementById('cliente-kpis').innerHTML=`
-    <div class="mini-kpi-item"><div class="mini-kpi-label">Deuda Total</div><div class="mini-kpi-value">${fmt(st.deuda)}</div></div>
-    <div class="mini-kpi-item"><div class="mini-kpi-label">Ops. Activas</div><div class="mini-kpi-value">${st.opsAct}</div></div>
-    <div class="mini-kpi-item"><div class="mini-kpi-label">TNA Promedio</div><div class="mini-kpi-value" style="color:var(--yellow)">${st.tna>0?fmtN(st.tna,1)+'%':'—'}</div></div>`;
-  // Ops
-  const opsAct=emp.operaciones.filter(op=>emp.cuotas.some(c=>c.opId===op.id&&c.estado!=='pagada'));
-  document.getElementById('modal-ops').innerHTML=!opsAct.length
-    ?'<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:16px;">Sin operaciones activas</td></tr>'
-    :opsAct.map(op=>{const saldo=emp.cuotas.filter(c=>c.opId===op.id&&c.estado!=='pagada').reduce((s,c)=>s+(c.capital||0),0);return`<tr><td class="td-bold">${op.entidadNombre||'—'}</td><td>${op.tipo||'—'}</td><td class="td-mono">${fmt(op.monto)}</td><td class="td-mono" style="color:var(--yellow)">${fmtN(op.tna,2)}%</td><td class="td-mono" style="color:var(--accent)">${fmt(saldo)}</td></tr>`;}).join('');
-  // Notas
-  await loadNotas(id);
-  document.getElementById('modal-cliente').classList.add('open');
+// RELEVAMIENTO
+function renderRelevamientoList(){
+  const list=document.getElementById('rel-cliente-list');
+  list.innerHTML='<div class="cli-header">Clientes</div>';
+  allClientes.forEach(emp=>{
+    const item=document.createElement('div');
+    item.className='cliente-list-item'+(clienteActivo?.id===emp.id?' active':'');
+    item.innerHTML=`<div class="cli-nombre">${emp.nombre||'—'}</div><div class="cli-sub">${emp.cuit||emp.email||'—'}</div>`;
+    item.onclick=()=>seleccionarCliente(emp.id);
+    list.appendChild(item);
+  });
 }
 
-async function loadNotas(clienteId){
-  const snap=await db.collection('empresas').doc(clienteId).collection('notas').orderBy('fecha','desc').limit(20).get();
-  const div=document.getElementById('notas-list');
-  if(snap.empty){div.innerHTML='<div style="font-size:.75rem;color:var(--text3);margin-bottom:8px;">Sin notas todavía.</div>';return;}
-  div.innerHTML=snap.docs.map(d=>{const dd=d.data();return`<div class="nota-item"><div class="nota-fecha">${fmtTs(dd.fecha)} · ${dd.autor||'admin'}</div><div class="nota-texto">${dd.texto}</div></div>`;}).join('');
+function irARelevamiento(id){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('nav-relevamiento').classList.add('active');
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-relevamiento').classList.add('active');
+  document.getElementById('page-title').textContent='Relevamiento por Cliente';
+  seleccionarCliente(id);
+}
+
+function seleccionarCliente(id){
+  clienteActivo=allClientes.find(e=>e.id===id)||null;
+  if(!clienteActivo)return;
+  document.querySelectorAll('.cliente-list-item').forEach(i=>i.classList.remove('active'));
+  document.querySelectorAll('.cliente-list-item').forEach(i=>{if(i.querySelector('.cli-nombre')?.textContent===(clienteActivo.nombre||'—'))i.classList.add('active');});
+  renderDetalleCliente();
+}
+
+function renderDetalleCliente(){
+  const emp=clienteActivo, st=getStats(emp);
+  document.getElementById('rel-detail').innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div><div style="font-family:var(--display);font-size:1rem;font-weight:700;">${emp.nombre}</div>
+      <div style="font-size:.72rem;color:var(--text3);font-family:var(--mono);">${emp.cuit||''} · ${emp.email||''}</div></div>
+    </div>
+    <div class="mini-kpi">
+      <div class="mini-kpi-item"><div class="mini-kpi-label">Deuda Total</div><div class="mini-kpi-value">${fmt(st.deuda)}</div></div>
+      <div class="mini-kpi-item"><div class="mini-kpi-label">Ops. Activas</div><div class="mini-kpi-value">${st.opsAct}</div></div>
+      <div class="mini-kpi-item"><div class="mini-kpi-label">TNA Promedio</div><div class="mini-kpi-value" style="color:var(--yellow)">${st.tna>0?fmtN(st.tna,1)+'%':'—'}</div></div>
+    </div>
+    <div class="inner-tabs">
+      <div class="inner-tab active" onclick="showInnerTab('entidades',this)">⬡ Entidades (${emp.entidades.length})</div>
+      <div class="inner-tab" onclick="showInnerTab('operaciones',this)">◎ Operaciones (${emp.operaciones.length})</div>
+      <div class="inner-tab" onclick="showInnerTab('notas',this)">✎ Notas</div>
+    </div>
+    <div class="inner-panel active" id="inner-entidades">${htmlEntidades()}</div>
+    <div class="inner-panel" id="inner-operaciones">${htmlOperaciones()}</div>
+    <div class="inner-panel" id="inner-notas">${htmlNotas()}</div>`;
+}
+
+function showInnerTab(name,el){
+  document.querySelectorAll('.inner-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.inner-panel').forEach(p=>p.classList.remove('active'));
+  if(el)el.classList.add('active');
+  document.getElementById('inner-'+name)?.classList.add('active');
+  if(name==='notas')cargarNotas();
+}
+
+function htmlEntidades(){
+  const ents=clienteActivo?.entidades||[];
+  let html=`<div style="display:flex;justify-content:flex-end;margin-bottom:12px;"><button class="btn btn-primary btn-sm" onclick="openModalEnt()">+ Nueva Entidad</button></div>`;
+  if(!ents.length) return html+'<div class="empty"><div class="empty-icon">⬡</div><div class="empty-text">Sin entidades. Cargá la primera.</div></div>';
+  html+=`<table><thead><tr><th>Entidad</th><th>Tipo</th><th>Línea Total</th><th>Utilizada</th><th>Disponible</th><th>Vto.</th><th>Uso</th><th></th></tr></thead><tbody>`;
+  ents.forEach(e=>{
+    const disp=Math.max(0,(e.lineaTotal||0)-(e.lineaUtilizada||0));
+    const pct=e.lineaTotal>0?Math.round((e.lineaUtilizada||0)/e.lineaTotal*100):0;
+    const color=pct>80?'var(--red)':pct>50?'var(--yellow)':'var(--green)';
+    html+=`<tr><td class="td-bold">${e.nombre}</td><td><span class="badge badge-blue">${e.tipo}</span></td><td class="td-mono">${fmt(e.lineaTotal)}</td><td class="td-mono" style="color:var(--red)">${fmt(e.lineaUtilizada||0)}</td><td class="td-mono" style="color:var(--green)">${fmt(disp)}</td><td class="td-mono" style="font-size:.7rem">${fmtDate(e.vtoLinea)}</td><td><div class="progress-wrap"><div class="progress-bg"><div class="progress-fill" style="width:${pct}%;background:${color}"></div></div><div class="pct-label">${pct}%</div></div></td><td><button class="btn btn-danger btn-sm" onclick="eliminarEntidadCliente('${e.id}')">✕</button></td></tr>`;
+  });
+  return html+'</tbody></table>';
+}
+
+function htmlOperaciones(){
+  const ops=clienteActivo?.operaciones||[], cuotas=clienteActivo?.cuotas||[];
+  let html=`<div style="display:flex;justify-content:flex-end;margin-bottom:12px;"><button class="btn btn-primary btn-sm" onclick="openModalOp()">+ Nueva Operación</button></div>`;
+  if(!ops.length) return html+'<div class="empty"><div class="empty-icon">◎</div><div class="empty-text">Sin operaciones. Cargá la primera.</div></div>';
+  html+=`<table><thead><tr><th>Entidad</th><th>Tipo</th><th>Monto</th><th>Saldo Rest.</th><th>TNA</th><th>Plazo</th><th>Tipo Tasa</th><th></th></tr></thead><tbody>`;
+  ops.forEach(op=>{
+    const saldo=cuotas.filter(c=>c.opId===op.id&&c.estado!=='pagada').reduce((s,c)=>s+(c.capital||0),0);
+    html+=`<tr><td class="td-bold">${op.entidadNombre}</td><td>${op.tipo}</td><td class="td-mono">${fmt(op.monto)}</td><td class="td-mono" style="color:var(--accent)">${fmt(saldo)}</td><td class="td-mono" style="color:var(--yellow)">${fmtN(op.tna,2)}%</td><td class="td-mono">${op.plazo}m</td><td style="font-size:.7rem">${op.tipoTasa}</td><td><button class="btn btn-danger btn-sm" onclick="eliminarOpCliente('${op.id}')">✕</button></td></tr>`;
+  });
+  return html+'</tbody></table>';
+}
+
+function htmlNotas(){
+  return`<div id="notas-contenido" style="margin-bottom:12px;"><div style="color:var(--text3);font-size:.78rem;">Cargando notas...</div></div>
+    <label style="margin-bottom:6px;">Nueva nota de relevamiento</label>
+    <textarea id="nueva-nota" rows="3" placeholder="Observación, dato relevante, condición negociada..." style="margin-top:6px;margin-bottom:8px;"></textarea>
+    <button class="btn btn-primary btn-sm" onclick="guardarNota()">+ Guardar nota</button>`;
+}
+
+async function cargarNotas(){
+  if(!clienteActivo)return;
+  try{
+    const snap=await colCli(clienteActivo.id,'notas').orderBy('fecha','desc').limit(20).get();
+    const div=document.getElementById('notas-contenido');if(!div)return;
+    if(snap.empty){div.innerHTML='<div style="font-size:.75rem;color:var(--text3);margin-bottom:8px;">Sin notas todavía.</div>';return;}
+    div.innerHTML=snap.docs.map(d=>{const dd=d.data();return`<div class="nota-item"><div class="nota-fecha">${fmtTs(dd.fecha)}</div><div class="nota-texto">${dd.texto}</div></div>`;}).join('');
+  }catch(e){}
 }
 
 async function guardarNota(){
   if(!clienteActivo)return;
-  const texto=document.getElementById('nueva-nota').value.trim();
+  const texto=document.getElementById('nueva-nota')?.value.trim();
   if(!texto){toast('Escribí una nota','red');return;}
-  await db.collection('empresas').doc(clienteActivo.id).collection('notas').add({texto,fecha:firebase.firestore.FieldValue.serverTimestamp(),autor:auth.currentUser?.email});
+  await colCli(clienteActivo.id,'notas').add({texto,fecha:firebase.firestore.FieldValue.serverTimestamp(),autor:auth.currentUser?.email});
   document.getElementById('nueva-nota').value='';
-  await loadNotas(clienteActivo.id);
-  toast('Nota guardada');
+  await cargarNotas();toast('Nota guardada');
+}
+
+// ENTIDAD
+function openModalEnt(){
+  document.getElementById('modal-ent-title').textContent=`➕ Nueva Entidad — ${clienteActivo?.nombre}`;
+  openModal('ent');
+}
+async function guardarEntidad(){
+  if(!clienteActivo){toast('Seleccioná un cliente','red');return;}
+  const nombre=document.getElementById('ent-nombre').value.trim();
+  if(!nombre){toast('Ingresá el nombre','red');return;}
+  const linea=parseFloat(document.getElementById('ent-linea').value)||0;
+  const ent={nombre,tipo:document.getElementById('ent-tipo').value,tipoLinea:document.getElementById('ent-tipo-linea').value,lineaTotal:linea,lineaUtilizada:0,vtoLinea:document.getElementById('ent-vto').value,creado:firebase.firestore.FieldValue.serverTimestamp()};
+  const ref=await colCli(clienteActivo.id,'entidades').add(ent);
+  clienteActivo.entidades.push({id:ref.id,...ent});
+  const idx=allClientes.findIndex(e=>e.id===clienteActivo.id);if(idx>=0)allClientes[idx]=clienteActivo;
+  closeModal('ent');renderDetalleCliente();toast(`Entidad "${nombre}" guardada`);
+}
+async function eliminarEntidadCliente(entId){
+  if(!confirm('¿Eliminar esta entidad?'))return;
+  await colCli(clienteActivo.id,'entidades').doc(entId).delete();
+  clienteActivo.entidades=clienteActivo.entidades.filter(e=>e.id!==entId);
+  renderDetalleCliente();toast('Entidad eliminada','yellow');
+}
+
+// OPERACION
+function openModalOp(){
+  if(!clienteActivo){toast('Seleccioná un cliente','red');return;}
+  if(!clienteActivo.entidades.length){toast('Cargá al menos una entidad primero','yellow');return;}
+  document.getElementById('modal-op-title').textContent=`➕ Nueva Operación — ${clienteActivo?.nombre}`;
+  const sel=document.getElementById('op-entidad');
+  sel.innerHTML='<option value="">— seleccioná —</option>';
+  clienteActivo.entidades.forEach(e=>sel.innerHTML+=`<option value="${e.id}">${e.nombre} (${e.tipo})</option>`);
+  document.getElementById('preview-wrap').style.display='none';
+  document.getElementById('op-desembolso').value=today();
+  const n=new Date();n.setMonth(n.getMonth()+1);document.getElementById('op-primera-cuota').value=n.toISOString().slice(0,10);
+  openModal('op');
+}
+
+function generarCuotas(op){
+  const cuotasOp=[],monto=parseFloat(op.monto),plazo=parseInt(op.plazo),frecuencia=parseInt(op.frecuencia||1);
+  const tna=parseFloat(op.tna)/100,periodos=Math.ceil(plazo/frecuencia),tpm=tna/(12/frecuencia);
+  let cf=tpm===0?monto/periodos:monto*tpm*Math.pow(1+tpm,periodos)/(Math.pow(1+tpm,periodos)-1);
+  let saldo=monto,fechaBase=new Date(op.primeraCuota+'T00:00:00');
+  for(let i=1;i<=periodos;i++){
+    const interes=saldo*tpm,capital=cf-interes;saldo=Math.max(0,saldo-capital);
+    cuotasOp.push({opId:op.id,numero:i,fecha:fechaBase.toISOString().slice(0,10),capital,interes,total:cf,saldo,estado:calcEstado(fechaBase.toISOString().slice(0,10))});
+    const nf=new Date(fechaBase);nf.setMonth(nf.getMonth()+frecuencia);fechaBase=nf;
+  }
+  return cuotasOp;
+}
+
+function previewCuotas(){
+  const monto=parseFloat(document.getElementById('op-monto').value);
+  const plazo=parseInt(document.getElementById('op-plazo').value);
+  const tna=parseFloat(document.getElementById('op-tna').value);
+  const pc=document.getElementById('op-primera-cuota').value;
+  const frec=parseInt(document.getElementById('op-frecuencia').value)||1;
+  if(!monto||!plazo||isNaN(tna)||!pc){document.getElementById('preview-wrap').style.display='none';return;}
+  const tmp=generarCuotas({id:'tmp',monto,plazo,tna,primeraCuota:pc,frecuencia:frec});
+  document.getElementById('preview-wrap').style.display='block';
+  document.getElementById('preview-cuotas').innerHTML=tmp.slice(0,5).map(c=>`<tr><td class="td-mono">${c.numero}</td><td class="td-mono">${fmtDate(c.fecha)}</td><td class="td-mono">${fmt(c.capital)}</td><td class="td-mono" style="color:var(--text3)">${fmt(c.interes)}</td><td class="td-mono td-bold">${fmt(c.total)}</td><td class="td-mono" style="color:var(--text3)">${fmt(c.saldo)}</td></tr>`).join('');
+  document.getElementById('preview-more').textContent=tmp.length>5?`+ ${tmp.length-5} cuotas más`:'';
+}
+
+async function guardarOperacion(){
+  if(!clienteActivo){toast('Seleccioná un cliente','red');return;}
+  const entId=document.getElementById('op-entidad').value;
+  const monto=parseFloat(document.getElementById('op-monto').value);
+  const plazo=parseInt(document.getElementById('op-plazo').value);
+  const tna=parseFloat(document.getElementById('op-tna').value);
+  const pc=document.getElementById('op-primera-cuota').value;
+  if(!entId){toast('Seleccioná una entidad','red');return;}
+  if(!monto||monto<=0){toast('Monto inválido','red');return;}
+  if(!plazo||plazo<=0){toast('Ingresá el plazo','red');return;}
+  if(isNaN(tna)){toast('Ingresá la TNA','red');return;}
+  if(!pc){toast('Ingresá fecha de primera cuota','red');return;}
+  const ent=clienteActivo.entidades.find(e=>e.id===entId);
+  const op={entidadId:entId,entidadNombre:ent?ent.nombre:'Desconocida',tipo:document.getElementById('op-tipo').value,monto,plazo,tna,desembolso:document.getElementById('op-desembolso').value,primeraCuota:pc,frecuencia:parseInt(document.getElementById('op-frecuencia').value)||1,tipoTasa:document.getElementById('op-tipo-tasa').value,garantia:document.getElementById('op-garantia').value||'Sin garantía',activa:true,creado:firebase.firestore.FieldValue.serverTimestamp()};
+  const opRef=await colCli(clienteActivo.id,'operaciones').add(op);
+  op.id=opRef.id;clienteActivo.operaciones.push(op);
+  if(ent){ent.lineaUtilizada=(ent.lineaUtilizada||0)+monto;await colCli(clienteActivo.id,'entidades').doc(entId).update({lineaUtilizada:ent.lineaUtilizada});}
+  const nuevas=generarCuotas(op);
+  const batch=db.batch();
+  nuevas.forEach(c=>{const r=colCli(clienteActivo.id,'cuotas').doc();c.id=r.id;batch.set(r,c);});
+  await batch.commit();
+  clienteActivo.cuotas=clienteActivo.cuotas.concat(nuevas);
+  const idx=allClientes.findIndex(e=>e.id===clienteActivo.id);if(idx>=0)allClientes[idx]=clienteActivo;
+  closeModal('op');renderDetalleCliente();
+  toast(`Operación guardada · ${nuevas.length} cuotas generadas`);
+}
+
+async function eliminarOpCliente(opId){
+  if(!confirm('¿Eliminar esta operación y sus cuotas?'))return;
+  const op=clienteActivo.operaciones.find(o=>o.id===opId);
+  if(op){const ent=clienteActivo.entidades.find(e=>e.id===op.entidadId);if(ent){ent.lineaUtilizada=Math.max(0,(ent.lineaUtilizada||0)-op.monto);await colCli(clienteActivo.id,'entidades').doc(ent.id).update({lineaUtilizada:ent.lineaUtilizada});}}
+  const batch=db.batch();
+  batch.delete(colCli(clienteActivo.id,'operaciones').doc(opId));
+  clienteActivo.cuotas.filter(c=>c.opId===opId).forEach(c=>batch.delete(colCli(clienteActivo.id,'cuotas').doc(c.id)));
+  await batch.commit();
+  clienteActivo.cuotas=clienteActivo.cuotas.filter(c=>c.opId!==opId);
+  clienteActivo.operaciones=clienteActivo.operaciones.filter(o=>o.id!==opId);
+  renderDetalleCliente();toast('Operación eliminada','yellow');
 }
 
 // NUEVO CLIENTE
-function openNuevoCliente(){ document.getElementById('modal-nuevo-cliente').classList.add('open'); }
-
 async function crearCliente(){
   const nombre=document.getElementById('nc-nombre').value.trim();
   const cuit=document.getElementById('nc-cuit').value.trim();
   const email=document.getElementById('nc-email').value.trim();
   const pass=document.getElementById('nc-pass').value;
   const errEl=document.getElementById('nc-error');
-  if(!nombre||!email||!pass){errEl.textContent='Completá todos los campos obligatorios';errEl.style.display='block';return;}
-  if(pass.length<6){errEl.textContent='La contraseña debe tener al menos 6 caracteres';errEl.style.display='block';return;}
+  if(!nombre||!email||!pass){errEl.textContent='Completá todos los campos';errEl.style.display='block';return;}
+  if(pass.length<6){errEl.textContent='Contraseña mínimo 6 caracteres';errEl.style.display='block';return;}
   try{
-    // Crear usuario usando Admin SDK no está disponible en el cliente, así que usamos una firebase function workaround
-    // Alternativa: crear cuenta secundaria y guardar datos
     const secondary=firebase.initializeApp(firebase.app().options,'secondary_'+Date.now());
     const secAuth=secondary.auth();
     const cred=await secAuth.createUserWithEmailAndPassword(email,pass);
-    await db.collection('empresas').doc(cred.user.uid).set({nombre,cuit,email,creado:firebase.firestore.FieldValue.serverTimestamp(),tnaRef:tnaActual});
+    await db.collection('empresas').doc(cred.user.uid).set({nombre,cuit,email,creado:firebase.firestore.FieldValue.serverTimestamp()});
     await secAuth.signOut();
-    closeModal('nuevo-cliente');
-    await loadClientes();
-    toast(`Cliente "${nombre}" creado correctamente`);
+    closeModal('nuevo-cliente');await loadClientes();
+    toast(`Cliente "${nombre}" creado`);
   }catch(e){
-    const msgs={'auth/email-already-in-use':'Ese email ya tiene una cuenta','auth/weak-password':'Contraseña muy débil','auth/invalid-email':'Email inválido'};
-    errEl.textContent=msgs[e.code]||'Error al crear cliente: '+e.message;
-    errEl.style.display='block';
+    const msgs={'auth/email-already-in-use':'Ese email ya tiene cuenta','auth/weak-password':'Contraseña muy débil','auth/invalid-email':'Email inválido'};
+    errEl.textContent=msgs[e.code]||'Error: '+e.message;errEl.style.display='block';
   }
 }
 </script>
