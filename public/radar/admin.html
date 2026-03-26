@@ -334,6 +334,56 @@
   </div>
 </div>
 
+<!-- MODAL EDITAR ENTIDAD -->
+<div class="modal-overlay" id="modal-edit-ent">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('edit-ent')">✕</button>
+    <div class="modal-title">✏️ Editar Entidad</div>
+    <input type="hidden" id="edit-ent-id">
+    <div class="form-grid">
+      <div class="form-group full"><label>Nombre Entidad</label><input type="text" id="edit-ent-nombre"></div>
+      <div class="form-group"><label>Tipo</label><select id="edit-ent-tipo"><option>Banco</option><option>SGR</option><option>ALyC</option><option>Mercado</option><option>Otro</option></select></div>
+      <div class="form-group"><label>Tipo de Línea</label><select id="edit-ent-tipo-linea"><option>Rotativa</option><option>Puntual</option></select></div>
+      <div class="form-group"><label>Línea Total ($)</label><input type="number" id="edit-ent-linea"></div>
+      <div class="form-group"><label>Vencimiento Línea</label><input type="date" id="edit-ent-vto"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeModal('edit-ent')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarEditEntidad()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR OPERACION -->
+<div class="modal-overlay" id="modal-edit-op">
+  <div class="modal modal-wide">
+    <button class="modal-close" onclick="closeModal('edit-op')">✕</button>
+    <div class="modal-title">✏️ Editar Operación</div>
+    <input type="hidden" id="edit-op-id">
+    <div class="form-grid">
+      <div class="form-group"><label>Entidad</label><select id="edit-op-entidad"></select></div>
+      <div class="form-group"><label>Tipo de Operación</label><select id="edit-op-tipo"><option>Préstamo</option><option>Leasing</option><option>Descubierto</option><option>Cheque descontado</option><option>Factura descontada</option><option>Obligación Negociable</option><option>Otro</option></select></div>
+      <div class="form-group"><label>Monto Original ($)</label><input type="number" id="edit-op-monto"></div>
+      <div class="form-group"><label>Fecha Desembolso</label><input type="date" id="edit-op-desembolso"></div>
+      <div class="form-group"><label>Plazo (meses)</label><input type="number" id="edit-op-plazo" min="1"></div>
+      <div class="form-group"><label>Fecha Primera Cuota</label><input type="date" id="edit-op-primera-cuota"></div>
+      <div class="form-group"><label>Frecuencia</label><select id="edit-op-frecuencia"><option value="1">Mensual</option><option value="2">Bimestral</option><option value="3">Trimestral</option><option value="6">Semestral</option></select></div>
+      <div class="form-group"><label>Tipo de Tasa</label><select id="edit-op-tipo-tasa" onchange="onEditTipoTasaChange()"><option value="fija">Fija</option><option value="variable">Variable</option><option value="tamar">TAMAR + spread</option><option value="badlar">BADLAR + spread</option></select></div>
+      <div class="form-group" id="edit-tna-field"><label>TNA (%)</label><input type="number" id="edit-op-tna" step="0.01"></div>
+      <div class="form-group" id="edit-spread-field" style="display:none;"><label>Spread fijo (%)</label><input type="number" id="edit-op-spread" step="0.01"><div style="font-size:.68rem;color:var(--text3);margin-top:4px;font-family:var(--mono);" id="edit-spread-label"></div></div>
+      <div class="form-group"><label>Sistema de Amortización</label><select id="edit-op-amortizacion"><option value="frances">Francés (cuota fija)</option><option value="aleman">Alemán (capital fijo)</option></select></div>
+      <div class="form-group full"><label>Garantía</label><input type="text" id="edit-op-garantia"></div>
+    </div>
+    <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:10px 14px;font-size:.75rem;color:var(--yellow);margin-top:12px;">
+      ⚠ Al guardar cambios, las cuotas pendientes se regenerarán automáticamente.
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeModal('edit-op')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarEditOperacion()">Guardar y regenerar cuotas</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -577,10 +627,12 @@ function renderDetalleCliente(){
     <div class="inner-tabs">
       <div class="inner-tab active" onclick="showInnerTab('entidades',this)">⬡ Entidades (${emp.entidades.length})</div>
       <div class="inner-tab" onclick="showInnerTab('operaciones',this)">◎ Operaciones (${emp.operaciones.length})</div>
+      <div class="inner-tab" onclick="showInnerTab('cuotas',this)">◷ Cuotas (${emp.cuotas.length})</div>
       <div class="inner-tab" onclick="showInnerTab('notas',this)">✎ Notas</div>
     </div>
     <div class="inner-panel active" id="inner-entidades">${htmlEntidades()}</div>
     <div class="inner-panel" id="inner-operaciones">${htmlOperaciones()}</div>
+    <div class="inner-panel" id="inner-cuotas">${htmlCuotas()}</div>
     <div class="inner-panel" id="inner-notas">${htmlNotas()}</div>`;
 }
 
@@ -590,6 +642,69 @@ function showInnerTab(name,el){
   if(el)el.classList.add('active');
   document.getElementById('inner-'+name)?.classList.add('active');
   if(name==='notas')cargarNotas();
+  if(name==='cuotas')renderCuotasPanel();
+}
+
+function htmlCuotas(){
+  return '<div id="cuotas-panel-content"><div style="color:var(--text3);font-size:.78rem;padding:20px 0;">Cargando cuotas...</div></div>';
+}
+
+function renderCuotasPanel(){
+  if(!clienteActivo)return;
+  const cuotas=clienteActivo.cuotas||[];
+  const ops=clienteActivo.operaciones||[];
+  const div=document.getElementById('cuotas-panel-content');
+  if(!div)return;
+  if(!cuotas.length){div.innerHTML='<div class="empty"><div class="empty-icon">◷</div><div class="empty-text">Sin cuotas generadas</div></div>';return;}
+
+  // Filtro por operacion
+  const opOptions=ops.map(op=>`<option value="${op.id}">${op.entidadNombre} – ${op.tipo} (${fmt(op.monto)})</option>`).join('');
+  const sorted=[...cuotas].sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const badges={pagada:'<span class="badge badge-green">✓ Pagada</span>',vencida:'<span class="badge badge-red">Vencida</span>',urgente:'<span class="badge" style="background:rgba(245,158,11,.15);color:var(--yellow);">⚡ Urgente</span>',pendiente:'<span class="badge badge-blue">Pendiente</span>'};
+
+  let html=`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+      <select id="filtro-cuota-op" onchange="renderCuotasPanel()" style="width:260px;font-size:.75rem;padding:5px 8px;">
+        <option value="">Todas las operaciones</option>${opOptions}
+      </select>
+      <select id="filtro-cuota-estado" onchange="renderCuotasPanel()" style="width:140px;font-size:.75rem;padding:5px 8px;">
+        <option value="">Todos los estados</option>
+        <option value="pendiente">Pendiente</option>
+        <option value="pagada">Pagada</option>
+        <option value="vencida">Vencida</option>
+      </select>
+    </div>`;
+
+  const filtroOp=document.getElementById('filtro-cuota-op')?.value||'';
+  const filtroEst=document.getElementById('filtro-cuota-estado')?.value||'';
+  let lista=sorted;
+  if(filtroOp)lista=lista.filter(c=>c.opId===filtroOp);
+  if(filtroEst)lista=lista.filter(c=>c.estado===filtroEst||(filtroEst==='vencida'&&c.estado==='urgente'));
+
+  if(!lista.length){div.innerHTML=html+'<div class="empty"><div class="empty-icon">◷</div><div class="empty-text">Sin cuotas con ese filtro</div></div>';return;}
+
+  html+=`<table><thead><tr><th>#</th><th>Operación</th><th>Vencimiento</th><th>Capital</th><th>Interés</th><th>Total</th><th>Saldo Rest.</th><th>Estado</th><th>Acción</th></tr></thead><tbody>`;
+  lista.forEach(c=>{
+    const op=ops.find(o=>o.id===c.opId)||{};
+    const rowStyle=c.estado==='pagada'?'opacity:.45;':'';
+    const btn=c.estado==='pagada'
+      ?`<button class="btn btn-ghost btn-sm" onclick="toggleCuotaPagada('${c.id}')">↩ Revertir</button>`
+      :`<button class="btn btn-success btn-sm" onclick="toggleCuotaPagada('${c.id}')">✓ Pagar</button>`;
+    html+=`<tr style="${rowStyle}"><td class="td-mono">${c.numero}</td><td style="font-size:.72rem">${op.entidadNombre||'—'} · ${op.tipo||'—'}</td><td class="td-mono">${fmtDate(c.fecha)}</td><td class="td-mono">${fmt(c.capital)}</td><td class="td-mono" style="color:var(--text3)">${fmt(c.interes)}</td><td class="td-mono td-bold">${fmt(c.total)}</td><td class="td-mono" style="color:var(--text3)">${fmt(c.saldo)}</td><td>${badges[c.estado]||'—'}</td><td>${btn}</td></tr>`;
+  });
+  html+='</tbody></table>';
+  div.innerHTML=html;
+}
+
+async function toggleCuotaPagada(cuotaId){
+  if(!clienteActivo)return;
+  const c=clienteActivo.cuotas.find(q=>q.id===cuotaId);
+  if(!c)return;
+  c.estado=c.estado==='pagada'?calcEstado(c.fecha):'pagada';
+  await colCli(clienteActivo.id,'cuotas').doc(cuotaId).update({estado:c.estado});
+  renderCuotasPanel();
+  renderDetalleCliente();
+  toast(c.estado==='pagada'?'Cuota marcada como pagada':'Cuota revertida a pendiente');
 }
 
 function htmlEntidades(){
@@ -601,7 +716,7 @@ function htmlEntidades(){
     const disp=Math.max(0,(e.lineaTotal||0)-(e.lineaUtilizada||0));
     const pct=e.lineaTotal>0?Math.round((e.lineaUtilizada||0)/e.lineaTotal*100):0;
     const color=pct>80?'var(--red)':pct>50?'var(--yellow)':'var(--green)';
-    html+=`<tr><td class="td-bold">${e.nombre}</td><td><span class="badge badge-blue">${e.tipo}</span></td><td class="td-mono">${fmt(e.lineaTotal)}</td><td class="td-mono" style="color:var(--red)">${fmt(e.lineaUtilizada||0)}</td><td class="td-mono" style="color:var(--green)">${fmt(disp)}</td><td class="td-mono" style="font-size:.7rem">${fmtDate(e.vtoLinea)}</td><td><div class="progress-wrap"><div class="progress-bg"><div class="progress-fill" style="width:${pct}%;background:${color}"></div></div><div class="pct-label">${pct}%</div></div></td><td><button class="btn btn-danger btn-sm" onclick="eliminarEntidadCliente('${e.id}')">✕</button></td></tr>`;
+    html+=`<tr><td class="td-bold">${e.nombre}</td><td><span class="badge badge-blue">${e.tipo}</span></td><td class="td-mono">${fmt(e.lineaTotal)}</td><td class="td-mono" style="color:var(--red)">${fmt(e.lineaUtilizada||0)}</td><td class="td-mono" style="color:var(--green)">${fmt(disp)}</td><td class="td-mono" style="font-size:.7rem">${fmtDate(e.vtoLinea)}</td><td><div class="progress-wrap"><div class="progress-bg"><div class="progress-fill" style="width:${pct}%;background:${color}"></div></div><div class="pct-label">${pct}%</div></div></td><td style="display:flex;gap:4px;"><button class="btn btn-ghost btn-sm" onclick="abrirEditEntidad('${e.id}')">✏️</button><button class="btn btn-danger btn-sm" onclick="eliminarEntidadCliente('${e.id}')">✕</button></td></tr>`;
   });
   return html+'</tbody></table>';
 }
@@ -613,7 +728,9 @@ function htmlOperaciones(){
   html+=`<table><thead><tr><th>Entidad</th><th>Tipo</th><th>Monto</th><th>Saldo Rest.</th><th>TNA</th><th>Plazo</th><th>Tipo Tasa</th><th></th></tr></thead><tbody>`;
   ops.forEach(op=>{
     const saldo=cuotas.filter(c=>c.opId===op.id&&c.estado!=='pagada').reduce((s,c)=>s+(c.capital||0),0);
-    html+=`<tr><td class="td-bold">${op.entidadNombre}</td><td>${op.tipo}</td><td class="td-mono">${fmt(op.monto)}</td><td class="td-mono" style="color:var(--accent)">${fmt(saldo)}</td><td class="td-mono" style="color:var(--yellow)">${fmtN(op.tna,2)}%</td><td class="td-mono">${op.plazo}m</td><td style="font-size:.7rem">${op.tipoTasa}</td><td><button class="btn btn-danger btn-sm" onclick="eliminarOpCliente('${op.id}')">✕</button></td></tr>`;
+    const amortLabel=op.amortizacion==='aleman'?'Alemán':'Francés';
+    const tasaLabel=op.tipoTasa==='badlar'?`BADLAR+${fmtN(op.spread||0,1)}%`:op.tipoTasa==='tamar'?`TAMAR+${fmtN(op.spread||0,1)}%`:op.tipoTasa||'Fija';
+    html+=`<tr><td class="td-bold">${op.entidadNombre}</td><td>${op.tipo}</td><td class="td-mono">${fmt(op.monto)}</td><td class="td-mono" style="color:var(--accent)">${fmt(saldo)}</td><td class="td-mono" style="color:var(--yellow)">${fmtN(op.tna,2)}%</td><td class="td-mono">${op.plazo}m</td><td style="font-size:.7rem">${tasaLabel}</td><td style="font-size:.7rem;color:var(--text3)">${amortLabel}</td><td style="display:flex;gap:4px;"><button class="btn btn-ghost btn-sm" onclick="abrirEditOperacion('${op.id}')">✏️</button><button class="btn btn-danger btn-sm" onclick="eliminarOpCliente('${op.id}')">✕</button></td></tr>`;
   });
   return html+'</tbody></table>';
 }
@@ -789,6 +906,108 @@ async function eliminarOpCliente(opId){
   clienteActivo.cuotas=clienteActivo.cuotas.filter(c=>c.opId!==opId);
   clienteActivo.operaciones=clienteActivo.operaciones.filter(o=>o.id!==opId);
   renderDetalleCliente();toast('Operación eliminada','yellow');
+}
+
+// EDITAR ENTIDAD
+function abrirEditEntidad(entId){
+  if(!clienteActivo)return;
+  const e=clienteActivo.entidades.find(x=>x.id===entId);
+  if(!e)return;
+  document.getElementById('edit-ent-id').value=entId;
+  document.getElementById('edit-ent-nombre').value=e.nombre||'';
+  document.getElementById('edit-ent-tipo').value=e.tipo||'Banco';
+  document.getElementById('edit-ent-tipo-linea').value=e.tipoLinea||'Rotativa';
+  document.getElementById('edit-ent-linea').value=e.lineaTotal||0;
+  document.getElementById('edit-ent-vto').value=e.vtoLinea||'';
+  openModal('edit-ent');
+}
+async function guardarEditEntidad(){
+  const entId=document.getElementById('edit-ent-id').value;
+  const nombre=document.getElementById('edit-ent-nombre').value.trim();
+  if(!nombre){toast('Ingresá el nombre','red');return;}
+  const linea=parseFloat(document.getElementById('edit-ent-linea').value)||0;
+  const changes={nombre,tipo:document.getElementById('edit-ent-tipo').value,tipoLinea:document.getElementById('edit-ent-tipo-linea').value,lineaTotal:linea,vtoLinea:document.getElementById('edit-ent-vto').value};
+  await colCli(clienteActivo.id,'entidades').doc(entId).update(changes);
+  const idx=clienteActivo.entidades.findIndex(e=>e.id===entId);
+  if(idx>=0)clienteActivo.entidades[idx]={...clienteActivo.entidades[idx],...changes};
+  const cidx=allClientes.findIndex(e=>e.id===clienteActivo.id);
+  if(cidx>=0)allClientes[cidx]=clienteActivo;
+  closeModal('edit-ent');renderDetalleCliente();toast('Entidad actualizada');
+}
+
+// EDITAR OPERACION
+function onEditTipoTasaChange(){
+  const tipo=document.getElementById('edit-op-tipo-tasa')?.value||'fija';
+  const esVariable=tipo==='tamar'||tipo==='badlar';
+  document.getElementById('edit-tna-field').style.display=esVariable?'none':'flex';
+  document.getElementById('edit-spread-field').style.display=esVariable?'flex':'none';
+  if(esVariable){const base=tipo==='badlar'?badlarActual:tamarActual;const spread=parseFloat(document.getElementById('edit-op-spread')?.value||0);const lbl=document.getElementById('edit-spread-label');if(lbl)lbl.textContent=`Tasa efectiva: ${base.toFixed(1)}% + ${spread.toFixed(1)}% = ${(base+spread).toFixed(1)}%`;}
+}
+function abrirEditOperacion(opId){
+  if(!clienteActivo)return;
+  const op=clienteActivo.operaciones.find(o=>o.id===opId);
+  if(!op)return;
+  document.getElementById('edit-op-id').value=opId;
+  // fill entidad select
+  const sel=document.getElementById('edit-op-entidad');
+  sel.innerHTML='';
+  clienteActivo.entidades.forEach(e=>sel.innerHTML+=`<option value="${e.id}" ${e.id===op.entidadId?'selected':''}>${e.nombre}</option>`);
+  document.getElementById('edit-op-tipo').value=op.tipo||'Préstamo';
+  document.getElementById('edit-op-monto').value=op.monto||0;
+  document.getElementById('edit-op-desembolso').value=op.desembolso||'';
+  document.getElementById('edit-op-plazo').value=op.plazo||12;
+  document.getElementById('edit-op-primera-cuota').value=op.primeraCuota||'';
+  document.getElementById('edit-op-frecuencia').value=op.frecuencia||1;
+  document.getElementById('edit-op-tipo-tasa').value=op.tipoTasa||'fija';
+  document.getElementById('edit-op-amortizacion').value=op.amortizacion||'frances';
+  document.getElementById('edit-op-garantia').value=op.garantia||'';
+  const esVariable=op.tipoTasa==='tamar'||op.tipoTasa==='badlar';
+  document.getElementById('edit-tna-field').style.display=esVariable?'none':'flex';
+  document.getElementById('edit-spread-field').style.display=esVariable?'flex':'none';
+  if(esVariable){document.getElementById('edit-op-spread').value=op.spread||0;}
+  else{document.getElementById('edit-op-tna').value=op.tna||0;}
+  openModal('edit-op');
+}
+async function guardarEditOperacion(){
+  const opId=document.getElementById('edit-op-id').value;
+  const op=clienteActivo.operaciones.find(o=>o.id===opId);
+  if(!op)return;
+  const tipoTasaVal=document.getElementById('edit-op-tipo-tasa').value;
+  const esVariable=tipoTasaVal==='tamar'||tipoTasaVal==='badlar';
+  const spread=esVariable?parseFloat(document.getElementById('edit-op-spread')?.value)||0:0;
+  const tnaBase=esVariable?(tipoTasaVal==='badlar'?badlarActual:tamarActual):0;
+  const tna=esVariable?tnaBase+spread:parseFloat(document.getElementById('edit-op-tna')?.value)||0;
+  const entId=document.getElementById('edit-op-entidad').value;
+  const ent=clienteActivo.entidades.find(e=>e.id===entId);
+  const monto=parseFloat(document.getElementById('edit-op-monto').value)||op.monto;
+  const plazo=parseInt(document.getElementById('edit-op-plazo').value)||op.plazo;
+  const pc=document.getElementById('edit-op-primera-cuota').value||op.primeraCuota;
+  const frec=parseInt(document.getElementById('edit-op-frecuencia').value)||op.frecuencia||1;
+  const amort=document.getElementById('edit-op-amortizacion').value||'frances';
+  const changes={entidadId:entId,entidadNombre:ent?ent.nombre:op.entidadNombre,tipo:document.getElementById('edit-op-tipo').value,monto,plazo,tna,tnaBase:esVariable?tnaBase:tna,spread,tipoTasa:tipoTasaVal,amortizacion:amort,desembolso:document.getElementById('edit-op-desembolso').value,primeraCuota:pc,frecuencia:frec,garantia:document.getElementById('edit-op-garantia').value||op.garantia};
+  // Update op in Firestore
+  await colCli(clienteActivo.id,'operaciones').doc(opId).update(changes);
+  // Regenerar cuotas pendientes
+  const cuotasPagadas=clienteActivo.cuotas.filter(c=>c.opId===opId&&c.estado==='pagada');
+  const cuotasPendientes=clienteActivo.cuotas.filter(c=>c.opId===opId&&c.estado!=='pagada');
+  const batch=db.batch();
+  cuotasPendientes.forEach(c=>batch.delete(colCli(clienteActivo.id,'cuotas').doc(c.id)));
+  // Recalcular desde el saldo pendiente
+  const saldoPend=cuotasPendientes.reduce((s,c)=>s+(c.capital||0),0)||monto;
+  const primeraFecha=cuotasPendientes.length>0?cuotasPendientes.sort((a,b)=>a.fecha.localeCompare(b.fecha))[0].fecha:pc;
+  const opCalc={...changes,id:opId,monto:saldoPend,primeraCuota:primeraFecha,plazo:cuotasPendientes.length>0?cuotasPendientes.length*frec:plazo};
+  const nuevas=generarCuotas(opCalc);
+  nuevas.forEach(c=>{const r=colCli(clienteActivo.id,'cuotas').doc();c.id=r.id;batch.set(r,c);});
+  await batch.commit();
+  // Update local state
+  const opIdx=clienteActivo.operaciones.findIndex(o=>o.id===opId);
+  if(opIdx>=0)clienteActivo.operaciones[opIdx]={...op,...changes};
+  clienteActivo.cuotas=clienteActivo.cuotas.filter(c=>c.opId!==opId||c.estado==='pagada');
+  clienteActivo.cuotas=clienteActivo.cuotas.concat(nuevas);
+  const cidx=allClientes.findIndex(e=>e.id===clienteActivo.id);
+  if(cidx>=0)allClientes[cidx]=clienteActivo;
+  closeModal('edit-op');renderDetalleCliente();
+  toast(`Operación actualizada · ${nuevas.length} cuotas regeneradas`);
 }
 
 // NUEVO CLIENTE
