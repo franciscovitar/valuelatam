@@ -140,7 +140,7 @@
     <div class="nav-item active" onclick="showTab('overview',this)"><span>◈</span> Overview</div>
     <div class="nav-item" onclick="showTab('clientes',this)"><span>⬡</span> Clientes</div>
     <div class="nav-item" id="nav-relevamiento" onclick="showTab('relevamiento',this)"><span>◎</span> Relevamiento</div>
-    <div class="nav-item" onclick="showTab('tna',this)"><span>↕</span> TNA Global</div>
+    <div class="nav-item" onclick="showTab('tna',this)"><span>↕</span> Tasas Globales</div>
   </nav>
   <div class="sidebar-bottom">
     <div style="font-family:var(--mono);font-size:.65rem;color:var(--text3);margin-bottom:4px;">ADMIN</div>
@@ -200,24 +200,60 @@
       </div>
     </div>
 
-    <!-- TNA -->
+    <!-- TASAS GLOBALES -->
     <div class="panel" id="panel-tna">
-      <div class="tna-card">
-        <div class="tna-card-title">TNA de Referencia Global</div>
-        <div class="tna-card-sub">Este valor se actualiza para TODOS los clientes automáticamente.</div>
-        <div class="tna-big" id="tna-display">— %</div>
-        <div class="tna-input-row">
-          <input type="range" class="tna-slider" id="tna-slider" min="0" max="200" step="0.5" oninput="updateTNADisplay()">
-          <input type="number" id="tna-input" style="width:90px;" step="0.5" oninput="updateTNAFromInput()">
-          <span style="color:var(--text3);font-size:.8rem;">%</span>
-          <button class="btn btn-success" onclick="guardarTNA()">✓ Guardar y publicar</button>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:24px;">
+
+        <!-- TNA MERCADO -->
+        <div class="tna-card" style="margin-bottom:0;">
+          <div class="tna-card-title">TNA de Mercado</div>
+          <div class="tna-card-sub">Benchmark general para comparar operaciones.</div>
+          <div class="tna-big" id="tna-display">— %</div>
+          <div class="tna-input-row" style="flex-wrap:wrap;gap:8px;">
+            <input type="range" class="tna-slider" id="tna-slider" min="0" max="200" step="0.5" oninput="updateTNADisplay()" style="width:100%;">
+            <input type="number" id="tna-input" style="width:80px;" step="0.5" oninput="updateTNAFromInput()">
+            <span style="color:var(--text3);font-size:.8rem;">%</span>
+            <button class="btn btn-success btn-sm" onclick="guardarTNA()">✓ Publicar</button>
+          </div>
+          <div class="last-update" id="last-update">Última actualización: —</div>
         </div>
-        <div class="last-update" id="last-update">Última actualización: —</div>
+
+        <!-- BADLAR -->
+        <div class="tna-card" style="margin-bottom:0;">
+          <div class="tna-card-title">BADLAR Publicada</div>
+          <div class="tna-card-sub">Tasa para depósitos a plazo fijo >$1M. Se usa en operaciones BADLAR + spread.</div>
+          <div class="tna-big" style="color:var(--cyan);" id="badlar-display">— %</div>
+          <div class="tna-input-row" style="flex-wrap:wrap;gap:8px;">
+            <input type="range" class="tna-slider" id="badlar-slider" min="0" max="200" step="0.5" oninput="updateBadlarDisplay()" style="width:100%;--thumb-color:var(--cyan);">
+            <input type="number" id="badlar-input" style="width:80px;" step="0.5" oninput="updateBadlarFromInput()">
+            <span style="color:var(--text3);font-size:.8rem;">%</span>
+            <button class="btn btn-sm" style="background:rgba(6,182,212,.15);color:var(--cyan);border:1px solid rgba(6,182,212,.3);" onclick="guardarBadlar()">✓ Publicar</button>
+          </div>
+          <div class="last-update" id="badlar-update">Última actualización: —</div>
+        </div>
+
+        <!-- TAMAR -->
+        <div class="tna-card" style="margin-bottom:0;">
+          <div class="tna-card-title">TAMAR Publicada</div>
+          <div class="tna-card-sub">Tasa activa de referencia del BCRA. Se usa en operaciones TAMAR + spread.</div>
+          <div class="tna-big" style="color:var(--purple);" id="tamar-display">— %</div>
+          <div class="tna-input-row" style="flex-wrap:wrap;gap:8px;">
+            <input type="range" class="tna-slider" id="tamar-slider" min="0" max="200" step="0.5" oninput="updateTamarDisplay()" style="width:100%;">
+            <input type="number" id="tamar-input" style="width:80px;" step="0.5" oninput="updateTamarFromInput()">
+            <span style="color:var(--text3);font-size:.8rem;">%</span>
+            <button class="btn btn-sm" style="background:rgba(139,92,246,.15);color:var(--purple);border:1px solid rgba(139,92,246,.3);" onclick="guardarTamar()">✓ Publicar</button>
+          </div>
+          <div class="last-update" id="tamar-update">Última actualización: —</div>
+        </div>
+
       </div>
+
+      <div class="info-bar">⚡ Cuando actualizás BADLAR o TAMAR, las cuotas futuras de todas las operaciones con esa tasa se recalculan automáticamente para todos los clientes.</div>
+
       <div class="table-card">
-        <div class="table-header"><div><div class="table-title">Historial de Cambios TNA</div></div></div>
-        <table><thead><tr><th>Fecha</th><th>TNA</th><th>Admin</th></tr></thead>
-        <tbody id="tabla-historial-tna"></tbody></table>
+        <div class="table-header"><div><div class="table-title">Tasas Actuales del Sistema</div><div class="table-sub">Resumen publicado</div></div></div>
+        <table><thead><tr><th>Tasa</th><th>Valor Actual</th><th>Última Actualización</th><th>Afecta a</th></tr></thead>
+        <tbody id="tabla-tasas-resumen"></tbody></table>
       </div>
     </div>
 
@@ -274,8 +310,9 @@
       <div class="form-group"><label>Plazo (meses)</label><input type="number" id="op-plazo" min="1" oninput="previewCuotas()"></div>
       <div class="form-group"><label>Fecha Primera Cuota</label><input type="date" id="op-primera-cuota"></div>
       <div class="form-group"><label>Frecuencia</label><select id="op-frecuencia" onchange="previewCuotas()"><option value="1">Mensual</option><option value="2">Bimestral</option><option value="3">Trimestral</option><option value="6">Semestral</option></select></div>
-      <div class="form-group"><label>TNA (%)</label><input type="number" id="op-tna" step="0.01" oninput="previewCuotas()"></div>
-      <div class="form-group"><label>Tipo de Tasa</label><select id="op-tipo-tasa"><option>Fija</option><option>Variable</option><option>TAMAR + spread</option><option>BADLAR + spread</option></select></div>
+      <div class="form-group"><label>Tipo de Tasa</label><select id="op-tipo-tasa" onchange="onTipoTasaChange()" oninput="previewCuotas()"><option value="fija">Fija</option><option value="variable">Variable</option><option value="tamar">TAMAR + spread</option><option value="badlar">BADLAR + spread</option></select></div>
+      <div class="form-group" id="tna-field"><label>TNA (%)</label><input type="number" id="op-tna" step="0.01" oninput="previewCuotas()" placeholder="Ej: 65.5"></div>
+      <div class="form-group" id="spread-field" style="display:none;"><label>Spread fijo (%)</label><input type="number" id="op-spread" step="0.01" oninput="previewCuotas()" placeholder="Ej: 5.0"><div style="font-size:.68rem;color:var(--text3);margin-top:4px;font-family:var(--mono);" id="spread-preview-label">Tasa efectiva: —</div></div>
       <div class="form-group"><label>Sistema de Amortización</label>
         <select id="op-amortizacion" onchange="previewCuotas()">
           <option value="frances">Francés (cuota fija)</option>
@@ -300,7 +337,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-let allClientes=[], clienteActivo=null, tnaActual=60;
+let allClientes=[], clienteActivo=null, tnaActual=60, badlarActual=0, tamarActual=0;
 
 auth.onAuthStateChanged(async user=>{
   if(!user){window.location.href='index.html';return;}
@@ -313,7 +350,7 @@ auth.onAuthStateChanged(async user=>{
 
 function doLogout(){auth.signOut().then(()=>window.location.href='index.html');}
 
-const titles={overview:'Overview General',clientes:'Gestión de Clientes',relevamiento:'Relevamiento por Cliente',tna:'TNA de Referencia Global'};
+const titles={overview:'Overview General',clientes:'Gestión de Clientes',relevamiento:'Relevamiento por Cliente',tna:'Tasas de Referencia Global'};
 function showTab(name,el){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -340,18 +377,46 @@ function calcEstado(fecha){const h=today();if(fecha<h)return'vencida';if(daysBet
 function colCli(id,sub){return db.collection('empresas').doc(id).collection(sub);}
 function toast(msg,type='green'){const t=document.getElementById('toast');t.innerHTML=`<span style="color:var(--${type})">●</span> ${msg}`;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
 
-// TNA
+// TASAS GLOBALES
 async function loadTNA(){
-  try{const doc=await db.collection('config').doc('global').get();if(doc.exists){tnaActual=doc.data().tnaRef||60;renderTNAPanel(doc.data());}else renderTNAPanel({tnaRef:60});}catch(e){renderTNAPanel({tnaRef:60});}
+  try{
+    const doc=await db.collection('config').doc('global').get();
+    if(doc.exists){
+      const d=doc.data();
+      tnaActual=d.tnaRef||60; badlarActual=d.badlar||0; tamarActual=d.tamar||0;
+      renderTNAPanel(d);
+    } else renderTNAPanel({tnaRef:60,badlar:0,tamar:0});
+  }catch(e){renderTNAPanel({tnaRef:60,badlar:0,tamar:0});}
 }
 function renderTNAPanel(data){
-  const tna=data.tnaRef||60;
-  document.getElementById('tna-display').textContent=tna.toFixed(1)+' %';
-  document.getElementById('tna-slider').value=tna;
-  document.getElementById('tna-input').value=tna;
-  document.getElementById('ov-tna').textContent=tna.toFixed(1)+'%';
-  if(data.updatedAt)document.getElementById('last-update').textContent='Última actualización: '+fmtTs(data.updatedAt);
+  const tna=data.tnaRef||60, badlar=data.badlar||0, tamar=data.tamar||0;
+  if(document.getElementById('tna-display')) document.getElementById('tna-display').textContent=tna.toFixed(1)+' %';
+  if(document.getElementById('tna-slider')) document.getElementById('tna-slider').value=tna;
+  if(document.getElementById('tna-input')) document.getElementById('tna-input').value=tna;
+  if(document.getElementById('ov-tna')) document.getElementById('ov-tna').textContent=tna.toFixed(1)+'%';
+  if(document.getElementById('badlar-display')) document.getElementById('badlar-display').textContent=badlar.toFixed(1)+' %';
+  if(document.getElementById('badlar-slider')) document.getElementById('badlar-slider').value=badlar;
+  if(document.getElementById('badlar-input')) document.getElementById('badlar-input').value=badlar;
+  if(document.getElementById('tamar-display')) document.getElementById('tamar-display').textContent=tamar.toFixed(1)+' %';
+  if(document.getElementById('tamar-slider')) document.getElementById('tamar-slider').value=tamar;
+  if(document.getElementById('tamar-input')) document.getElementById('tamar-input').value=tamar;
+  if(data.updatedAt && document.getElementById('last-update')) document.getElementById('last-update').textContent='Última actualización: '+fmtTs(data.updatedAt);
+  if(data.badlarUpdatedAt && document.getElementById('badlar-update')) document.getElementById('badlar-update').textContent='Última actualización: '+fmtTs(data.badlarUpdatedAt);
+  if(data.tamarUpdatedAt && document.getElementById('tamar-update')) document.getElementById('tamar-update').textContent='Última actualización: '+fmtTs(data.tamarUpdatedAt);
+  renderTasasResumen(data);
 }
+function renderTasasResumen(data){
+  const tbody=document.getElementById('tabla-tasas-resumen');
+  if(!tbody)return;
+  const rows=[
+    {nombre:'TNA Mercado',valor:(data.tnaRef||0).toFixed(1)+'%',fecha:fmtTs(data.updatedAt),afecta:'Comparador de tasas',color:'var(--yellow)'},
+    {nombre:'BADLAR',valor:(data.badlar||0).toFixed(1)+'%',fecha:fmtTs(data.badlarUpdatedAt),afecta:'Operaciones BADLAR + spread',color:'var(--cyan)'},
+    {nombre:'TAMAR',valor:(data.tamar||0).toFixed(1)+'%',fecha:fmtTs(data.tamarUpdatedAt),afecta:'Operaciones TAMAR + spread',color:'var(--purple)'},
+  ];
+  tbody.innerHTML=rows.map(r=>`<tr><td class="td-bold">${r.nombre}</td><td class="td-mono" style="color:${r.color};font-size:1rem;">${r.valor}</td><td class="td-mono" style="font-size:.7rem;color:var(--text3)">${r.fecha}</td><td style="font-size:.75rem;color:var(--text2)">${r.afecta}</td></tr>`).join('');
+}
+
+// TNA mercado
 function updateTNADisplay(){const v=parseFloat(document.getElementById('tna-slider').value)||0;document.getElementById('tna-input').value=v;document.getElementById('tna-display').textContent=v.toFixed(1)+' %';}
 function updateTNAFromInput(){const v=parseFloat(document.getElementById('tna-input').value)||0;document.getElementById('tna-slider').value=v;document.getElementById('tna-display').textContent=v.toFixed(1)+' %';}
 async function guardarTNA(){
@@ -359,18 +424,71 @@ async function guardarTNA(){
   if(isNaN(v)||v<0){toast('TNA inválida','red');return;}
   const data={tnaRef:v,updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:auth.currentUser?.email};
   await db.collection('config').doc('global').set(data,{merge:true});
-  await db.collection('config').doc('global').collection('historial').add({...data,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
   tnaActual=v;document.getElementById('tna-display').textContent=v.toFixed(1)+' %';document.getElementById('ov-tna').textContent=v.toFixed(1)+'%';
-  toast(`TNA actualizada a ${v.toFixed(1)}%`);loadHistorialTNA();
+  toast(`TNA Mercado actualizada a ${v.toFixed(1)}%`);await loadTNA();
 }
-async function loadHistorialTNA(){
-  try{
-    const snap=await db.collection('config').doc('global').collection('historial').orderBy('updatedAt','desc').limit(20).get();
-    const tbody=document.getElementById('tabla-historial-tna');
-    if(snap.empty){tbody.innerHTML='<tr><td colspan="3" style="text-align:center;color:var(--text3);padding:20px;">Sin historial</td></tr>';return;}
-    tbody.innerHTML=snap.docs.map(d=>{const dd=d.data();return`<tr><td class="td-mono">${fmtTs(dd.updatedAt)}</td><td class="td-mono" style="color:var(--yellow)">${(dd.tnaRef||0).toFixed(1)}%</td><td style="font-size:.72rem;color:var(--text3)">${dd.updatedBy||'—'}</td></tr>`;}).join('');
-  }catch(e){}
+
+// BADLAR
+function updateBadlarDisplay(){const v=parseFloat(document.getElementById('badlar-slider').value)||0;document.getElementById('badlar-input').value=v;document.getElementById('badlar-display').textContent=v.toFixed(1)+' %';}
+function updateBadlarFromInput(){const v=parseFloat(document.getElementById('badlar-input').value)||0;document.getElementById('badlar-slider').value=v;document.getElementById('badlar-display').textContent=v.toFixed(1)+' %';}
+async function guardarBadlar(){
+  const v=parseFloat(document.getElementById('badlar-input').value);
+  if(isNaN(v)||v<0){toast('Valor inválido','red');return;}
+  await db.collection('config').doc('global').set({badlar:v,badlarUpdatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+  badlarActual=v;toast(`BADLAR actualizada a ${v.toFixed(1)}%`);
+  await recalcularCuotasVariables('badlar',v);
+  await loadTNA();
 }
+
+// TAMAR
+function updateTamarDisplay(){const v=parseFloat(document.getElementById('tamar-slider').value)||0;document.getElementById('tamar-input').value=v;document.getElementById('tamar-display').textContent=v.toFixed(1)+' %';}
+function updateTamarFromInput(){const v=parseFloat(document.getElementById('tamar-input').value)||0;document.getElementById('tamar-slider').value=v;document.getElementById('tamar-display').textContent=v.toFixed(1)+' %';}
+async function guardarTamar(){
+  const v=parseFloat(document.getElementById('tamar-input').value);
+  if(isNaN(v)||v<0){toast('Valor inválido','red');return;}
+  await db.collection('config').doc('global').set({tamar:v,tamarUpdatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+  tamarActual=v;toast(`TAMAR actualizada a ${v.toFixed(1)}%`);
+  await recalcularCuotasVariables('tamar',v);
+  await loadTNA();
+}
+
+// RECALCULAR CUOTAS FUTURAS para todas las operaciones con tasa variable
+async function recalcularCuotasVariables(tipoTasa, nuevaTasa){
+  toast(`Recalculando cuotas ${tipoTasa.toUpperCase()}...`,'yellow');
+  let totalOps=0;
+  for(const emp of allClientes){
+    const opsVar=emp.operaciones.filter(op=>op.tipoTasa===tipoTasa+'_spread'||op.tipoTasa===tipoTasa);
+    for(const op of opsVar){
+      // Nueva TNA efectiva = tasa publicada + spread
+      const spread=parseFloat(op.spread||0);
+      const nuevaTnaEfectiva=nuevaTasa+spread;
+      const opActualizada={...op, tna:nuevaTnaEfectiva, tnaBase:nuevaTasa};
+      // Borrar cuotas futuras y regenerar
+      const hoy=today();
+      const cuotasFuturas=emp.cuotas.filter(c=>c.opId===op.id&&c.estado!=='pagada'&&c.fecha>=hoy);
+      const cuotasPagadas=emp.cuotas.filter(c=>c.opId===op.id&&c.estado==='pagada');
+      if(cuotasFuturas.length===0) continue;
+      // Calcular saldo restante desde la primera cuota futura
+      const saldoRestante=cuotasFuturas.reduce((s,c)=>s+(c.capital||0),0);
+      const primeraFutura=cuotasFuturas.sort((a,b)=>a.fecha.localeCompare(b.fecha))[0];
+      // Generar nuevas cuotas desde el saldo restante
+      const opParaCalc={...opActualizada, monto:saldoRestante, primeraCuota:primeraFutura.fecha, plazo:cuotasFuturas.length*(op.frecuencia||1)};
+      const nuevasCuotas=generarCuotas(opParaCalc);
+      // Actualizar en Firestore
+      const batch=db.batch();
+      cuotasFuturas.forEach(c=>batch.delete(colCli(emp.id,'cuotas').doc(c.id)));
+      nuevasCuotas.forEach(c=>{const r=colCli(emp.id,'cuotas').doc();c.id=r.id;batch.set(r,c);});
+      // Actualizar TNA en la operacion
+      batch.update(colCli(emp.id,'operaciones').doc(op.id),{tna:nuevaTnaEfectiva,tnaBase:nuevaTasa});
+      await batch.commit();
+      totalOps++;
+    }
+  }
+  await loadClientes();
+  toast(`Recálculo completo: ${totalOps} operación(es) actualizadas`,'green');
+}
+
+async function loadHistorialTNA(){} // deprecated, kept for compat
 
 // CLIENTES
 async function loadClientes(){
@@ -550,6 +668,27 @@ async function eliminarEntidadCliente(entId){
 }
 
 // OPERACION
+function onTipoTasaChange(){
+  const tipo=document.getElementById('op-tipo-tasa')?.value||'fija';
+  const esVariable=tipo==='tamar'||tipo==='badlar';
+  document.getElementById('tna-field').style.display=esVariable?'none':'flex';
+  document.getElementById('spread-field').style.display=esVariable?'flex':'none';
+  if(esVariable){
+    const base=tipo==='badlar'?badlarActual:tamarActual;
+    const spread=parseFloat(document.getElementById('op-spread')?.value||0);
+    const lbl=document.getElementById('spread-preview-label');
+    if(lbl)lbl.textContent=`Tasa efectiva: ${base.toFixed(1)}% (${tipo.toUpperCase()}) + ${spread.toFixed(1)}% (spread) = ${(base+spread).toFixed(1)}%`;
+  }
+  previewCuotas();
+}
+
+function getTNAEfectiva(){
+  const tipo=document.getElementById('op-tipo-tasa')?.value||'fija';
+  if(tipo==='badlar') return badlarActual+(parseFloat(document.getElementById('op-spread')?.value)||0);
+  if(tipo==='tamar') return tamarActual+(parseFloat(document.getElementById('op-spread')?.value)||0);
+  return parseFloat(document.getElementById('op-tna')?.value)||0;
+}
+
 function openModalOp(){
   if(!clienteActivo){toast('Seleccioná un cliente','red');return;}
   if(!clienteActivo.entidades.length){toast('Cargá al menos una entidad primero','yellow');return;}
@@ -560,6 +699,9 @@ function openModalOp(){
   document.getElementById('preview-wrap').style.display='none';
   document.getElementById('op-desembolso').value=today();
   const n=new Date();n.setMonth(n.getMonth()+1);document.getElementById('op-primera-cuota').value=n.toISOString().slice(0,10);
+  // reset tipo tasa fields
+  document.getElementById('tna-field').style.display='flex';
+  document.getElementById('spread-field').style.display='none';
   openModal('op');
 }
 
@@ -594,8 +736,12 @@ function previewCuotas(){
   const pc=document.getElementById('op-primera-cuota').value;
   const frec=parseInt(document.getElementById('op-frecuencia').value)||1;
   const amort=document.getElementById('op-amortizacion')?.value||'frances';
-  if(!monto||!plazo||isNaN(tna)||!pc){document.getElementById('preview-wrap').style.display='none';return;}
-  const tmp=generarCuotas({id:'tmp',monto,plazo,tna,primeraCuota:pc,frecuencia:frec,amortizacion:amort});
+  const tipo=document.getElementById('op-tipo-tasa')?.value||'fija';
+  const esVariable=tipo==='tamar'||tipo==='badlar';
+  const tnaEfectiva=esVariable?getTNAEfectiva():tna;
+  if(esVariable){const base=tipo==='badlar'?badlarActual:tamarActual;const spread=parseFloat(document.getElementById('op-spread')?.value||0);const lbl=document.getElementById('spread-preview-label');if(lbl)lbl.textContent=`Tasa efectiva: ${base.toFixed(1)}% (${tipo.toUpperCase()}) + ${spread.toFixed(1)}% (spread) = ${(base+spread).toFixed(1)}%`;}
+  if(!monto||!plazo||isNaN(tnaEfectiva)||!pc){document.getElementById('preview-wrap').style.display='none';return;}
+  const tmp=generarCuotas({id:'tmp',monto,plazo,tna:tnaEfectiva,primeraCuota:pc,frecuencia:frec,amortizacion:amort});
   document.getElementById('preview-wrap').style.display='block';
   document.getElementById('preview-cuotas').innerHTML=tmp.slice(0,5).map(c=>`<tr><td class="td-mono">${c.numero}</td><td class="td-mono">${fmtDate(c.fecha)}</td><td class="td-mono">${fmt(c.capital)}</td><td class="td-mono" style="color:var(--text3)">${fmt(c.interes)}</td><td class="td-mono td-bold">${fmt(c.total)}</td><td class="td-mono" style="color:var(--text3)">${fmt(c.saldo)}</td></tr>`).join('');
   document.getElementById('preview-more').textContent=tmp.length>5?`+ ${tmp.length-5} cuotas más`:'';
@@ -606,15 +752,19 @@ async function guardarOperacion(){
   const entId=document.getElementById('op-entidad').value;
   const monto=parseFloat(document.getElementById('op-monto').value);
   const plazo=parseInt(document.getElementById('op-plazo').value);
-  const tna=parseFloat(document.getElementById('op-tna').value);
+  const tipoTasaVal=document.getElementById('op-tipo-tasa')?.value||'fija';
+  const esVariable=tipoTasaVal==='tamar'||tipoTasaVal==='badlar';
+  const spread=esVariable?parseFloat(document.getElementById('op-spread')?.value)||0:0;
+  const tnaBase=esVariable?(tipoTasaVal==='badlar'?badlarActual:tamarActual):0;
+  const tna=esVariable?tnaBase+spread:parseFloat(document.getElementById('op-tna')?.value)||0;
   const pc=document.getElementById('op-primera-cuota').value;
   if(!entId){toast('Seleccioná una entidad','red');return;}
   if(!monto||monto<=0){toast('Monto inválido','red');return;}
   if(!plazo||plazo<=0){toast('Ingresá el plazo','red');return;}
-  if(isNaN(tna)){toast('Ingresá la TNA','red');return;}
+  if(isNaN(tna)||tna<=0){toast('Ingresá la TNA o el spread','red');return;}
   if(!pc){toast('Ingresá fecha de primera cuota','red');return;}
   const ent=clienteActivo.entidades.find(e=>e.id===entId);
-  const op={entidadId:entId,entidadNombre:ent?ent.nombre:'Desconocida',tipo:document.getElementById('op-tipo').value,monto,plazo,tna,desembolso:document.getElementById('op-desembolso').value,primeraCuota:pc,frecuencia:parseInt(document.getElementById('op-frecuencia').value)||1,tipoTasa:document.getElementById('op-tipo-tasa').value,amortizacion:document.getElementById('op-amortizacion')?.value||'frances',garantia:document.getElementById('op-garantia').value||'Sin garantía',activa:true,creado:firebase.firestore.FieldValue.serverTimestamp()};
+  const op={entidadId:entId,entidadNombre:ent?ent.nombre:'Desconocida',tipo:document.getElementById('op-tipo').value,monto,plazo,tna,tnaBase:esVariable?tnaBase:tna,spread,tipoTasa:tipoTasaVal,amortizacion:document.getElementById('op-amortizacion')?.value||'frances',desembolso:document.getElementById('op-desembolso').value,primeraCuota:pc,frecuencia:parseInt(document.getElementById('op-frecuencia').value)||1,garantia:document.getElementById('op-garantia').value||'Sin garantía',activa:true,creado:firebase.firestore.FieldValue.serverTimestamp()};
   const opRef=await colCli(clienteActivo.id,'operaciones').add(op);
   op.id=opRef.id;clienteActivo.operaciones.push(op);
   if(ent){ent.lineaUtilizada=(ent.lineaUtilizada||0)+monto;await colCli(clienteActivo.id,'entidades').doc(entId).update({lineaUtilizada:ent.lineaUtilizada});}
