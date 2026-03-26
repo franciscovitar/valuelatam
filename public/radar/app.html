@@ -405,8 +405,9 @@
       <div class="form-group"><label>Plazo (meses)</label><input type="number" id="op-plazo" min="1" oninput="previewCuotas()"></div>
       <div class="form-group"><label>Fecha Primera Cuota</label><input type="date" id="op-primera-cuota"></div>
       <div class="form-group"><label>Frecuencia</label><select id="op-frecuencia" onchange="previewCuotas()"><option value="1">Mensual</option><option value="2">Bimestral</option><option value="3">Trimestral</option><option value="6">Semestral</option></select></div>
-      <div class="form-group"><label>TNA (%)</label><input type="number" id="op-tna" step="0.01" oninput="previewCuotas()"></div>
-      <div class="form-group"><label>Tipo de Tasa</label><select id="op-tipo-tasa"><option>Fija</option><option>Variable</option><option>TAMAR + spread</option><option>BADLAR + spread</option></select></div>
+      <div class="form-group"><label>Tipo de Tasa</label><select id="op-tipo-tasa" onchange="onTipoTasaChange()" oninput="previewCuotas()"><option value="fija">Fija</option><option value="variable">Variable</option><option value="tamar">TAMAR + spread</option><option value="badlar">BADLAR + spread</option></select></div>
+      <div class="form-group" id="tna-field"><label>TNA (%)</label><input type="number" id="op-tna" step="0.01" oninput="previewCuotas()" placeholder="Ej: 65.5"></div>
+      <div class="form-group" id="spread-field" style="display:none;"><label>Spread fijo (%)</label><input type="number" id="op-spread" step="0.01" oninput="previewCuotas()" placeholder="Ej: 5.0"><div style="font-size:.68rem;color:var(--text3);margin-top:4px;font-family:var(--mono);" id="spread-preview-label">Tasa efectiva: —</div></div>
       <div class="form-group"><label>Sistema de Amortización</label>
         <select id="op-amortizacion" onchange="previewCuotas()">
           <option value="frances">Francés (cuota fija)</option>
@@ -437,7 +438,7 @@ let empresaData = {};
 let entidades = [];
 let operaciones = [];
 let cuotas = [];
-let tnaRef = 60; // se actualiza desde Firestore global
+let tnaRef = 60, badlarRef = 0, tamarRef = 0; // se actualizan desde Firestore global
 
 // =================== AUTH ===================
 auth.onAuthStateChanged(async user => {
@@ -465,11 +466,15 @@ async function loadEmpresa() {
 async function loadGlobalTNA() {
   try {
     const doc = await db.collection('config').doc('global').get();
-    if(doc.exists && doc.data().tnaRef) {
-      tnaRef = doc.data().tnaRef;
+    if(doc.exists){
+      const d=doc.data();
+      if(d.tnaRef) tnaRef=d.tnaRef;
+      if(d.badlar) badlarRef=d.badlar;
+      if(d.tamar) tamarRef=d.tamar;
     }
-  } catch(e) { /* usa default */ }
-  document.getElementById('tna-mercado-display').textContent = tnaRef.toFixed(1) + '%';
+  } catch(e) {}
+  const el=document.getElementById('tna-mercado-display');
+  if(el) el.textContent = tnaRef.toFixed(1) + '%';
 }
 
 async function loadData() {
@@ -521,8 +526,29 @@ function showTab(name,el){
 }
 
 // =================== MODALS ===================
+function onTipoTasaChange(){
+  const tipo=document.getElementById('op-tipo-tasa')?.value||'fija';
+  const esVariable=tipo==='tamar'||tipo==='badlar';
+  const tnaField=document.getElementById('tna-field');
+  const spreadField=document.getElementById('spread-field');
+  if(tnaField) tnaField.style.display=esVariable?'none':'flex';
+  if(spreadField) spreadField.style.display=esVariable?'flex':'none';
+  if(esVariable){
+    const base=tipo==='badlar'?badlarRef:tamarRef;
+    const spread=parseFloat(document.getElementById('op-spread')?.value||0);
+    const lbl=document.getElementById('spread-preview-label');
+    if(lbl)lbl.textContent=`Tasa efectiva: ${base.toFixed(1)}% (${tipo.toUpperCase()}) + ${spread.toFixed(1)}% (spread) = ${(base+spread).toFixed(1)}%`;
+  }
+  previewCuotas();
+}
+function getTNAEfectiva(){
+  const tipo=document.getElementById('op-tipo-tasa')?.value||'fija';
+  if(tipo==='badlar') return badlarRef+(parseFloat(document.getElementById('op-spread')?.value)||0);
+  if(tipo==='tamar') return tamarRef+(parseFloat(document.getElementById('op-spread')?.value)||0);
+  return parseFloat(document.getElementById('op-tna')?.value)||0;
+}
 function openModal(type){
-  if(type==='op'){refreshEntSelect();document.getElementById('preview-wrap').style.display='none';const t=today();document.getElementById('op-desembolso').value=t;const n=new Date();n.setMonth(n.getMonth()+1);document.getElementById('op-primera-cuota').value=n.toISOString().slice(0,10);}
+  if(type==='op'){refreshEntSelect();document.getElementById('preview-wrap').style.display='none';const t=today();document.getElementById('op-desembolso').value=t;const n=new Date();n.setMonth(n.getMonth()+1);document.getElementById('op-primera-cuota').value=n.toISOString().slice(0,10);const tf=document.getElementById('tna-field');const sf=document.getElementById('spread-field');if(tf)tf.style.display='flex';if(sf)sf.style.display='none';}
   document.getElementById('modal-'+type).classList.add('open');
 }
 function closeModal(type){
@@ -582,8 +608,13 @@ async function guardarOperacion(){
   if(!plazo||plazo<=0){toast('Ingresá el plazo','red');return;}
   if(isNaN(tna)){toast('Ingresá la TNA','red');return;}
   if(!primeraCuota){toast('Ingresá fecha de primera cuota','red');return;}
+  const tipoTasaVal=document.getElementById('op-tipo-tasa')?.value||'fija';
+  const esVariable=tipoTasaVal==='tamar'||tipoTasaVal==='badlar';
+  const spread=esVariable?parseFloat(document.getElementById('op-spread')?.value)||0:0;
+  const tnaBase=esVariable?(tipoTasaVal==='badlar'?badlarRef:tamarRef):tna;
+  const tnaFinal=esVariable?tnaBase+spread:tna;
   const ent=entidades.find(e=>e.id===entId);
-  const op={entidadId:entId,entidadNombre:ent?ent.nombre:'Desconocida',tipo:document.getElementById('op-tipo').value,monto,plazo,tna,desembolso:document.getElementById('op-desembolso').value,primeraCuota,frecuencia:parseInt(document.getElementById('op-frecuencia').value)||1,tipoTasa:document.getElementById('op-tipo-tasa').value,amortizacion:document.getElementById('op-amortizacion')?.value||'frances',garantia:document.getElementById('op-garantia').value||'Sin garantía',activa:true,creado:firebase.firestore.FieldValue.serverTimestamp()};
+  const op={entidadId:entId,entidadNombre:ent?ent.nombre:'Desconocida',tipo:document.getElementById('op-tipo').value,monto,plazo,tna:tnaFinal,tnaBase,spread,tipoTasa:tipoTasaVal,amortizacion:document.getElementById('op-amortizacion')?.value||'frances',desembolso:document.getElementById('op-desembolso').value,primeraCuota,frecuencia:parseInt(document.getElementById('op-frecuencia').value)||1,garantia:document.getElementById('op-garantia').value||'Sin garantía',activa:true,creado:firebase.firestore.FieldValue.serverTimestamp()};
   const opRef=await col('operaciones').add(op);
   op.id=opRef.id;operaciones.push(op);
   // Actualizar entidad
@@ -644,8 +675,12 @@ function previewCuotas(){
   const pc=document.getElementById('op-primera-cuota').value;
   const frec=parseInt(document.getElementById('op-frecuencia').value)||1;
   const amort=document.getElementById('op-amortizacion')?.value||'frances';
-  if(!monto||!plazo||isNaN(tna)||!pc){document.getElementById('preview-wrap').style.display='none';return;}
-  const tmp=generarCuotas({id:'tmp',monto,plazo,tna,primeraCuota:pc,frecuencia:frec,amortizacion:amort});
+  const tipo=document.getElementById('op-tipo-tasa')?.value||'fija';
+  const esVariable=tipo==='tamar'||tipo==='badlar';
+  const tnaEfectiva=esVariable?getTNAEfectiva():tna;
+  if(esVariable){const base=tipo==='badlar'?badlarRef:tamarRef;const spread=parseFloat(document.getElementById('op-spread')?.value||0);const lbl=document.getElementById('spread-preview-label');if(lbl)lbl.textContent=`Tasa efectiva: ${base.toFixed(1)}% (${tipo.toUpperCase()}) + ${spread.toFixed(1)}% (spread) = ${(base+spread).toFixed(1)}%`;}
+  if(!monto||!plazo||isNaN(tnaEfectiva)||!pc){document.getElementById('preview-wrap').style.display='none';return;}
+  const tmp=generarCuotas({id:'tmp',monto,plazo,tna:tnaEfectiva,primeraCuota:pc,frecuencia:frec,amortizacion:amort});
   const lbl=document.getElementById('preview-label');
   if(lbl)lbl.textContent='Preview · Amortización '+(amort==='aleman'?'Alemana (cuota decreciente)':'Francesa (cuota fija)');
   document.getElementById('preview-wrap').style.display='block';
