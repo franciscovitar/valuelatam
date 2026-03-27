@@ -397,6 +397,7 @@
           <option value="Descubierto">Descubierto</option>
           <option value="Tarjeta de Crédito">Tarjeta de Crédito</option>
           <option value="Préstamo de Inversión">Préstamo de Inversión</option>
+          <option value="Leasing">Leasing</option>
         </select>
       </div>
       <div class="form-group" id="ent-monto-wrap"><label>Monto / Línea Total ($)</label><input type="number" id="ent-linea" placeholder="10000000" oninput="previewEntCuotasApp()"></div>
@@ -629,8 +630,10 @@ function populateBancoDropdownApp(selectId,selectedValue=''){
 const ENT_PUNTUAL_FIELDS_APP={
   'Descubierto':['ent-tomado-wrap','ent-tna-wrap'],
   'Tarjeta de Crédito':['ent-tomado-wrap'],
-  'Préstamo de Inversión':['ent-desembolso-wrap','ent-primer-vto-wrap','ent-plazo-wrap','ent-frecuencia-wrap','ent-amort-wrap','ent-gracia-wrap']
+  'Préstamo de Inversión':['ent-desembolso-wrap','ent-primer-vto-wrap','ent-plazo-wrap','ent-frecuencia-wrap','ent-amort-wrap','ent-gracia-wrap','ent-tna-wrap'],
+  'Leasing':['ent-desembolso-wrap','ent-primer-vto-wrap','ent-plazo-wrap','ent-frecuencia-wrap','ent-amort-wrap','ent-gracia-wrap','ent-tna-wrap']
 };
+const PUNTUAL_AMORTIZABLE_APP=['Préstamo de Inversión','Leasing'];
 const ALL_ENT_PUNTUAL_FIELDS_APP=['ent-tomado-wrap','ent-tna-wrap','ent-desembolso-wrap','ent-primer-vto-wrap','ent-plazo-wrap','ent-frecuencia-wrap','ent-amort-wrap','ent-gracia-wrap'];
 
 function ocultarTodosCamposEntApp(){
@@ -958,9 +961,9 @@ function previewCuotas(){
 function refreshEntSelect(){
   const sel=document.getElementById('op-entidad');
   sel.innerHTML='<option value="">— seleccioná —</option>';
-  entidades.forEach(e=>{
-    const label=e.tipoLinea==='Rotativa'?`${e.nombre} · ↺ Rotativa`:`${e.nombre} · ◆ Puntual`;
-    sel.innerHTML+=`<option value="${e.id}">${label}</option>`;
+  // Solo entidades rotativas en operaciones
+  entidades.filter(e=>e.tipoLinea==='Rotativa').forEach(e=>{
+    sel.innerHTML+=`<option value="${e.id}">${e.nombre} · ↺ Rotativa</option>`;
   });
 }
 
@@ -999,46 +1002,75 @@ function getAhorroMensual(op){
 }
 function renderOperaciones(){
   const tbody=document.getElementById('tabla-operaciones');
-  if(!operaciones.length){tbody.innerHTML='<tr><td colspan="11"><div class="empty"><div class="empty-icon">◎</div><div class="empty-text">Sin operaciones</div></div></td></tr>';return;}
-  // Resumen alerta
-  const ahorroTotal=operaciones.reduce((s,op)=>s+getAhorroMensual(op),0);
-  const opsCara=operaciones.filter(op=>getSemaforoOp(getTNAEfectivaOp(op)).label!=='OK');
+  if(!operaciones.length){tbody.innerHTML='<tr><td colspan="12"><div class="empty"><div class="empty-icon">◎</div><div class="empty-text">Sin operaciones</div></div></td></tr>';return;}
+
+  const rotativas=operaciones.filter(op=>op.esRotativa!==false&&!['Descubierto','Tarjeta de Crédito','Préstamo de Inversión'].includes(op.tipo));
+  const puntuales=operaciones.filter(op=>op.esRotativa===false||['Descubierto','Tarjeta de Crédito','Préstamo de Inversión'].includes(op.tipo));
+
+  // Resumen alertas solo rotativas
+  const opsCara=rotativas.filter(op=>getSemaforoOp(getTNAEfectivaOp(op)).label!=='OK');
+  const ahorroTotal=rotativas.reduce((s,op)=>s+getAhorroMensual(op),0);
   const resumenEl=document.getElementById('ops-resumen');
   if(resumenEl){
     if(opsCara.length>0){
-      resumenEl.innerHTML=`<div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:10px 14px;font-size:.75rem;color:var(--red);margin-bottom:12px;display:flex;justify-content:space-between;">
-        <span>⚠ ${opsCara.length} operación(es) por encima del mercado</span>
-        ${ahorroTotal>0?`<span style="font-family:var(--mono);">Ahorro potencial: <strong>${fmt(ahorroTotal)}/mes</strong></span>`:''}
-      </div>`;
-    } else if(operaciones.length>0){
-      resumenEl.innerHTML=`<div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:10px 14px;font-size:.75rem;color:var(--green);margin-bottom:12px;">✓ Todas las operaciones están alineadas con el mercado (TNA: ${tnaRef.toFixed(1)}%)</div>`;
+      resumenEl.innerHTML=`<div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:10px 14px;font-size:.75rem;color:var(--red);margin-bottom:12px;display:flex;justify-content:space-between;"><span>⚠ ${opsCara.length} operación(es) por encima del mercado</span>${ahorroTotal>0?`<span style="font-family:var(--mono);">Ahorro potencial: <strong>${fmt(ahorroTotal)}/mes</strong></span>`:''}</div>`;
+    } else if(rotativas.length>0){
+      resumenEl.innerHTML=`<div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:10px 14px;font-size:.75rem;color:var(--green);margin-bottom:12px;">✓ Todas las operaciones rotativas alineadas con el mercado</div>`;
     } else { resumenEl.innerHTML=''; }
   }
 
-  tbody.innerHTML=operaciones.map(op=>{
-    const pend=cuotas.filter(c=>c.opId===op.id&&c.estado!=='pagada');
-    const saldo=pend.reduce((s,c)=>s+(c.capital||0),0);
-    const tnaEfectiva=getTNAEfectivaOp(op);
-    const sem=getSemaforoOp(tnaEfectiva);
-    const diffStr=(sem.diff>=0?'+':'')+fmtN(sem.diff,1)+'pp';
-    const tasaLabel=op.tipoTasa==='badlar'?`BADLAR+${fmtN(op.spread||0,1)}%`:op.tipoTasa==='tamar'?`TAMAR+${fmtN(op.spread||0,1)}%`:op.tipoTasa||'Fija';
-    const ahorro=getAhorroMensual(op);
-    const refinBadge=ahorro>0?`<span class="kpi-badge badge-blue" title="Ahorro potencial: ${fmt(ahorro)}/mes" style="cursor:help;">💡 Refinanciar</span>`:'';
-    return`<tr>
-      <td class="td-bold">${op.entidadNombre}</td>
-      <td>${op.tipo}</td>
-      <td class="td-mono">${fmt(op.monto)}</td>
-      <td class="td-mono" style="color:var(--accent)">${fmt(saldo)}</td>
-      <td class="td-mono" style="color:${sem.color};font-weight:600;">${fmtN(tnaEfectiva,2)}%</td>
-      <td class="td-mono" style="color:${sem.color};">${diffStr}</td>
-      <td style="white-space:nowrap;"><span style="font-size:1rem;">${sem.dot}</span> <span class="kpi-badge" style="background:${sem.color}22;color:${sem.color};">${sem.label}</span>${refinBadge}</td>
-      <td style="font-size:.72rem;">${tasaLabel}</td>
-      <td class="td-mono">${fmtDate(op.desembolso)}</td>
-      <td class="td-mono">${op.plazo}m</td>
-      <td>${pend.length>0?`<span class="dot dot-green"></span><span style="font-size:.72rem">Activa (${pend.length})</span>`:`<span class="dot dot-yellow"></span><span style="font-size:.72rem">Finalizada</span>`}</td>
-      <td><button class="btn btn-danger btn-sm" onclick="eliminarOperacion('${op.id}')">✕</button></td>
-    </tr>`;
-  }).join('');
+  let html='';
+
+  // ROTATIVAS
+  if(rotativas.length){
+    html+=`<div style="font-family:var(--mono);font-size:.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin:0 0 8px;">↺ Operaciones Rotativas</div>`;
+    html+=`<table style="margin-bottom:20px;"><thead><tr><th>Entidad</th><th>Tipo</th><th>Monto</th><th>Saldo Rest.</th><th>TNA Efectiva</th><th>vs Mercado</th><th>Semáforo</th><th>Tipo Tasa</th><th>Estado</th><th></th></tr></thead><tbody>`;
+    rotativas.forEach(op=>{
+      const pend=cuotas.filter(c=>c.opId===op.id&&c.estado!=='pagada');
+      const saldo=pend.reduce((s,c)=>s+(c.capital||0),0);
+      const tnaEfectiva=getTNAEfectivaOp(op);
+      const sem=getSemaforoOp(tnaEfectiva);
+      const diffStr=(sem.diff>=0?'+':'')+fmtN(sem.diff,1)+'pp';
+      const tasaLabel=op.tipoTasa==='badlar'?`BADLAR+${fmtN(op.spread||0,1)}%`:op.tipoTasa==='tamar'?`TAMAR+${fmtN(op.spread||0,1)}%`:'Fija';
+      const ahorro=getAhorroMensual(op);
+      const refinBadge=ahorro>0?`<span class="kpi-badge badge-blue" title="${fmt(ahorro)}/mes" style="cursor:help;">💡</span>`:'';
+      html+=`<tr><td class="td-bold">${op.entidadNombre}</td><td>${op.tipo}</td><td class="td-mono">${fmt(op.monto)}</td><td class="td-mono" style="color:var(--accent)">${fmt(saldo)}</td><td class="td-mono" style="color:${sem.color};font-weight:600;">${fmtN(tnaEfectiva,2)}%</td><td class="td-mono" style="color:${sem.color};">${diffStr}</td><td><span style="font-size:1rem;">${sem.dot}</span><span class="kpi-badge" style="background:${sem.color}22;color:${sem.color};margin-left:4px;">${sem.label}</span>${refinBadge}</td><td style="font-size:.72rem;">${tasaLabel}</td><td>${pend.length>0?`<span class="dot dot-green"></span><span style="font-size:.72rem">Activa (${pend.length})</span>`:`<span class="dot dot-yellow"></span><span style="font-size:.72rem">Finalizada</span>`}</td><td><button class="btn btn-danger btn-sm" onclick="eliminarOperacion('${op.id}')">✕</button></td></tr>`;
+    });
+    html+='</tbody></table>';
+  }
+
+  // PUNTUALES - separadas en margen y amortizables
+  const puntualMargen=puntuales.filter(op=>!PUNTUAL_AMORTIZABLE_APP.includes(op.tipo));
+  const puntualAmort=puntuales.filter(op=>PUNTUAL_AMORTIZABLE_APP.includes(op.tipo));
+
+  if(puntualMargen.length){
+    html+=`<div style="font-family:var(--mono);font-size:.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin:0 0 8px;">◆ Márgenes Puntuales</div>`;
+    html+=`<table style="margin-bottom:20px;"><thead><tr><th>Entidad</th><th>Tipo</th><th>Límite</th><th>Tomado</th><th>Disponible</th><th>TNA</th><th>Vencimiento</th></tr></thead><tbody>`;
+    puntualMargen.forEach(op=>{
+      const ent=entidades.find(e=>e.id===op.entidadId);
+      const tomado=parseFloat(ent?.lineaUtilizada||0);
+      const limite=parseFloat(ent?.lineaTotal||op.monto||0);
+      const disp=Math.max(0,limite-tomado);
+      const tnaShow=op.tna?fmtN(op.tna,2)+'%':'—';
+      const vtoShow=op.vencimiento?fmtDate(op.vencimiento):'—';
+      const dispColor=disp===0?'var(--red)':disp<limite*0.2?'var(--yellow)':'var(--green)';
+      html+=`<tr><td class="td-bold">${op.entidadNombre}</td><td style="font-size:.75rem">${op.tipo}</td><td class="td-mono">${fmt(limite)}</td><td class="td-mono" style="color:var(--red)">${fmt(tomado)}</td><td class="td-mono" style="color:${dispColor};font-weight:600;">${fmt(disp)}</td><td class="td-mono" style="color:var(--yellow)">${tnaShow}</td><td class="td-mono" style="font-size:.7rem">${vtoShow}</td></tr>`;
+    });
+    html+='</tbody></table>';
+  }
+
+  if(puntualAmort.length){
+    html+=`<div style="font-family:var(--mono);font-size:.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin:0 0 8px;">◆ Créditos Puntuales (amortizables)</div>`;
+    html+=`<table><thead><tr><th>Entidad</th><th>Tipo</th><th>Monto Orig.</th><th>Saldo Rest.</th><th>TNA</th><th>Plazo</th><th>Primer Vto.</th></tr></thead><tbody>`;
+    puntualAmort.forEach(op=>{
+      const saldo=cuotas.filter(c=>c.opId===op.id&&c.estado!=='pagada').reduce((s,c)=>s+(c.capital||0),0);
+      const tnaShow=op.tna?fmtN(op.tna,2)+'%':'—';
+      html+=`<tr><td class="td-bold">${op.entidadNombre}</td><td style="font-size:.75rem">${op.tipo}</td><td class="td-mono">${fmt(op.monto)}</td><td class="td-mono" style="color:var(--accent)">${fmt(saldo)}</td><td class="td-mono" style="color:var(--yellow)">${tnaShow}</td><td class="td-mono">${op.plazo}m</td><td class="td-mono" style="font-size:.7rem">${op.primeraCuota?fmtDate(op.primeraCuota):'—'}</td></tr>`;
+    });
+    html+='</tbody></table>';
+  }
+
+  tbody.innerHTML=html;
 }
 
 function renderCuotas(){
