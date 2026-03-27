@@ -327,10 +327,11 @@
 </div>
 
 <div class="modal-overlay" id="modal-ent">
-  <div class="modal">
+  <div class="modal modal-wide">
     <button class="modal-close" onclick="closeModal('ent')">✕</button>
     <div class="modal-title" id="modal-ent-title">➕ Nueva Entidad</div>
     <div class="form-grid">
+      <!-- Siempre visibles -->
       <div class="form-group full">
         <label>Banco / Entidad</label>
         <select id="ent-nombre"><option value="">— seleccioná —</option></select>
@@ -344,19 +345,84 @@
       </div>
       <div class="form-group" id="ent-subtipo-wrap" style="display:none;">
         <label>Tipo de Operación Puntual</label>
-        <select id="ent-subtipo">
+        <select id="ent-subtipo" onchange="onEntSubtipoChange()">
           <option value="Descubierto">Descubierto</option>
           <option value="Tarjeta de Crédito">Tarjeta de Crédito</option>
-          <option value="Leasing">Leasing</option>
           <option value="Préstamo de Inversión">Préstamo de Inversión</option>
         </select>
       </div>
-      <div class="form-group"><label>Línea Total ($)</label><input type="number" id="ent-linea" placeholder="10000000"></div>
+      <div class="form-group"><label>Monto / Línea Total ($)</label><input type="number" id="ent-linea" placeholder="10000000" oninput="previewEntCuotas()"></div>
       <div class="form-group"><label>Vencimiento Línea</label><input type="date" id="ent-vto"></div>
+
+      <!-- Solo Descubierto / Tarjeta: utilizado toggle -->
+      <div class="form-group" id="ent-utilizado-wrap" style="display:none;">
+        <label>¿Está utilizado?</label>
+        <select id="ent-utilizado">
+          <option value="si">Sí — está utilizado</option>
+          <option value="no">No — disponible</option>
+        </select>
+      </div>
+
+      <!-- Descubierto: solo tasa -->
+      <div class="form-group" id="ent-tna-wrap" style="display:none;">
+        <label>TNA (%)</label>
+        <input type="number" id="ent-tna" step="0.01" placeholder="Ej: 65.5" oninput="previewEntCuotas()">
+      </div>
+
+      <!-- Préstamo de Inversión: campos completos -->
+      <div class="form-group" id="ent-primer-vto-wrap" style="display:none;">
+        <label>Primer Vencimiento Cuota</label>
+        <input type="date" id="ent-primer-vto" oninput="previewEntCuotas()">
+      </div>
+      <div class="form-group" id="ent-plazo-wrap" style="display:none;">
+        <label>Plazo (meses)</label>
+        <input type="number" id="ent-plazo" min="1" oninput="previewEntCuotas()">
+      </div>
+      <div class="form-group" id="ent-frecuencia-wrap" style="display:none;">
+        <label>Frecuencia</label>
+        <select id="ent-frecuencia" onchange="previewEntCuotas()">
+          <option value="1">Mensual</option><option value="2">Bimestral</option>
+          <option value="3">Trimestral</option><option value="6">Semestral</option>
+        </select>
+      </div>
+      <div class="form-group" id="ent-amort-wrap" style="display:none;">
+        <label>Sistema de Amortización</label>
+        <select id="ent-amortizacion" onchange="previewEntCuotas()">
+          <option value="frances">Francés (cuota fija)</option>
+          <option value="aleman">Alemán (capital fijo)</option>
+        </select>
+      </div>
+      <div class="form-group" id="ent-gracia-wrap" style="display:none;">
+        <label>Período de Gracia (meses)</label>
+        <input type="number" id="ent-gracia" min="0" value="0" placeholder="0" oninput="previewEntCuotas()">
+        <div style="font-size:.68rem;color:var(--text3);margin-top:3px;font-family:var(--mono);">Meses en que solo se paga interés</div>
+      </div>
+      <div class="form-group" id="ent-tipo-tasa-wrap" style="display:none;">
+        <label>Tipo de Tasa</label>
+        <select id="ent-tipo-tasa" onchange="onEntTipoTasaChange()">
+          <option value="fija">Fija</option>
+          <option value="tamar">TAMAR + spread</option>
+          <option value="badlar">BADLAR + spread</option>
+        </select>
+      </div>
+      <div class="form-group" id="ent-spread-wrap" style="display:none;">
+        <label>Spread fijo (%)</label>
+        <input type="number" id="ent-spread" step="0.01" placeholder="Ej: 5.0" oninput="previewEntCuotas()">
+        <div style="font-size:.68rem;color:var(--text3);margin-top:3px;font-family:var(--mono);" id="ent-spread-label"></div>
+      </div>
     </div>
+
+    <!-- Preview cuotas para Préstamo de Inversión -->
+    <div id="ent-preview-wrap" style="margin-top:16px;display:none;">
+      <div style="font-family:var(--mono);font-size:.62rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;" id="ent-preview-label">Preview cuotas</div>
+      <table style="font-size:.72rem;"><thead><tr><th>#</th><th>Fecha</th><th>Capital</th><th>Interés</th><th>Total</th><th>Saldo</th></tr></thead>
+      <tbody id="ent-preview-cuotas"></tbody></table>
+      <div id="ent-preview-more" style="text-align:center;padding:6px;font-size:.7rem;color:var(--text3);"></div>
+    </div>
+
     <div class="form-actions">
       <button class="btn btn-ghost" onclick="closeModal('ent')">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarEntidad()">Guardar Entidad</button>
+      <button class="btn btn-primary" id="btn-guardar-ent" onclick="guardarEntidad()">Guardar Entidad</button>
     </div>
   </div>
 </div>
@@ -371,7 +437,7 @@
         <select id="op-entidad" onchange="onOpEntidadChange()"><option value="">— seleccioná —</option></select>
         <div id="op-linea-tipo-info" style="font-size:.68rem;font-family:var(--mono);margin-top:4px;color:var(--text3);display:none;"></div>
       </div>
-      <div class="form-group" id="op-tipo-group"><label>Tipo de Operación</label><select id="op-tipo" onchange="onTipoOpChange()"><option>Préstamo</option><option>Leasing</option><option>Descubierto</option><option>Tarjeta de Crédito</option><option>Cheque descontado</option><option>Factura descontada</option><option>Obligación Negociable</option><option>Préstamo de Inversión</option><option>Otro</option></select></div>
+      <div class="form-group" id="op-tipo-group"><label>Tipo de Operación</label><select id="op-tipo"><option value="Préstamo">Préstamo</option><option value="Cheque descontado">Cheque descontado</option><option value="Factura descontada">Factura descontada</option><option value="Obligación Negociable">Obligación Negociable</option><option value="Otro">Otro</option></select></div>
       <div class="form-group"><label>Monto Original ($)</label><input type="number" id="op-monto" oninput="previewCuotas()"></div>
       <div class="form-group"><label>Fecha Desembolso</label><input type="date" id="op-desembolso"></div>
       <div class="form-group" id="op-vencimiento-field" style="display:none;"><label>Fecha Vencimiento</label><input type="date" id="op-vencimiento"></div>
@@ -672,8 +738,8 @@ async function guardarTasasBancos(){
 const OP_SIMPLES = ['Descubierto','Tarjeta de Crédito'];
 const OP_SIN_TASA = ['Tarjeta de Crédito'];
 function onTipoOpChange(){
-  const tipo=document.getElementById('op-tipo')?.value||'';
-  ajustarCamposOp(tipo);
+  // Operaciones solo son rotativas - always show all fields
+  ajustarCamposOp('Préstamo');
 }
 function onEditTipoOpChange(){
   const tipo=document.getElementById('edit-op-tipo')?.value||'';
@@ -1048,8 +1114,12 @@ function htmlEntidades(){
     const disp=Math.max(0,(e.lineaTotal||0)-(e.lineaUtilizada||0));
     const pct=e.lineaTotal>0?Math.round((e.lineaUtilizada||0)/e.lineaTotal*100):0;
     const color=pct>80?'var(--red)':pct>50?'var(--yellow)':'var(--green)';
+    const utilizadoInfo=e.tipoLinea==='Puntual'&&['Descubierto','Tarjeta de Crédito'].includes(e.subtipo||'')
+      ?(e.lineaUtilizada>0?'<span class="badge badge-red" style="margin-left:4px;">● Utilizado</span>':'<span class="badge badge-green" style="margin-left:4px;">○ Disponible</span>'):'';
+    const toggleUtilBtn=e.tipoLinea==='Puntual'&&['Descubierto','Tarjeta de Crédito'].includes(e.subtipo||'')
+      ?`<button class="btn btn-ghost btn-sm" onclick="toggleUtilizadoEnt('${e.id}')" title="${e.lineaUtilizada>0?'Marcar disponible':'Marcar utilizado'}">${e.lineaUtilizada>0?'↩':'✓'}</button>`:'';
     const tipoLabel=e.tipoLinea==='Rotativa'?'<span class="badge badge-green">↺ Rotativa</span>':`<span class="badge badge-yellow">◆ Puntual${e.subtipo?' · '+e.subtipo:''}</span>`;
-    html+=`<tr><td class="td-bold">${e.nombre}</td><td>${tipoLabel}</td><td class="td-mono">${fmt(e.lineaTotal)}</td><td class="td-mono" style="color:var(--red)">${fmt(e.lineaUtilizada||0)}</td><td class="td-mono" style="color:var(--green)">${fmt(disp)}</td><td class="td-mono" style="font-size:.7rem">${fmtDate(e.vtoLinea)}</td><td><div class="progress-wrap"><div class="progress-bg"><div class="progress-fill" style="width:${pct}%;background:${color}"></div></div><div class="pct-label">${pct}%</div></div></td><td style="display:flex;gap:4px;"><button class="btn btn-ghost btn-sm" onclick="abrirEditEntidad('${e.id}')">✏️</button><button class="btn btn-danger btn-sm" onclick="eliminarEntidadCliente('${e.id}')">✕</button></td></tr>`;
+    html+=`<tr><td class="td-bold">${e.nombre}</td><td>${tipoLabel}${utilizadoInfo}</td><td class="td-mono">${fmt(e.lineaTotal)}</td><td class="td-mono" style="color:var(--red)">${fmt(e.lineaUtilizada||0)}</td><td class="td-mono" style="color:var(--green)">${fmt(disp)}</td><td class="td-mono" style="font-size:.7rem">${fmtDate(e.vtoLinea)}</td><td><div class="progress-wrap"><div class="progress-bg"><div class="progress-fill" style="width:${pct}%;background:${color}"></div></div><div class="pct-label">${pct}%</div></div></td><td style="display:flex;gap:4px;">${toggleUtilBtn}<button class="btn btn-ghost btn-sm" onclick="abrirEditEntidad('${e.id}')">✏️</button><button class="btn btn-danger btn-sm" onclick="eliminarEntidadCliente('${e.id}')">✕</button></td></tr>`;
   });
   return html+'</tbody></table>';
 }
@@ -1220,11 +1290,114 @@ function ajustarCamposOp(tipo){
   else previewCuotas();
 }
 
+// Campos puntual a mostrar por subtipo
+const ENT_PUNTUAL_FIELDS={
+  'Descubierto':['ent-utilizado-wrap','ent-tna-wrap'],
+  'Tarjeta de Crédito':['ent-utilizado-wrap'],
+  'Préstamo de Inversión':['ent-primer-vto-wrap','ent-plazo-wrap','ent-frecuencia-wrap','ent-amort-wrap','ent-gracia-wrap','ent-tipo-tasa-wrap']
+};
+const ALL_ENT_FIELDS=['ent-utilizado-wrap','ent-tna-wrap','ent-primer-vto-wrap','ent-plazo-wrap','ent-frecuencia-wrap','ent-amort-wrap','ent-gracia-wrap','ent-tipo-tasa-wrap','ent-spread-wrap'];
+
+function ocultarTodosCamposEnt(){
+  ALL_ENT_FIELDS.forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+  document.getElementById('ent-preview-wrap').style.display='none';
+}
+
 function onEntTipoLineaChange(){
   const tipo=document.getElementById('ent-tipo-linea')?.value;
   const wrap=document.getElementById('ent-subtipo-wrap');
   if(wrap)wrap.style.display=tipo==='Puntual'?'flex':'none';
+  ocultarTodosCamposEnt();
+  if(tipo==='Puntual') onEntSubtipoChange();
 }
+
+function onEntSubtipoChange(){
+  ocultarTodosCamposEnt();
+  const sub=document.getElementById('ent-subtipo')?.value||'';
+  const fields=ENT_PUNTUAL_FIELDS[sub]||[];
+  fields.forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='flex';});
+  const btn=document.getElementById('btn-guardar-ent');
+  if(btn)btn.textContent=sub==='Préstamo de Inversión'?'Guardar y Generar Cuotas':'Guardar Entidad';
+  previewEntCuotas();
+}
+
+function onEntTipoTasaChange(){
+  const tipo=document.getElementById('ent-tipo-tasa')?.value||'fija';
+  const sw=document.getElementById('ent-spread-wrap');
+  if(sw)sw.style.display=(tipo==='tamar'||tipo==='badlar')?'flex':'none';
+  if(tipo==='tamar'||tipo==='badlar'){
+    const base=tipo==='badlar'?badlarActual:tamarActual;
+    const spread=parseFloat(document.getElementById('ent-spread')?.value||0);
+    const lbl=document.getElementById('ent-spread-label');
+    if(lbl)lbl.textContent=`Efectiva: ${base.toFixed(1)}% + ${spread.toFixed(1)}% = ${(base+spread).toFixed(1)}%`;
+  }
+  previewEntCuotas();
+}
+
+function getEntTNA(){
+  const tipo=document.getElementById('ent-tipo-tasa')?.value||'fija';
+  const spread=parseFloat(document.getElementById('ent-spread')?.value||0);
+  if(tipo==='badlar') return badlarActual+spread;
+  if(tipo==='tamar') return tamarActual+spread;
+  return parseFloat(document.getElementById('ent-tna')?.value)||0;
+}
+
+function previewEntCuotas(){
+  const sub=document.getElementById('ent-subtipo')?.value||'';
+  if(sub!=='Préstamo de Inversión'){document.getElementById('ent-preview-wrap').style.display='none';return;}
+  const monto=parseFloat(document.getElementById('ent-linea')?.value)||0;
+  const plazo=parseInt(document.getElementById('ent-plazo')?.value)||0;
+  const tna=getEntTNA();
+  const pc=document.getElementById('ent-primer-vto')?.value;
+  const frec=parseInt(document.getElementById('ent-frecuencia')?.value)||1;
+  const gracia=parseInt(document.getElementById('ent-gracia')?.value)||0;
+  const amort=document.getElementById('ent-amortizacion')?.value||'frances';
+  if(!monto||!plazo||!tna||!pc){document.getElementById('ent-preview-wrap').style.display='none';return;}
+  const cuotas=generarCuotasConGracia({id:'tmp',monto,plazo,tna,primeraCuota:pc,frecuencia:frec,amortizacion:amort,gracia});
+  document.getElementById('ent-preview-wrap').style.display='block';
+  document.getElementById('ent-preview-label').textContent=`Preview · ${amort==='aleman'?'Alemán':'Francés'} · ${cuotas.length} cuotas`;
+  document.getElementById('ent-preview-cuotas').innerHTML=cuotas.slice(0,6).map(c=>`<tr><td class="td-mono">${c.numero}</td><td class="td-mono">${fmtDate(c.fecha)}</td><td class="td-mono">${fmt(c.capital)}</td><td class="td-mono" style="color:var(--text3)">${fmt(c.interes)}</td><td class="td-mono td-bold">${fmt(c.total)}</td><td class="td-mono" style="color:var(--text3)">${fmt(c.saldo)}</td></tr>`).join('');
+  document.getElementById('ent-preview-more').textContent=cuotas.length>6?`+ ${cuotas.length-6} cuotas más`:'';
+}
+
+function generarCuotasConGracia(op){
+  const cuotasOp=[];
+  const monto=parseFloat(op.monto),plazo=parseInt(op.plazo),frecuencia=parseInt(op.frecuencia||1);
+  const gracia=parseInt(op.gracia||0);
+  const tna=parseFloat(op.tna)/100,tpm=tna/(12/frecuencia);
+  const diasPorPeriodo=frecuencia*30;
+  const primerFecha=op.primeraCuota;
+  let saldo=monto,numero=1;
+
+  // Período de gracia: cuotas solo de interés
+  for(let i=0;i<gracia;i++){
+    const fecha=i===0?primerFecha:addDias(primerFecha,i*diasPorPeriodo);
+    const interes=saldo*tpm;
+    cuotasOp.push({opId:op.id,numero:numero++,fecha,capital:0,interes,total:interes,saldo,estado:calcEstado(fecha),esGracia:true});
+  }
+
+  // Amortización normal
+  const periodosAmort=Math.ceil(plazo/frecuencia);
+  const sistema=op.amortizacion||'frances';
+  if(sistema==='aleman'){
+    const capitalFijo=monto/periodosAmort;
+    for(let i=0;i<periodosAmort;i++){
+      const fecha=addDias(primerFecha,(gracia+i)*diasPorPeriodo);
+      const interes=saldo*tpm,total=capitalFijo+interes;
+      saldo=Math.max(0,saldo-capitalFijo);
+      cuotasOp.push({opId:op.id,numero:numero++,fecha,capital:capitalFijo,interes,total,saldo,estado:calcEstado(fecha)});
+    }
+  } else {
+    const cf=tpm===0?monto/periodosAmort:monto*tpm*Math.pow(1+tpm,periodosAmort)/(Math.pow(1+tpm,periodosAmort)-1);
+    for(let i=0;i<periodosAmort;i++){
+      const fecha=addDias(primerFecha,(gracia+i)*diasPorPeriodo);
+      const interes=saldo*tpm,capital=cf-interes;saldo=Math.max(0,saldo-capital);
+      cuotasOp.push({opId:op.id,numero:numero++,fecha,capital,interes,total:cf,saldo,estado:calcEstado(fecha)});
+    }
+  }
+  return cuotasOp;
+}
+
 function onEditEntTipoLineaChange(){
   const tipo=document.getElementById('edit-ent-tipo-linea')?.value;
   const wrap=document.getElementById('edit-ent-subtipo-wrap');
@@ -1235,6 +1408,7 @@ function openModalEnt(){
   populateBancoDropdown('ent-nombre');
   document.getElementById('ent-subtipo-wrap').style.display='none';
   document.getElementById('ent-tipo-linea').value='Rotativa';
+  ocultarTodosCamposEnt();
   openModal('ent');
 }
 async function guardarEntidad(){
@@ -1244,17 +1418,73 @@ async function guardarEntidad(){
   const tipoLinea=document.getElementById('ent-tipo-linea').value;
   const subtipo=tipoLinea==='Puntual'?document.getElementById('ent-subtipo')?.value||'':'';
   const linea=parseFloat(document.getElementById('ent-linea').value)||0;
-  const ent={nombre,tipo:'Banco',tipoLinea,subtipo,lineaTotal:linea,lineaUtilizada:0,vtoLinea:document.getElementById('ent-vto').value,creado:firebase.firestore.FieldValue.serverTimestamp()};
+  const utilizado=document.getElementById('ent-utilizado')?.value==='si';
+  const ent={nombre,tipo:'Banco',tipoLinea,subtipo,lineaTotal:linea,lineaUtilizada:utilizado?linea:0,vtoLinea:document.getElementById('ent-vto').value,creado:firebase.firestore.FieldValue.serverTimestamp()};
   const ref=await colCli(clienteActivo.id,'entidades').add(ent);
-  clienteActivo.entidades.push({id:ref.id,...ent});
+  ent.id=ref.id;
+  clienteActivo.entidades.push(ent);
+
+  // Si es puntual, crear operación automáticamente
+  if(tipoLinea==='Puntual'&&subtipo){
+    const tna=getEntTNA();
+    const tipoTasaVal=document.getElementById('ent-tipo-tasa')?.value||'fija';
+    const spread=parseFloat(document.getElementById('ent-spread')?.value)||0;
+    const op={
+      entidadId:ent.id,entidadNombre:nombre,tipo:subtipo,
+      monto:linea,tna,tnaBase:tipoTasaVal==='fija'?tna:(tipoTasaVal==='badlar'?badlarActual:tamarActual),
+      spread,tipoTasa:tipoTasaVal,esRotativa:false,esOpSimple:['Descubierto','Tarjeta de Crédito'].includes(subtipo),
+      desembolso:today(),vencimiento:document.getElementById('ent-vto')?.value||'',
+      plazo:parseInt(document.getElementById('ent-plazo')?.value)||0,
+      frecuencia:parseInt(document.getElementById('ent-frecuencia')?.value)||1,
+      amortizacion:document.getElementById('ent-amortizacion')?.value||'frances',
+      gracia:parseInt(document.getElementById('ent-gracia')?.value)||0,
+      primeraCuota:document.getElementById('ent-primer-vto')?.value||'',
+      garantia:'Sin garantía',activa:true,
+      creado:firebase.firestore.FieldValue.serverTimestamp()
+    };
+    const opRef=await colCli(clienteActivo.id,'operaciones').add(op);
+    op.id=opRef.id;
+    clienteActivo.operaciones.push(op);
+
+    // Generar cuotas para Préstamo de Inversión
+    if(subtipo==='Préstamo de Inversión'&&op.primeraCuota&&op.plazo>0){
+      const cuotasGen=generarCuotasConGracia(op);
+      const batch=db.batch();
+      cuotasGen.forEach(c=>{const r=colCli(clienteActivo.id,'cuotas').doc();c.id=r.id;batch.set(r,c);});
+      await batch.commit();
+      clienteActivo.cuotas=clienteActivo.cuotas.concat(cuotasGen);
+      toast(`Entidad y operación creadas · ${cuotasGen.length} cuotas generadas`);
+    } else {
+      toast(`Entidad "${nombre}" y operación creadas`);
+    }
+  } else {
+    toast(`Entidad "${nombre}" guardada`);
+  }
+
   const idx=allClientes.findIndex(e=>e.id===clienteActivo.id);if(idx>=0)allClientes[idx]=clienteActivo;
-  closeModal('ent');renderDetalleCliente();toast(`Entidad "${nombre}" guardada`);
+  closeModal('ent');renderDetalleCliente();
 }
 async function eliminarEntidadCliente(entId){
   if(!confirm('¿Eliminar esta entidad?'))return;
   await colCli(clienteActivo.id,'entidades').doc(entId).delete();
   clienteActivo.entidades=clienteActivo.entidades.filter(e=>e.id!==entId);
   renderDetalleCliente();toast('Entidad eliminada','yellow');
+}
+
+async function toggleUtilizadoEnt(entId){
+  const ent=clienteActivo?.entidades.find(e=>e.id===entId);
+  if(!ent)return;
+  const estaUtilizado=ent.lineaUtilizada>0;
+  ent.lineaUtilizada=estaUtilizado?0:ent.lineaTotal;
+  await colCli(clienteActivo.id,'entidades').doc(entId).update({lineaUtilizada:ent.lineaUtilizada});
+  // Sync operacion vinculada
+  const op=clienteActivo.operaciones.find(o=>o.entidadId===entId);
+  if(op){
+    op.lineaUtilizada=ent.lineaUtilizada;
+    await colCli(clienteActivo.id,'operaciones').doc(op.id).update({lineaUtilizada:ent.lineaUtilizada});
+  }
+  renderDetalleCliente();
+  toast(estaUtilizado?'Marcado como disponible':'Marcado como utilizado');
 }
 
 // OPERACION
@@ -1362,7 +1592,7 @@ async function guardarOperacion(){
   const tna=esVariable?tnaBase+spread:parseFloat(document.getElementById('op-tna')?.value)||0;
   const pc=document.getElementById('op-primera-cuota').value;
   const tipoOpVal=document.getElementById('op-tipo')?.value||'';
-  const esOpSimple=PUNTUAL_SOLO_VTO.includes(tipoOpVal)||typeof PUNTUAL_SOLO_VTO==='undefined'?['Descubierto','Tarjeta de Crédito'].includes(tipoOpVal):PUNTUAL_SOLO_VTO.includes(tipoOpVal);
+  const esOpSimple=false; // Operaciones siempre generan cuotas (son rotativas)
   if(!entId){toast('Seleccioná una entidad','red');return;}
   if(!monto||monto<=0){toast('Monto inválido','red');return;}
   if(isNaN(tna)||tna<=0){toast('Ingresá la TNA o el spread','red');return;}
