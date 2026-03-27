@@ -936,7 +936,7 @@ function renderAnalisisPanel(){
   if(!clienteActivo)return;
   const div=document.getElementById('analisis-panel-content');
   if(!div)return;
-  const ops=clienteActivo.operaciones.filter(op=>!op.esOpSimple&&op.activa);
+  const ops=clienteActivo.operaciones.filter(op=>op.esRotativa!==false&&op.activa&&!['Descubierto','Tarjeta de Crédito','Préstamo de Inversión','Leasing'].includes(op.tipo));
   const cuotasAll=clienteActivo.cuotas||[];
 
   if(!ops.length){div.innerHTML='<div class="empty"><div class="empty-icon">↕</div><div class="empty-text">Sin operaciones con amortización para analizar</div></div>';return;}
@@ -1559,8 +1559,23 @@ async function guardarEntidad(){
   closeModal('ent');renderDetalleCliente();
 }
 async function eliminarEntidadCliente(entId){
-  if(!confirm('¿Eliminar esta entidad?'))return;
-  await colCli(clienteActivo.id,'entidades').doc(entId).delete();
+  const ent=clienteActivo.entidades.find(e=>e.id===entId);
+  if(!ent)return;
+  const msg=ent.tipoLinea==='Puntual'?'¿Eliminar esta entidad y su operación vinculada?':'¿Eliminar esta entidad?';
+  if(!confirm(msg))return;
+  const batch=db.batch();
+  batch.delete(colCli(clienteActivo.id,'entidades').doc(entId));
+  // Si es puntual, eliminar también la operación vinculada y sus cuotas
+  if(ent.tipoLinea==='Puntual'){
+    const opVinculada=clienteActivo.operaciones.find(o=>o.entidadId===entId||o.entidadLinkeada===entId);
+    if(opVinculada){
+      batch.delete(colCli(clienteActivo.id,'operaciones').doc(opVinculada.id));
+      clienteActivo.cuotas.filter(c=>c.opId===opVinculada.id).forEach(c=>batch.delete(colCli(clienteActivo.id,'cuotas').doc(c.id)));
+      clienteActivo.cuotas=clienteActivo.cuotas.filter(c=>c.opId!==opVinculada.id);
+      clienteActivo.operaciones=clienteActivo.operaciones.filter(o=>o.id!==opVinculada.id);
+    }
+  }
+  await batch.commit();
   clienteActivo.entidades=clienteActivo.entidades.filter(e=>e.id!==entId);
   renderDetalleCliente();toast('Entidad eliminada','yellow');
 }
@@ -1714,12 +1729,28 @@ async function guardarOperacion(){
 }
 
 async function eliminarOpCliente(opId){
-  if(!confirm('¿Eliminar esta operación y sus cuotas?'))return;
   const op=clienteActivo.operaciones.find(o=>o.id===opId);
-  if(op){const ent=clienteActivo.entidades.find(e=>e.id===op.entidadId);if(ent){ent.lineaUtilizada=Math.max(0,(ent.lineaUtilizada||0)-op.monto);await colCli(clienteActivo.id,'entidades').doc(ent.id).update({lineaUtilizada:ent.lineaUtilizada});}}
+  if(!op)return;
+  const esPuntual=op.esRotativa===false||['Descubierto','Tarjeta de Crédito','Préstamo de Inversión','Leasing'].includes(op.tipo);
+  const msg=esPuntual?'¿Eliminar esta operación y su entidad vinculada?':'¿Eliminar esta operación y sus cuotas?';
+  if(!confirm(msg))return;
   const batch=db.batch();
+  // Eliminar operación y sus cuotas
   batch.delete(colCli(clienteActivo.id,'operaciones').doc(opId));
   clienteActivo.cuotas.filter(c=>c.opId===opId).forEach(c=>batch.delete(colCli(clienteActivo.id,'cuotas').doc(c.id)));
+  // Si es puntual, eliminar también la entidad vinculada
+  if(esPuntual){
+    const entId=op.entidadLinkeada||op.entidadId;
+    const ent=clienteActivo.entidades.find(e=>e.id===entId);
+    if(ent&&ent.tipoLinea==='Puntual'){
+      batch.delete(colCli(clienteActivo.id,'entidades').doc(entId));
+      clienteActivo.entidades=clienteActivo.entidades.filter(e=>e.id!==entId);
+    }
+  } else {
+    // Rotativa: revertir lineaUtilizada de la entidad
+    const ent=clienteActivo.entidades.find(e=>e.id===op.entidadId);
+    if(ent){ent.lineaUtilizada=Math.max(0,(ent.lineaUtilizada||0)-op.monto);batch.update(colCli(clienteActivo.id,'entidades').doc(ent.id),{lineaUtilizada:ent.lineaUtilizada});}
+  }
   await batch.commit();
   clienteActivo.cuotas=clienteActivo.cuotas.filter(c=>c.opId!==opId);
   clienteActivo.operaciones=clienteActivo.operaciones.filter(o=>o.id!==opId);
