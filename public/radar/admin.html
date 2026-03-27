@@ -331,9 +331,17 @@
     <button class="modal-close" onclick="closeModal('ent')">✕</button>
     <div class="modal-title" id="modal-ent-title">➕ Nueva Entidad</div>
     <div class="form-grid">
-      <div class="form-group full"><label>Nombre Entidad</label><input type="text" id="ent-nombre" placeholder="Banco Galicia, SGR Garantizar…"></div>
-      <div class="form-group"><label>Tipo</label><select id="ent-tipo"><option>Banco</option><option>SGR</option><option>ALyC</option><option>Mercado</option><option>Otro</option></select></div>
-      <div class="form-group"><label>Tipo de Línea</label><select id="ent-tipo-linea"><option>Rotativa</option><option>Puntual</option></select></div>
+      <div class="form-group full">
+        <label>Banco / Entidad</label>
+        <select id="ent-nombre"><option value="">— seleccioná —</option></select>
+      </div>
+      <div class="form-group">
+        <label>Tipo de Línea</label>
+        <select id="ent-tipo-linea">
+          <option value="Rotativa">Rotativa</option>
+          <option value="Puntual">Puntual</option>
+        </select>
+      </div>
       <div class="form-group"><label>Línea Total ($)</label><input type="number" id="ent-linea" placeholder="10000000"></div>
       <div class="form-group"><label>Vencimiento Línea</label><input type="date" id="ent-vto"></div>
     </div>
@@ -349,7 +357,11 @@
     <button class="modal-close" onclick="closeModal('op')">✕</button>
     <div class="modal-title" id="modal-op-title">➕ Nueva Operación</div>
     <div class="form-grid">
-      <div class="form-group"><label>Entidad</label><select id="op-entidad"><option value="">— seleccioná —</option></select></div>
+      <div class="form-group">
+        <label>Entidad</label>
+        <select id="op-entidad" onchange="onOpEntidadChange()"><option value="">— seleccioná —</option></select>
+        <div id="op-linea-tipo-info" style="font-size:.68rem;font-family:var(--mono);margin-top:4px;color:var(--text3);display:none;"></div>
+      </div>
       <div class="form-group"><label>Tipo de Operación</label><select id="op-tipo" onchange="onTipoOpChange()"><option>Préstamo</option><option>Leasing</option><option>Descubierto</option><option>Tarjeta de Crédito</option><option>Cheque descontado</option><option>Factura descontada</option><option>Obligación Negociable</option><option>Otro</option></select></div>
       <div class="form-group"><label>Monto Original ($)</label><input type="number" id="op-monto" oninput="previewCuotas()"></div>
       <div class="form-group"><label>Fecha Desembolso</label><input type="date" id="op-desembolso"></div>
@@ -388,9 +400,17 @@
     <div class="modal-title">✏️ Editar Entidad</div>
     <input type="hidden" id="edit-ent-id">
     <div class="form-grid">
-      <div class="form-group full"><label>Nombre Entidad</label><input type="text" id="edit-ent-nombre"></div>
-      <div class="form-group"><label>Tipo</label><select id="edit-ent-tipo"><option>Banco</option><option>SGR</option><option>ALyC</option><option>Mercado</option><option>Otro</option></select></div>
-      <div class="form-group"><label>Tipo de Línea</label><select id="edit-ent-tipo-linea"><option>Rotativa</option><option>Puntual</option></select></div>
+      <div class="form-group full">
+        <label>Banco / Entidad</label>
+        <select id="edit-ent-nombre"><option value="">— seleccioná —</option></select>
+      </div>
+      <div class="form-group">
+        <label>Tipo de Línea</label>
+        <select id="edit-ent-tipo-linea">
+          <option value="Rotativa">Rotativa</option>
+          <option value="Puntual">Puntual</option>
+        </select>
+      </div>
       <div class="form-group"><label>Línea Total ($)</label><input type="number" id="edit-ent-linea"></div>
       <div class="form-group"><label>Vencimiento Línea</label><input type="date" id="edit-ent-vto"></div>
     </div>
@@ -963,10 +983,11 @@ async function toggleCuotaPagada(cuotaId){
   const batch=db.batch();
   batch.update(colCli(clienteActivo.id,'cuotas').doc(cuotaId),{estado:c.estado});
 
-  if(ent&&ent.tipoLinea==='Rotativa'&&!op.esOpSimple){
+  // Reconstituir cupo: solo si la línea es Rotativa
+  if(ent&&ent.tipoLinea==='Rotativa'){
     const capital=parseFloat(c.capital)||0;
     if(c.estado==='pagada'){
-      // Pagando → libera cupo (baja la utilizada)
+      // Pagando → libera capital (baja lineaUtilizada)
       ent.lineaUtilizada=Math.max(0,(ent.lineaUtilizada||0)-capital);
     } else {
       // Revirtiendo → vuelve a usar el cupo
@@ -1033,7 +1054,8 @@ function htmlEntidades(){
     const disp=Math.max(0,(e.lineaTotal||0)-(e.lineaUtilizada||0));
     const pct=e.lineaTotal>0?Math.round((e.lineaUtilizada||0)/e.lineaTotal*100):0;
     const color=pct>80?'var(--red)':pct>50?'var(--yellow)':'var(--green)';
-    html+=`<tr><td class="td-bold">${e.nombre}</td><td><span class="badge badge-blue">${e.tipo}</span></td><td class="td-mono">${fmt(e.lineaTotal)}</td><td class="td-mono" style="color:var(--red)">${fmt(e.lineaUtilizada||0)}</td><td class="td-mono" style="color:var(--green)">${fmt(disp)}</td><td class="td-mono" style="font-size:.7rem">${fmtDate(e.vtoLinea)}</td><td><div class="progress-wrap"><div class="progress-bg"><div class="progress-fill" style="width:${pct}%;background:${color}"></div></div><div class="pct-label">${pct}%</div></div></td><td style="display:flex;gap:4px;"><button class="btn btn-ghost btn-sm" onclick="abrirEditEntidad('${e.id}')">✏️</button><button class="btn btn-danger btn-sm" onclick="eliminarEntidadCliente('${e.id}')">✕</button></td></tr>`;
+    const tipoLabel=e.tipoLinea==='Rotativa'?'<span class="badge badge-green">↺ Rotativa</span>':'<span class="badge badge-yellow">◆ Puntual</span>';
+    html+=`<tr><td class="td-bold">${e.nombre}</td><td>${tipoLabel}</td><td class="td-mono">${fmt(e.lineaTotal)}</td><td class="td-mono" style="color:var(--red)">${fmt(e.lineaUtilizada||0)}</td><td class="td-mono" style="color:var(--green)">${fmt(disp)}</td><td class="td-mono" style="font-size:.7rem">${fmtDate(e.vtoLinea)}</td><td><div class="progress-wrap"><div class="progress-bg"><div class="progress-fill" style="width:${pct}%;background:${color}"></div></div><div class="pct-label">${pct}%</div></div></td><td style="display:flex;gap:4px;"><button class="btn btn-ghost btn-sm" onclick="abrirEditEntidad('${e.id}')">✏️</button><button class="btn btn-danger btn-sm" onclick="eliminarEntidadCliente('${e.id}')">✕</button></td></tr>`;
   });
   return html+'</tbody></table>';
 }
@@ -1124,16 +1146,47 @@ async function guardarNota(){
 }
 
 // ENTIDAD
+const BANCOS_LISTA = [
+  'Banco de la Nación Argentina','Banco de la Provincia de Buenos Aires','Banco Ciudad',
+  'Banco Galicia','Banco Santander Río','Banco Supervielle',
+  'Banco BBVA','Banco ICBC','Banco Hipotecario',
+  'SGR Garantizar','SGR Afianzar','SGR Crecer',
+  'Portfolio Personal','IOL','PPI','Otro'
+];
+
+function populateBancoDropdown(selectId, selectedValue=''){
+  const sel=document.getElementById(selectId);
+  if(!sel)return;
+  sel.innerHTML='<option value="">— seleccioná —</option>';
+  BANCOS_LISTA.forEach(b=>sel.innerHTML+=`<option value="${b}" ${b===selectedValue?'selected':''}>${b}</option>`);
+}
+
+function onOpEntidadChange(){
+  const entId=document.getElementById('op-entidad')?.value;
+  const ent=clienteActivo?.entidades.find(e=>e.id===entId);
+  const info=document.getElementById('op-linea-tipo-info');
+  if(!ent||!info){if(info)info.style.display='none';return;}
+  const esRotativa=ent.tipoLinea==='Rotativa';
+  info.style.display='block';
+  info.style.color=esRotativa?'var(--green)':'var(--yellow)';
+  info.textContent=esRotativa
+    ?'✓ Línea Rotativa — el capital se reconstituye al pagar cuotas'
+    :'◆ Línea Puntual — sin reconstitución de cupo';
+  previewCuotas();
+}
+
 function openModalEnt(){
   document.getElementById('modal-ent-title').textContent=`➕ Nueva Entidad — ${clienteActivo?.nombre}`;
+  populateBancoDropdown('ent-nombre');
   openModal('ent');
 }
 async function guardarEntidad(){
   if(!clienteActivo){toast('Seleccioná un cliente','red');return;}
-  const nombre=document.getElementById('ent-nombre').value.trim();
-  if(!nombre){toast('Ingresá el nombre','red');return;}
+  const nombre=document.getElementById('ent-nombre').value;
+  if(!nombre){toast('Seleccioná un banco','red');return;}
+  const tipoLinea=document.getElementById('ent-tipo-linea').value;
   const linea=parseFloat(document.getElementById('ent-linea').value)||0;
-  const ent={nombre,tipo:document.getElementById('ent-tipo').value,tipoLinea:document.getElementById('ent-tipo-linea').value,lineaTotal:linea,lineaUtilizada:0,vtoLinea:document.getElementById('ent-vto').value,creado:firebase.firestore.FieldValue.serverTimestamp()};
+  const ent={nombre,tipo:'Banco',tipoLinea,lineaTotal:linea,lineaUtilizada:0,vtoLinea:document.getElementById('ent-vto').value,creado:firebase.firestore.FieldValue.serverTimestamp()};
   const ref=await colCli(clienteActivo.id,'entidades').add(ent);
   clienteActivo.entidades.push({id:ref.id,...ent});
   const idx=allClientes.findIndex(e=>e.id===clienteActivo.id);if(idx>=0)allClientes[idx]=clienteActivo;
@@ -1174,7 +1227,10 @@ function openModalOp(){
   document.getElementById('modal-op-title').textContent=`➕ Nueva Operación — ${clienteActivo?.nombre}`;
   const sel=document.getElementById('op-entidad');
   sel.innerHTML='<option value="">— seleccioná —</option>';
-  clienteActivo.entidades.forEach(e=>sel.innerHTML+=`<option value="${e.id}">${e.nombre} (${e.tipo})</option>`);
+  clienteActivo.entidades.forEach(e=>{
+    const label=e.tipoLinea==='Rotativa'?`${e.nombre} · ↺ Rotativa`:`${e.nombre} · ◆ Puntual`;
+    sel.innerHTML+=`<option value="${e.id}">${label}</option>`;
+  });
   document.getElementById('preview-wrap').style.display='none';
   document.getElementById('op-desembolso').value=today();
   const n=new Date();n.setMonth(n.getMonth()+1);document.getElementById('op-primera-cuota').value=n.toISOString().slice(0,10);
@@ -1259,7 +1315,8 @@ async function guardarOperacion(){
   if(!esOpSimple&&(!plazo||plazo<=0)){toast('Ingresá el plazo','red');return;}
   if(!esOpSimple&&!pc){toast('Ingresá fecha de primera cuota','red');return;}
   const ent=clienteActivo.entidades.find(e=>e.id===entId);
-  const op={entidadId:entId,entidadNombre:ent?ent.nombre:'Desconocida',tipo:tipoOpVal,monto,plazo:esOpSimple?0:plazo,tna,tnaBase:esVariable?tnaBase:tna,spread,tipoTasa:tipoTasaVal,amortizacion:esOpSimple?'ninguno':document.getElementById('op-amortizacion')?.value||'frances',desembolso:document.getElementById('op-desembolso').value,vencimiento:esOpSimple?document.getElementById('op-vencimiento')?.value||'':pc,primeraCuota:esOpSimple?'':pc,frecuencia:esOpSimple?0:parseInt(document.getElementById('op-frecuencia').value)||1,garantia:document.getElementById('op-garantia').value||'Sin garantía',esOpSimple,activa:true,creado:firebase.firestore.FieldValue.serverTimestamp()};
+  const esRotativa=ent?.tipoLinea==='Rotativa';
+  const op={entidadId:entId,entidadNombre:ent?ent.nombre:'Desconocida',tipo:tipoOpVal,monto,plazo:esOpSimple?0:plazo,tna,tnaBase:esVariable?tnaBase:tna,spread,tipoTasa:tipoTasaVal,amortizacion:esOpSimple?'ninguno':document.getElementById('op-amortizacion')?.value||'frances',desembolso:document.getElementById('op-desembolso').value,vencimiento:esOpSimple?document.getElementById('op-vencimiento')?.value||'':pc,primeraCuota:esOpSimple?'':pc,frecuencia:esOpSimple?0:parseInt(document.getElementById('op-frecuencia').value)||1,garantia:document.getElementById('op-garantia').value||'Sin garantía',esOpSimple,esRotativa,activa:true,creado:firebase.firestore.FieldValue.serverTimestamp()};
   const opRef=await colCli(clienteActivo.id,'operaciones').add(op);
   op.id=opRef.id;clienteActivo.operaciones.push(op);
   if(ent){ent.lineaUtilizada=(ent.lineaUtilizada||0)+monto;await colCli(clienteActivo.id,'entidades').doc(entId).update({lineaUtilizada:ent.lineaUtilizada});}
@@ -1295,8 +1352,7 @@ function abrirEditEntidad(entId){
   const e=clienteActivo.entidades.find(x=>x.id===entId);
   if(!e)return;
   document.getElementById('edit-ent-id').value=entId;
-  document.getElementById('edit-ent-nombre').value=e.nombre||'';
-  document.getElementById('edit-ent-tipo').value=e.tipo||'Banco';
+  populateBancoDropdown('edit-ent-nombre',e.nombre||'');
   document.getElementById('edit-ent-tipo-linea').value=e.tipoLinea||'Rotativa';
   document.getElementById('edit-ent-linea').value=e.lineaTotal||0;
   document.getElementById('edit-ent-vto').value=e.vtoLinea||'';
@@ -1307,7 +1363,8 @@ async function guardarEditEntidad(){
   const nombre=document.getElementById('edit-ent-nombre').value.trim();
   if(!nombre){toast('Ingresá el nombre','red');return;}
   const linea=parseFloat(document.getElementById('edit-ent-linea').value)||0;
-  const changes={nombre,tipo:document.getElementById('edit-ent-tipo').value,tipoLinea:document.getElementById('edit-ent-tipo-linea').value,lineaTotal:linea,vtoLinea:document.getElementById('edit-ent-vto').value};
+  const tipoLineaEdit=document.getElementById('edit-ent-tipo-linea').value;
+  const changes={nombre,tipo:'Banco',tipoLinea:tipoLineaEdit,lineaTotal:linea,vtoLinea:document.getElementById('edit-ent-vto').value};
   await colCli(clienteActivo.id,'entidades').doc(entId).update(changes);
   const idx=clienteActivo.entidades.findIndex(e=>e.id===entId);
   if(idx>=0)clienteActivo.entidades[idx]={...clienteActivo.entidades[idx],...changes};
