@@ -400,16 +400,17 @@
     <div class="modal-title">➕ Nueva Operación</div>
     <div class="form-grid">
       <div class="form-group"><label>Entidad</label><select id="op-entidad"><option value="">— seleccioná —</option></select></div>
-      <div class="form-group"><label>Tipo de Operación</label><select id="op-tipo"><option>Préstamo</option><option>Leasing</option><option>Descubierto</option><option>Cheque descontado</option><option>Factura descontada</option><option>Obligación Negociable</option><option>Otro</option></select></div>
+      <div class="form-group"><label>Tipo de Operación</label><select id="op-tipo" onchange="onTipoOpChange()"><option>Préstamo</option><option>Leasing</option><option>Descubierto</option><option>Tarjeta de Crédito</option><option>Cheque descontado</option><option>Factura descontada</option><option>Obligación Negociable</option><option>Otro</option></select></div>
       <div class="form-group"><label>Monto Original ($)</label><input type="number" id="op-monto" oninput="previewCuotas()"></div>
       <div class="form-group"><label>Fecha Desembolso</label><input type="date" id="op-desembolso"></div>
-      <div class="form-group"><label>Plazo (meses)</label><input type="number" id="op-plazo" min="1" oninput="previewCuotas()"></div>
-      <div class="form-group"><label>Fecha Primera Cuota</label><input type="date" id="op-primera-cuota"></div>
-      <div class="form-group"><label>Frecuencia</label><select id="op-frecuencia" onchange="previewCuotas()"><option value="1">Mensual</option><option value="2">Bimestral</option><option value="3">Trimestral</option><option value="6">Semestral</option></select></div>
+      <div class="form-group" id="op-vencimiento-field" style="display:none;"><label>Fecha Vencimiento</label><input type="date" id="op-vencimiento"></div>
+      <div class="form-group op-plazo-group"><label>Plazo (meses)</label><input type="number" id="op-plazo" min="1" oninput="previewCuotas()"></div>
+      <div class="form-group op-primera-group"><label>Fecha Primera Cuota</label><input type="date" id="op-primera-cuota"></div>
+      <div class="form-group op-frecuencia-group"><label>Frecuencia</label><select id="op-frecuencia" onchange="previewCuotas()"><option value="1">Mensual</option><option value="2">Bimestral</option><option value="3">Trimestral</option><option value="6">Semestral</option></select></div>
       <div class="form-group"><label>Tipo de Tasa</label><select id="op-tipo-tasa" onchange="onTipoTasaChange()" oninput="previewCuotas()"><option value="fija">Fija</option><option value="variable">Variable</option><option value="tamar">TAMAR + spread</option><option value="badlar">BADLAR + spread</option></select></div>
       <div class="form-group" id="tna-field"><label>TNA (%)</label><input type="number" id="op-tna" step="0.01" oninput="previewCuotas()" placeholder="Ej: 65.5"></div>
       <div class="form-group" id="spread-field" style="display:none;"><label>Spread fijo (%)</label><input type="number" id="op-spread" step="0.01" oninput="previewCuotas()" placeholder="Ej: 5.0"><div style="font-size:.68rem;color:var(--text3);margin-top:4px;font-family:var(--mono);" id="spread-preview-label">Tasa efectiva: —</div></div>
-      <div class="form-group"><label>Sistema de Amortización</label>
+      <div class="form-group op-amort-group"><label>Sistema de Amortización</label>
         <select id="op-amortizacion" onchange="previewCuotas()">
           <option value="frances">Francés (cuota fija)</option>
           <option value="aleman">Alemán (capital fijo)</option>
@@ -425,7 +426,7 @@
     </div>
     <div class="form-actions">
       <button class="btn btn-ghost" onclick="closeModal('op')">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarOperacion()">Guardar y Generar Cuotas</button>
+      <button class="btn btn-primary" id="btn-guardar-op" onclick="guardarOperacion()">Guardar y Generar Cuotas</button>
     </div>
   </div>
 </div>
@@ -439,7 +440,7 @@ let empresaData = {};
 let entidades = [];
 let operaciones = [];
 let cuotas = [];
-let tnaRef = 60, badlarRef = 0, tamarRef = 0, umbralAmarillo = 3, umbralRojo = 8; // se actualizan desde Firestore global
+let tnaRef = 60, badlarRef = 0, tamarRef = 0, umbralAmarillo = 3, umbralRojo = 8, tasasBancosRef = {}; // se actualizan desde Firestore global
 
 // =================== AUTH ===================
 auth.onAuthStateChanged(async user => {
@@ -474,6 +475,7 @@ async function loadGlobalTNA() {
       if(d.tamar) tamarRef=d.tamar;
       if(d.umbralAmarillo!=null) umbralAmarillo=d.umbralAmarillo;
       if(d.umbralRojo!=null) umbralRojo=d.umbralRojo;
+      if(d.tasasBancos) tasasBancosRef=d.tasasBancos;
     }
   } catch(e) {}
   const el=document.getElementById('tna-mercado-display');
@@ -550,8 +552,22 @@ function getTNAEfectiva(){
   if(tipo==='tamar') return tamarRef+(parseFloat(document.getElementById('op-spread')?.value)||0);
   return parseFloat(document.getElementById('op-tna')?.value)||0;
 }
+const OP_SIMPLES=['Descubierto','Tarjeta de Crédito'];
+function onTipoOpChange(){
+  const tipo=document.getElementById('op-tipo')?.value||'';
+  const esSimple=OP_SIMPLES.includes(tipo);
+  ['op-plazo-group','op-primera-group','op-frecuencia-group','op-amort-group'].forEach(cls=>{
+    document.querySelectorAll('.'+cls).forEach(el=>el.style.display=esSimple?'none':'flex');
+  });
+  const vf=document.getElementById('op-vencimiento-field');
+  if(vf)vf.style.display=esSimple?'flex':'none';
+  const btn=document.getElementById('btn-guardar-op');
+  if(btn)btn.textContent=esSimple?'Guardar Operación':'Guardar y Generar Cuotas';
+  if(esSimple)document.getElementById('preview-wrap').style.display='none';
+  else previewCuotas();
+}
 function openModal(type){
-  if(type==='op'){refreshEntSelect();document.getElementById('preview-wrap').style.display='none';const t=today();document.getElementById('op-desembolso').value=t;const n=new Date();n.setMonth(n.getMonth()+1);document.getElementById('op-primera-cuota').value=n.toISOString().slice(0,10);const tf=document.getElementById('tna-field');const sf=document.getElementById('spread-field');if(tf)tf.style.display='flex';if(sf)sf.style.display='none';}
+  if(type==='op'){refreshEntSelect();document.getElementById('preview-wrap').style.display='none';const t=today();document.getElementById('op-desembolso').value=t;const n=new Date();n.setMonth(n.getMonth()+1);document.getElementById('op-primera-cuota').value=n.toISOString().slice(0,10);const tf=document.getElementById('tna-field');const sf=document.getElementById('spread-field');if(tf)tf.style.display='flex';if(sf)sf.style.display='none';const vf=document.getElementById('op-vencimiento-field');if(vf)vf.style.display='none';['op-plazo-group','op-primera-group','op-frecuencia-group','op-amort-group'].forEach(cls=>document.querySelectorAll('.'+cls).forEach(el=>el.style.display='flex'));}
   document.getElementById('modal-'+type).classList.add('open');
 }
 function closeModal(type){
@@ -606,30 +622,35 @@ async function guardarOperacion(){
   const plazo=parseInt(document.getElementById('op-plazo').value);
   const tna=parseFloat(document.getElementById('op-tna').value);
   const primeraCuota=document.getElementById('op-primera-cuota').value;
+  const tipoOpVal=document.getElementById('op-tipo')?.value||'';
+  const esOpSimple=OP_SIMPLES.includes(tipoOpVal);
   if(!entId){toast('Seleccioná una entidad','red');return;}
   if(!monto||monto<=0){toast('Monto inválido','red');return;}
-  if(!plazo||plazo<=0){toast('Ingresá el plazo','red');return;}
   if(isNaN(tna)){toast('Ingresá la TNA','red');return;}
-  if(!primeraCuota){toast('Ingresá fecha de primera cuota','red');return;}
+  if(!esOpSimple&&(!plazo||plazo<=0)){toast('Ingresá el plazo','red');return;}
+  if(!esOpSimple&&!primeraCuota){toast('Ingresá fecha de primera cuota','red');return;}
   const tipoTasaVal=document.getElementById('op-tipo-tasa')?.value||'fija';
   const esVariable=tipoTasaVal==='tamar'||tipoTasaVal==='badlar';
   const spread=esVariable?parseFloat(document.getElementById('op-spread')?.value)||0:0;
   const tnaBase=esVariable?(tipoTasaVal==='badlar'?badlarRef:tamarRef):tna;
   const tnaFinal=esVariable?tnaBase+spread:tna;
   const ent=entidades.find(e=>e.id===entId);
-  const op={entidadId:entId,entidadNombre:ent?ent.nombre:'Desconocida',tipo:document.getElementById('op-tipo').value,monto,plazo,tna:tnaFinal,tnaBase,spread,tipoTasa:tipoTasaVal,amortizacion:document.getElementById('op-amortizacion')?.value||'frances',desembolso:document.getElementById('op-desembolso').value,primeraCuota,frecuencia:parseInt(document.getElementById('op-frecuencia').value)||1,garantia:document.getElementById('op-garantia').value||'Sin garantía',activa:true,creado:firebase.firestore.FieldValue.serverTimestamp()};
+  const op={entidadId:entId,entidadNombre:ent?ent.nombre:'Desconocida',tipo:tipoOpVal,esOpSimple,monto,plazo:esOpSimple?0:plazo,tna:tnaFinal,tnaBase,spread,tipoTasa:tipoTasaVal,amortizacion:document.getElementById('op-amortizacion')?.value||'frances',desembolso:document.getElementById('op-desembolso').value,vencimiento:esOpSimple?document.getElementById('op-vencimiento')?.value||'':'',primeraCuota:esOpSimple?'':primeraCuota,frecuencia:esOpSimple?0:parseInt(document.getElementById('op-frecuencia').value)||1,garantia:document.getElementById('op-garantia').value||'Sin garantía',activa:true,creado:firebase.firestore.FieldValue.serverTimestamp()};
   const opRef=await col('operaciones').add(op);
   op.id=opRef.id;operaciones.push(op);
   // Actualizar entidad
   if(ent){ent.lineaUtilizada=(ent.lineaUtilizada||0)+monto;await col('entidades').doc(entId).update({lineaUtilizada:ent.lineaUtilizada});}
   // Generar cuotas
-  const nuevas=generarCuotas(op);
-  const batch=db.batch();
-  nuevas.forEach(c=>{const r=col('cuotas').doc();c.id=r.id;batch.set(r,c);});
-  await batch.commit();
-  cuotas=cuotas.concat(nuevas);
+  let nuevas=[];
+  if(!esOpSimple){
+    nuevas=generarCuotas(op);
+    const batch=db.batch();
+    nuevas.forEach(c=>{const r=col('cuotas').doc();c.id=r.id;batch.set(r,c);});
+    await batch.commit();
+    cuotas=cuotas.concat(nuevas);
+  }
   closeModal('op');renderAll();
-  toast(`Operación guardada · ${nuevas.length} cuotas generadas`);
+  toast(esOpSimple?'Operación guardada':`Operación guardada · ${nuevas.length} cuotas generadas`);
 }
 
 // =================== ELIMINAR ===================
