@@ -355,9 +355,9 @@
       <div class="form-group"><label>Fecha Desembolso</label><input type="date" id="op-desembolso"></div>
       <div class="form-group" id="op-vencimiento-field" style="display:none;"><label>Fecha Vencimiento</label><input type="date" id="op-vencimiento"></div>
       <div class="form-group op-plazo-group"><label>Plazo (meses)</label><input type="number" id="op-plazo" min="1" oninput="previewCuotas()"></div>
-      <div class="form-group op-primera-group"><label>Fecha Primera Cuota</label><input type="date" id="op-primera-cuota"></div>
+      <div class="form-group op-primera-group"><label>Primer Vencimiento</label><input type="date" id="op-primera-cuota"></div>
       <div class="form-group op-frecuencia-group"><label>Frecuencia</label><select id="op-frecuencia" onchange="previewCuotas()"><option value="1">Mensual</option><option value="2">Bimestral</option><option value="3">Trimestral</option><option value="6">Semestral</option></select></div>
-      <div class="form-group"><label>Tipo de Tasa</label><select id="op-tipo-tasa" onchange="onTipoTasaChange()" oninput="previewCuotas()"><option value="fija">Fija</option><option value="variable">Variable</option><option value="tamar">TAMAR + spread</option><option value="badlar">BADLAR + spread</option></select></div>
+      <div class="form-group" id="op-tipo-tasa-group"><label>Tipo de Tasa</label><select id="op-tipo-tasa" onchange="onTipoTasaChange()" oninput="previewCuotas()"><option value="fija">Fija</option><option value="variable">Variable</option><option value="tamar">TAMAR + spread</option><option value="badlar">BADLAR + spread</option></select></div>
       <div class="form-group" id="tna-field"><label>TNA (%)</label><input type="number" id="op-tna" step="0.01" oninput="previewCuotas()" placeholder="Ej: 65.5"></div>
       <div class="form-group" id="spread-field" style="display:none;"><label>Spread fijo (%)</label><input type="number" id="op-spread" step="0.01" oninput="previewCuotas()" placeholder="Ej: 5.0"><div style="font-size:.68rem;color:var(--text3);margin-top:4px;font-family:var(--mono);" id="spread-preview-label">Tasa efectiva: —</div></div>
       <div class="form-group op-amort-group"><label>Sistema de Amortización</label>
@@ -632,13 +632,30 @@ async function guardarTasasBancos(){
 
 // TIPO OPERACION CHANGE (descubierto / tarjeta ocultan campos)
 const OP_SIMPLES = ['Descubierto','Tarjeta de Crédito'];
+const OP_SIN_TASA = ['Tarjeta de Crédito'];
 function onTipoOpChange(){
   const tipo=document.getElementById('op-tipo')?.value||'';
   const esSimple=OP_SIMPLES.includes(tipo);
+  const esSinTasa=OP_SIN_TASA.includes(tipo);
+  // Mostrar/ocultar campos de préstamo
   ['op-plazo-group','op-primera-group','op-frecuencia-group','op-amort-group'].forEach(cls=>{
     document.querySelectorAll('.'+cls).forEach(el=>el.style.display=esSimple?'none':'flex');
   });
-  document.getElementById('op-vencimiento-field').style.display=esSimple?'flex':'none';
+  // Vencimiento: solo para ops simples
+  const vf=document.getElementById('op-vencimiento-field');
+  if(vf)vf.style.display=esSimple?'flex':'none';
+  // Tasa: ocultar para Tarjeta de Crédito
+  const tasaFields=['op-tipo-tasa-group','tna-field','spread-field'];
+  const tfg=document.getElementById('op-tipo-tasa-group');
+  if(tfg)tfg.style.display=esSinTasa?'none':'flex';
+  const tnaf=document.getElementById('tna-field');
+  if(tnaf)tnaf.style.display=esSinTasa?'none':'flex';
+  const sf=document.getElementById('spread-field');
+  if(sf)sf.style.display='none'; // always reset spread
+  // Renombrar label "Fecha Primera Cuota" → "Primer Vencimiento"
+  const lbl=document.querySelector('.op-primera-group label');
+  if(lbl)lbl.textContent='Primer Vencimiento';
+  // Botón
   const btn=document.getElementById('btn-guardar-op');
   if(btn)btn.textContent=esSimple?'Guardar Operación':'Guardar y Generar Cuotas';
   document.getElementById('preview-wrap').style.display='none';
@@ -919,14 +936,15 @@ function renderCuotasPanel(){
 
   if(!lista.length){div.innerHTML=html+'<div class="empty"><div class="empty-icon">◷</div><div class="empty-text">Sin cuotas con ese filtro</div></div>';return;}
 
-  html+=`<table><thead><tr><th>#</th><th>Operación</th><th>Vencimiento</th><th>Capital</th><th>Interés</th><th>Total</th><th>Saldo Rest.</th><th>Estado</th><th>Acción</th></tr></thead><tbody>`;
+  html+=`<table><thead><tr><th>#</th><th>Operación</th><th>Vencimiento</th><th>Capital</th><th>Interés</th><th>Total</th><th>Saldo Rest.</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>`;
   lista.forEach(c=>{
     const op=ops.find(o=>o.id===c.opId)||{};
     const rowStyle=c.estado==='pagada'?'opacity:.45;':'';
-    const btn=c.estado==='pagada'
-      ?`<button class="btn btn-ghost btn-sm" onclick="toggleCuotaPagada('${c.id}')">↩ Revertir</button>`
-      :`<button class="btn btn-success btn-sm" onclick="toggleCuotaPagada('${c.id}')">✓ Pagar</button>`;
-    html+=`<tr style="${rowStyle}"><td class="td-mono">${c.numero}</td><td style="font-size:.72rem">${op.entidadNombre||'—'} · ${op.tipo||'—'}</td><td class="td-mono">${fmtDate(c.fecha)}</td><td class="td-mono">${fmt(c.capital)}</td><td class="td-mono" style="color:var(--text3)">${fmt(c.interes)}</td><td class="td-mono td-bold">${fmt(c.total)}</td><td class="td-mono" style="color:var(--text3)">${fmt(c.saldo)}</td><td>${badges[c.estado]||'—'}</td><td>${btn}</td></tr>`;
+    const pagarBtn=c.estado==='pagada'
+      ?`<button class="btn btn-ghost btn-sm" onclick="toggleCuotaPagada('${c.id}')">↩</button>`
+      :`<button class="btn btn-success btn-sm" onclick="toggleCuotaPagada('${c.id}')">✓</button>`;
+    const editBtn=`<button class="btn btn-ghost btn-sm" onclick="abrirEditCuota('${c.id}')" title="Editar vencimiento">✏️</button>`;
+    html+=`<tr style="${rowStyle}"><td class="td-mono">${c.numero}</td><td style="font-size:.72rem">${op.entidadNombre||'—'} · ${op.tipo||'—'}</td><td class="td-mono">${fmtDate(c.fecha)}</td><td class="td-mono">${fmt(c.capital)}</td><td class="td-mono" style="color:var(--text3)">${fmt(c.interes)}</td><td class="td-mono td-bold">${fmt(c.total)}</td><td class="td-mono" style="color:var(--text3)">${fmt(c.saldo)}</td><td>${badges[c.estado]||'—'}</td><td style="display:flex;gap:4px;">${editBtn}${pagarBtn}</td></tr>`;
   });
   html+='</tbody></table>';
   div.innerHTML=html;
@@ -941,6 +959,46 @@ async function toggleCuotaPagada(cuotaId){
   renderCuotasPanel();
   renderDetalleCliente();
   toast(c.estado==='pagada'?'Cuota marcada como pagada':'Cuota revertida a pendiente');
+}
+
+function abrirEditCuota(cuotaId){
+  const c=clienteActivo?.cuotas.find(q=>q.id===cuotaId);
+  if(!c)return;
+  const op=clienteActivo.operaciones.find(o=>o.id===c.opId)||{};
+  // Create inline mini-modal
+  const existing=document.getElementById('mini-modal-cuota');
+  if(existing)existing.remove();
+  const div=document.createElement('div');
+  div.id='mini-modal-cuota';
+  div.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:2000;display:flex;align-items:center;justify-content:center;';
+  div.innerHTML=`
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:24px;width:380px;">
+      <div style="font-family:var(--display);font-size:.95rem;font-weight:700;margin-bottom:16px;">✏️ Editar Vencimiento</div>
+      <div style="font-size:.78rem;color:var(--text2);margin-bottom:12px;">${op.entidadNombre||'—'} · ${op.tipo||'—'} · Cuota #${c.numero}</div>
+      <div style="margin-bottom:16px;">
+        <label style="font-family:var(--mono);font-size:.62rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">Nueva fecha de vencimiento</label>
+        <input type="date" id="edit-cuota-fecha" value="${c.fecha}" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 11px;border-radius:7px;font-size:.85rem;">
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;">
+        <button class="btn btn-ghost" onclick="document.getElementById('mini-modal-cuota').remove()">Cancelar</button>
+        <button class="btn btn-primary" onclick="guardarFechaCuota('${cuotaId}')">Guardar</button>
+      </div>
+    </div>`;
+  div.addEventListener('click',e=>{if(e.target===div)div.remove();});
+  document.body.appendChild(div);
+}
+
+async function guardarFechaCuota(cuotaId){
+  const nuevaFecha=document.getElementById('edit-cuota-fecha')?.value;
+  if(!nuevaFecha){toast('Seleccioná una fecha','red');return;}
+  const c=clienteActivo?.cuotas.find(q=>q.id===cuotaId);
+  if(!c)return;
+  c.fecha=nuevaFecha;
+  c.estado=c.estado==='pagada'?'pagada':calcEstado(nuevaFecha);
+  await colCli(clienteActivo.id,'cuotas').doc(cuotaId).update({fecha:nuevaFecha,estado:c.estado});
+  document.getElementById('mini-modal-cuota')?.remove();
+  renderCuotasPanel();
+  toast('Vencimiento actualizado');
 }
 
 function htmlEntidades(){
@@ -1100,28 +1158,42 @@ function openModalOp(){
   // reset tipo tasa fields
   document.getElementById('tna-field').style.display='flex';
   document.getElementById('spread-field').style.display='none';
+  const tpg=document.getElementById('op-tipo-tasa-group');if(tpg)tpg.style.display='flex';
+  // reset label
+  const lbl=document.querySelector('.op-primera-group label');
+  if(lbl)lbl.textContent='Primer Vencimiento';
   openModal('op');
+}
+
+function addDias(fechaStr, dias){
+  // Suma días exactos a una fecha (no mes+N para evitar drift)
+  const d=new Date(fechaStr+'T00:00:00');
+  d.setDate(d.getDate()+dias);
+  return d.toISOString().slice(0,10);
 }
 
 function generarCuotas(op){
   const cuotasOp=[],monto=parseFloat(op.monto),plazo=parseInt(op.plazo),frecuencia=parseInt(op.frecuencia||1);
   const tna=parseFloat(op.tna)/100,periodos=Math.ceil(plazo/frecuencia),tpm=tna/(12/frecuencia);
   const sistema=op.amortizacion||'frances';
-  let saldo=monto,fechaBase=new Date(op.primeraCuota+'T00:00:00');
+  const diasPorPeriodo=frecuencia*30; // 30, 60, 90, 120...
+  const primerFecha=op.primeraCuota;
+  let saldo=monto;
+
   if(sistema==='aleman'){
     const capitalFijo=monto/periodos;
     for(let i=1;i<=periodos;i++){
+      const fecha=i===1?primerFecha:addDias(primerFecha,(i-1)*diasPorPeriodo);
       const interes=saldo*tpm,total=capitalFijo+interes;
       saldo=Math.max(0,saldo-capitalFijo);
-      cuotasOp.push({opId:op.id,numero:i,fecha:fechaBase.toISOString().slice(0,10),capital:capitalFijo,interes,total,saldo,estado:calcEstado(fechaBase.toISOString().slice(0,10))});
-      const nf=new Date(fechaBase);nf.setMonth(nf.getMonth()+frecuencia);fechaBase=nf;
+      cuotasOp.push({opId:op.id,numero:i,fecha,capital:capitalFijo,interes,total,saldo,estado:calcEstado(fecha)});
     }
   } else {
     const cf=tpm===0?monto/periodos:monto*tpm*Math.pow(1+tpm,periodos)/(Math.pow(1+tpm,periodos)-1);
     for(let i=1;i<=periodos;i++){
+      const fecha=i===1?primerFecha:addDias(primerFecha,(i-1)*diasPorPeriodo);
       const interes=saldo*tpm,capital=cf-interes;saldo=Math.max(0,saldo-capital);
-      cuotasOp.push({opId:op.id,numero:i,fecha:fechaBase.toISOString().slice(0,10),capital,interes,total:cf,saldo,estado:calcEstado(fechaBase.toISOString().slice(0,10))});
-      const nf=new Date(fechaBase);nf.setMonth(nf.getMonth()+frecuencia);fechaBase=nf;
+      cuotasOp.push({opId:op.id,numero:i,fecha,capital,interes,total:cf,saldo,estado:calcEstado(fecha)});
     }
   }
   return cuotasOp;
