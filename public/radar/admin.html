@@ -1383,7 +1383,14 @@ function onEntSubtipoChange(){
     if(vtoLbl)vtoLbl.textContent='Fecha de Vencimiento';
   }
   const btn=document.getElementById('btn-guardar-ent');
-  if(btn)btn.textContent=sub==='Préstamo de Inversión'?'Guardar y Generar Cuotas':'Guardar Entidad';
+  if(btn)btn.textContent=['Préstamo de Inversión','Leasing'].includes(sub)?'Guardar y Generar Cuotas':'Guardar Entidad';
+  // Para amortizables con tipo-tasa fija, mostrar TNA de entrada
+  if(['Préstamo de Inversión','Leasing'].includes(sub)){
+    const tipoTasa=document.getElementById('ent-tipo-tasa')?.value||'fija';
+    const tnaw=document.getElementById('ent-tna-wrap');
+    if(tnaw)tnaw.style.display=tipoTasa==='fija'?'flex':'none';
+    document.getElementById('ent-tipo-tasa').value='fija'; // default fija
+  }
   previewEntCuotas();
 }
 
@@ -1391,6 +1398,9 @@ function onEntTipoTasaChange(){
   const tipo=document.getElementById('ent-tipo-tasa')?.value||'fija';
   const sw=document.getElementById('ent-spread-wrap');
   if(sw)sw.style.display=(tipo==='tamar'||tipo==='badlar')?'flex':'none';
+  // Mostrar campo TNA cuando es fija, ocultarlo cuando es spread
+  const tnaw=document.getElementById('ent-tna-wrap');
+  if(tnaw)tnaw.style.display=tipo==='fija'?'flex':'none';
   if(tipo==='tamar'||tipo==='badlar'){
     const base=tipo==='badlar'?badlarActual:tamarActual;
     const spread=parseFloat(document.getElementById('ent-spread')?.value||0);
@@ -1427,38 +1437,42 @@ function previewEntCuotas(){
 }
 
 function generarCuotasConGracia(op){
+  // plazo = cuotas TOTALES (gracia incluída)
+  // gracia = primeras X cuotas son solo interés, el resto amortiza capital
   const cuotasOp=[];
   const monto=parseFloat(op.monto),plazo=parseInt(op.plazo),frecuencia=parseInt(op.frecuencia||1);
-  const gracia=parseInt(op.gracia||0);
+  const gracia=Math.min(parseInt(op.gracia||0),plazo); // gracia no puede superar plazo
+  const periodosAmort=plazo-gracia; // cuotas de capital = plazo - gracia
   const tna=parseFloat(op.tna)/100,tpm=tna/(12/frecuencia);
   const diasPorPeriodo=frecuencia*30;
   const primerFecha=op.primeraCuota;
   let saldo=monto,numero=1;
 
-  // Período de gracia: cuotas solo de interés
+  // Período de gracia: solo interés (capital NO se amortiza)
   for(let i=0;i<gracia;i++){
     const fecha=i===0?primerFecha:addDias(primerFecha,i*diasPorPeriodo);
     const interes=saldo*tpm;
     cuotasOp.push({opId:op.id,numero:numero++,fecha,capital:0,interes,total:interes,saldo,estado:calcEstado(fecha),esGracia:true});
   }
 
-  // Amortización normal
-  const periodosAmort=Math.ceil(plazo/frecuencia);
-  const sistema=op.amortizacion||'frances';
-  if(sistema==='aleman'){
-    const capitalFijo=monto/periodosAmort;
-    for(let i=0;i<periodosAmort;i++){
-      const fecha=addDias(primerFecha,(gracia+i)*diasPorPeriodo);
-      const interes=saldo*tpm,total=capitalFijo+interes;
-      saldo=Math.max(0,saldo-capitalFijo);
-      cuotasOp.push({opId:op.id,numero:numero++,fecha,capital:capitalFijo,interes,total,saldo,estado:calcEstado(fecha)});
-    }
-  } else {
-    const cf=tpm===0?monto/periodosAmort:monto*tpm*Math.pow(1+tpm,periodosAmort)/(Math.pow(1+tpm,periodosAmort)-1);
-    for(let i=0;i<periodosAmort;i++){
-      const fecha=addDias(primerFecha,(gracia+i)*diasPorPeriodo);
-      const interes=saldo*tpm,capital=cf-interes;saldo=Math.max(0,saldo-capital);
-      cuotasOp.push({opId:op.id,numero:numero++,fecha,capital,interes,total:cf,saldo,estado:calcEstado(fecha)});
+  // Cuotas de amortización (sobre el total de períodos restantes)
+  if(periodosAmort>0){
+    const sistema=op.amortizacion||'frances';
+    if(sistema==='aleman'){
+      const capitalFijo=monto/periodosAmort;
+      for(let i=0;i<periodosAmort;i++){
+        const fecha=addDias(primerFecha,(gracia+i)*diasPorPeriodo);
+        const interes=saldo*tpm,total=capitalFijo+interes;
+        saldo=Math.max(0,saldo-capitalFijo);
+        cuotasOp.push({opId:op.id,numero:numero++,fecha,capital:capitalFijo,interes,total,saldo,estado:calcEstado(fecha)});
+      }
+    } else {
+      const cf=tpm===0?monto/periodosAmort:monto*tpm*Math.pow(1+tpm,periodosAmort)/(Math.pow(1+tpm,periodosAmort)-1);
+      for(let i=0;i<periodosAmort;i++){
+        const fecha=addDias(primerFecha,(gracia+i)*diasPorPeriodo);
+        const interes=saldo*tpm,capital=cf-interes;saldo=Math.max(0,saldo-capital);
+        cuotasOp.push({opId:op.id,numero:numero++,fecha,capital,interes,total:cf,saldo,estado:calcEstado(fecha)});
+      }
     }
   }
   return cuotasOp;
@@ -1505,8 +1519,10 @@ async function guardarEntidad(){
   ent.id=ref.id;
   clienteActivo.entidades.push(ent);
 
-  // Si es puntual, crear operación automáticamente
+  // Si es puntual, crear operación automáticamente (solo si no existe ya una para esta entidad)
   if(tipoLinea==='Puntual'&&subtipo){
+    const opExistente=clienteActivo.operaciones.find(o=>o.entidadLinkeada===ent.id||o.entidadId===ent.id);
+    if(opExistente){toast(`Entidad "${nombre}" guardada`);const idx2=allClientes.findIndex(e=>e.id===clienteActivo.id);if(idx2>=0)allClientes[idx2]=clienteActivo;closeModal('ent');renderDetalleCliente();return;}
     const tna=getEntTNA();
     const tipoTasaVal=ent.tipoTasa||'fija';
     const op={
@@ -1525,7 +1541,7 @@ async function guardarEntidad(){
     clienteActivo.operaciones.push(op);
 
     // Generar cuotas para Préstamo de Inversión
-    if(subtipo==='Préstamo de Inversión'&&op.primeraCuota&&op.plazo>0){
+    if(['Préstamo de Inversión','Leasing'].includes(subtipo)&&op.primeraCuota&&op.plazo>0){
       const cuotasGen=generarCuotasConGracia(op);
       const batch=db.batch();
       cuotasGen.forEach(c=>{const r=colCli(clienteActivo.id,'cuotas').doc();c.id=r.id;batch.set(r,c);});
