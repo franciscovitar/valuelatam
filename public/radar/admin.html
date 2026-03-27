@@ -954,11 +954,34 @@ async function toggleCuotaPagada(cuotaId){
   if(!clienteActivo)return;
   const c=clienteActivo.cuotas.find(q=>q.id===cuotaId);
   if(!c)return;
-  c.estado=c.estado==='pagada'?calcEstado(c.fecha):'pagada';
-  await colCli(clienteActivo.id,'cuotas').doc(cuotaId).update({estado:c.estado});
+  const estabaPageda=c.estado==='pagada';
+  c.estado=estabaPageda?calcEstado(c.fecha):'pagada';
+
+  // Reconstituir cupo si la línea es rotativa
+  const op=clienteActivo.operaciones.find(o=>o.id===c.opId);
+  const ent=op?clienteActivo.entidades.find(e=>e.id===op.entidadId):null;
+  const batch=db.batch();
+  batch.update(colCli(clienteActivo.id,'cuotas').doc(cuotaId),{estado:c.estado});
+
+  if(ent&&ent.tipoLinea==='Rotativa'&&!op.esOpSimple){
+    const capital=parseFloat(c.capital)||0;
+    if(c.estado==='pagada'){
+      // Pagando → libera cupo (baja la utilizada)
+      ent.lineaUtilizada=Math.max(0,(ent.lineaUtilizada||0)-capital);
+    } else {
+      // Revirtiendo → vuelve a usar el cupo
+      ent.lineaUtilizada=(ent.lineaUtilizada||0)+capital;
+    }
+    batch.update(colCli(clienteActivo.id,'entidades').doc(ent.id),{lineaUtilizada:ent.lineaUtilizada});
+  }
+
+  await batch.commit();
   renderCuotasPanel();
   renderDetalleCliente();
-  toast(c.estado==='pagada'?'Cuota marcada como pagada':'Cuota revertida a pendiente');
+  const msg=c.estado==='pagada'
+    ?(ent?.tipoLinea==='Rotativa'?`Cuota pagada · ${fmt(c.capital)} liberados en ${ent.nombre}`:'Cuota marcada como pagada')
+    :'Cuota revertida a pendiente';
+  toast(msg,'green');
 }
 
 function abrirEditCuota(cuotaId){
