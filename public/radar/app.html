@@ -908,12 +908,15 @@ async function guardarOperacion(){
   const tna=parseFloat(document.getElementById('op-tna').value);
   const primeraCuota=document.getElementById('op-primera-cuota').value;
   const tipoOpVal=document.getElementById('op-tipo')?.value||'';
+  const amortizacionValApp=document.getElementById('op-amortizacion')?.value||'frances';
+  const esBulletPuroApp=amortizacionValApp==='bullet';
   const esOpSimple=false; // solo rotativas en operaciones
   if(!entId){toast('Seleccioná una entidad','red');return;}
   if(!monto||monto<=0){toast('Monto inválido','red');return;}
   if(isNaN(tna)){toast('Ingresá la TNA','red');return;}
-  if(!esOpSimple&&(!plazo||plazo<=0)){toast('Ingresá el plazo','red');return;}
-  if(!esOpSimple&&!primeraCuota){toast('Ingresá fecha de primera cuota','red');return;}
+  if(!esBulletPuroApp&&(!plazo||plazo<=0)){toast('Ingresá el plazo','red');return;}
+  if(!esBulletPuroApp&&!primeraCuota){toast('Ingresá fecha de primera cuota','red');return;}
+  if(esBulletPuroApp&&!document.getElementById('op-vencimiento')?.value){toast('Ingresá fecha de vencimiento','red');return;}
   const tipoTasaVal=document.getElementById('op-tipo-tasa')?.value||'fija';
   const esVariable=tipoTasaVal==='tamar'||tipoTasaVal==='badlar';
   const spread=esVariable?parseFloat(document.getElementById('op-spread')?.value)||0:0;
