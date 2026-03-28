@@ -1305,32 +1305,18 @@ function onOpEntidadChange(){
 function ajustarCamposOp(tipo){
   const soloVto=PUNTUAL_SOLO_VTO.includes(tipo);
   const sinTasa=PUNTUAL_SIN_TASA.includes(tipo);
-  const esBullet=BULLET_TIPOS.includes(tipo);
-  const esBulletIntereses=tipo==='Bullet Intereses';
   const conCuotas=!soloVto;
 
-  // Vencimiento: Descubierto/Tarjeta y Bullet
+  // Vencimiento: solo para Descubierto/Tarjeta (bullet maneja su propio campo)
   const vf=document.getElementById('op-vencimiento-field');
-  const vl=document.getElementById('op-vencimiento-label');
-  if(vf)vf.style.display=(soloVto||esBullet)?'flex':'none';
-  if(vl)vl.textContent=esBullet?'Fecha Vencimiento':'Fecha Vencimiento';
+  if(vf)vf.style.display=soloVto?'flex':'none';
 
-  // Campos de cuotas: ocultar para bullets (se calculan automático)
+  // Campos de cuotas
   ['op-plazo-group','op-primera-group','op-frecuencia-group','op-amort-group'].forEach(cls=>{
-    document.querySelectorAll('.'+cls).forEach(el=>{
-      if(cls==='op-primera-group')
-        el.style.display=(conCuotas&&!esBullet)||(esBulletIntereses)?'flex':'none';
-      else
-        el.style.display=(conCuotas&&!esBullet)?'flex':'none';
-    });
+    document.querySelectorAll('.'+cls).forEach(el=>el.style.display=conCuotas?'flex':'none');
   });
-  // Para Bullet Intereses: mostrar primer cupón
   const pgFirst=document.querySelector('.op-primera-group');
-  if(pgFirst){
-    const lbl=pgFirst.querySelector('label');
-    if(lbl)lbl.textContent=esBulletIntereses?'Fecha Primer Cupón de Interés':'Primer Vencimiento';
-    pgFirst.style.display=esBulletIntereses?'flex':(conCuotas&&!esBullet)?'flex':'none';
-  }
+  if(pgFirst){const lbl=pgFirst.querySelector('label');if(lbl)lbl.textContent='Primer Vencimiento';}
 
   // Tasa
   const tpg=document.getElementById('op-tipo-tasa-group');
@@ -1342,11 +1328,9 @@ function ajustarCamposOp(tipo){
 
   // Botón guardar
   const btn=document.getElementById('btn-guardar-op');
-  if(btn)btn.textContent=(conCuotas||esBullet)?'Guardar y Generar Cuotas':'Guardar Operación';
+  if(btn)btn.textContent=conCuotas?'Guardar y Generar Cuotas':'Guardar Operación';
 
-  // Preview / info
-  if(soloVto)document.getElementById('preview-wrap').style.display='none';
-  else if(esBullet) mostrarInfoBullet(tipo);
+  if(!conCuotas) document.getElementById('preview-wrap').style.display='none';
   else previewCuotas();
 }
 
