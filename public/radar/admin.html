@@ -1869,10 +1869,21 @@ async function guardarEditOperacion(){
   const graciaRestante=Math.max(0,gracia-nroPagadas);
   const plazoRestante=Math.max(1,plazo-nroPagadas);
 
-  // Fecha de la primera cuota pendiente
-  const primeraFechaPend=cuotasPendientes.length>0
-    ?[...cuotasPendientes].sort((a,b)=>a.fecha.localeCompare(b.fecha))[0].fecha
-    :pc;
+  // Usar siempre la fecha editada por el usuario como base para recalcular
+  // Si hay cuotas pagadas, la primera cuota pendiente arranca después de la última pagada
+  const cuotasPagadasOrdenadas=[...cuotasPagadas].sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const diasPorPeriodo=(frec)*30;
+  let primeraFechaPend;
+  if(cuotasPagadas.length>0){
+    // Arrancar desde la fecha de la última cuota pagada + 1 período
+    const ultimaPagada=cuotasPagadasOrdenadas[cuotasPagadasOrdenadas.length-1];
+    const d=new Date(ultimaPagada.fecha+'T00:00:00');
+    d.setDate(d.getDate()+diasPorPeriodo);
+    primeraFechaPend=d.toISOString().slice(0,10);
+  } else {
+    // Sin cuotas pagadas: usar la fecha de primera cuota editada
+    primeraFechaPend=pc;
+  }
 
   // Regenerar cuotas desde el saldo restante
   const opCalc={
