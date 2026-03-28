@@ -1827,12 +1827,15 @@ async function guardarOperacion(){
   const tna=esVariable?tnaBase+spread:parseFloat(document.getElementById('op-tna')?.value)||0;
   const pc=document.getElementById('op-primera-cuota').value;
   const tipoOpVal=document.getElementById('op-tipo')?.value||'';
+  const amortizacionVal=document.getElementById('op-amortizacion')?.value||'frances';
+  const esBulletPuro=amortizacionVal==='bullet';
   const esOpSimple=false; // Operaciones siempre generan cuotas (son rotativas)
   if(!entId){toast('Seleccioná una entidad','red');return;}
   if(!monto||monto<=0){toast('Monto inválido','red');return;}
   if(isNaN(tna)||tna<=0){toast('Ingresá la TNA o el spread','red');return;}
-  if(!esOpSimple&&(!plazo||plazo<=0)){toast('Ingresá el plazo','red');return;}
-  if(!esOpSimple&&!pc){toast('Ingresá fecha de primera cuota','red');return;}
+  if(!esBulletPuro&&(!plazo||plazo<=0)){toast('Ingresá el plazo','red');return;}
+  if(!esBulletPuro&&!pc){toast('Ingresá fecha de primera cuota','red');return;}
+  if(esBulletPuro&&!document.getElementById('op-vencimiento')?.value){toast('Ingresá fecha de vencimiento','red');return;}
   const ent=clienteActivo.entidades.find(e=>e.id===entId);
   const esRotativa=ent?.tipoLinea==='Rotativa';
   const op={entidadId:entId,entidadNombre:ent?ent.nombre:'Desconocida',tipo:tipoOpVal,monto,plazo:esOpSimple?0:plazo,tna,tnaBase:esVariable?tnaBase:tna,spread,tipoTasa:tipoTasaVal,amortizacion:esOpSimple?'ninguno':document.getElementById('op-amortizacion')?.value||'frances',desembolso:document.getElementById('op-desembolso').value,vencimiento:(esOpSimple||document.getElementById('op-amortizacion')?.value==='bullet')?document.getElementById('op-vencimiento')?.value||'':pc,primeraCuota:esOpSimple?'':pc,frecuencia:esOpSimple?0:parseInt(document.getElementById('op-frecuencia').value)||1,garantia:document.getElementById('op-garantia').value||'Sin garantía',nroPrestamo:document.getElementById('op-nro')?.value||'',esOpSimple,esRotativa,activa:true,creado:firebase.firestore.FieldValue.serverTimestamp()};
