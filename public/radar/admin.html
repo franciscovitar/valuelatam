@@ -1825,6 +1825,7 @@ async function guardarEditOperacion(){
   const opId=document.getElementById('edit-op-id').value;
   const op=clienteActivo.operaciones.find(o=>o.id===opId);
   if(!op)return;
+
   const tipoTasaVal=document.getElementById('edit-op-tipo-tasa').value;
   const esVariable=tipoTasaVal==='tamar'||tipoTasaVal==='badlar';
   const spread=esVariable?parseFloat(document.getElementById('edit-op-spread')?.value)||0:0;
@@ -1837,22 +1838,57 @@ async function guardarEditOperacion(){
   const pc=document.getElementById('edit-op-primera-cuota').value||op.primeraCuota;
   const frec=parseInt(document.getElementById('edit-op-frecuencia').value)||op.frecuencia||1;
   const amort=document.getElementById('edit-op-amortizacion').value||'frances';
-  const changes={entidadId:entId,entidadNombre:ent?ent.nombre:op.entidadNombre,tipo:document.getElementById('edit-op-tipo').value,monto,plazo,tna,tnaBase:esVariable?tnaBase:tna,spread,tipoTasa:tipoTasaVal,amortizacion:amort,desembolso:document.getElementById('edit-op-desembolso').value,primeraCuota:pc,frecuencia:frec,garantia:document.getElementById('edit-op-garantia').value||op.garantia};
-  // Update op in Firestore
+  const gracia=parseInt(document.getElementById('edit-op-gracia')?.value)||op.gracia||0;
+
+  const changes={
+    entidadId:entId,entidadNombre:ent?ent.nombre:op.entidadNombre,
+    tipo:document.getElementById('edit-op-tipo').value,
+    monto,plazo,tna,tnaBase:esVariable?tnaBase:tna,spread,tipoTasa:tipoTasaVal,
+    amortizacion:amort,gracia,
+    desembolso:document.getElementById('edit-op-desembolso').value,
+    primeraCuota:pc,frecuencia:frec,
+    garantia:document.getElementById('edit-op-garantia').value||op.garantia
+  };
+
+  // Guardar cambios en Firestore
   await colCli(clienteActivo.id,'operaciones').doc(opId).update(changes);
-  // Regenerar cuotas pendientes
+
+  // Borrar TODAS las cuotas pendientes de esta operación
   const cuotasPagadas=clienteActivo.cuotas.filter(c=>c.opId===opId&&c.estado==='pagada');
   const cuotasPendientes=clienteActivo.cuotas.filter(c=>c.opId===opId&&c.estado!=='pagada');
+
   const batch=db.batch();
   cuotasPendientes.forEach(c=>batch.delete(colCli(clienteActivo.id,'cuotas').doc(c.id)));
-  // Recalcular desde el saldo pendiente
-  const saldoPend=cuotasPendientes.reduce((s,c)=>s+(c.capital||0),0)||monto;
-  const primeraFecha=cuotasPendientes.length>0?cuotasPendientes.sort((a,b)=>a.fecha.localeCompare(b.fecha))[0].fecha:pc;
-  const opCalc={...changes,id:opId,monto:saldoPend,primeraCuota:primeraFecha,plazo:cuotasPendientes.length>0?cuotasPendientes.length*frec:plazo};
-  const nuevas=generarCuotas(opCalc);
+
+  // Calcular cuánto capital ya se pagó
+  const capitalPagado=cuotasPagadas.reduce((s,c)=>s+(c.capital||0),0);
+  const saldoRestante=Math.max(0,monto-capitalPagado);
+
+  // Calcular número de cuotas ya pagadas para saber desde qué cuota arrancamos
+  const nroPagadas=cuotasPagadas.length;
+  const graciaRestante=Math.max(0,gracia-nroPagadas);
+  const plazoRestante=Math.max(1,plazo-nroPagadas);
+
+  // Fecha de la primera cuota pendiente
+  const primeraFechaPend=cuotasPendientes.length>0
+    ?[...cuotasPendientes].sort((a,b)=>a.fecha.localeCompare(b.fecha))[0].fecha
+    :pc;
+
+  // Regenerar cuotas desde el saldo restante
+  const opCalc={
+    ...op,...changes,id:opId,
+    monto:saldoRestante,
+    primeraCuota:primeraFechaPend,
+    plazo:plazoRestante,
+    gracia:graciaRestante,
+    numero_inicio:nroPagadas+1
+  };
+
+  const nuevas=generarCuotasConGracia(opCalc).map((c,i)=>({...c,numero:nroPagadas+1+i}));
   nuevas.forEach(c=>{const r=colCli(clienteActivo.id,'cuotas').doc();c.id=r.id;batch.set(r,c);});
   await batch.commit();
-  // Update local state
+
+  // Actualizar estado local
   const opIdx=clienteActivo.operaciones.findIndex(o=>o.id===opId);
   if(opIdx>=0)clienteActivo.operaciones[opIdx]={...op,...changes};
   clienteActivo.cuotas=clienteActivo.cuotas.filter(c=>c.opId!==opId||c.estado==='pagada');
