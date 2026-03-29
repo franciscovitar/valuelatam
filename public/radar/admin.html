@@ -723,8 +723,14 @@ function renderBancosRef(){
   const container=document.getElementById('bancos-ref-rows');
   if(!container)return;
   container.innerHTML=BANCOS_REF.map(banco=>{
-    const condiciones=tasasBancos[banco]||(tasasBancos[banco]={tipo:'fija',valor:0})?[{tipoTasa:'fija',valor:0,plazo:12,amort:'frances'}]:[];
-    const arr=Array.isArray(condiciones)?condiciones:(condiciones.tipo?[{tipoTasa:condiciones.tipo,valor:condiciones.valor,plazo:12,amort:'frances'}]:[{tipoTasa:'fija',valor:0,plazo:12,amort:'frances'}]);
+    // Leer condiciones guardadas, normalizar al formato array
+    const raw=tasasBancos[banco];
+    let arr=[];
+    if(Array.isArray(raw)&&raw.length) arr=raw;
+    else if(raw&&raw.tipo) arr=[{tipoTasa:raw.tipo,valor:raw.valor||0,plazo:12,amort:'frances'}];
+    // Si no hay condiciones guardadas, mostrar una vacía por defecto
+    if(!arr.length) arr=[{tipoTasa:'fija',valor:0,plazo:12,amort:'frances'}];
+
     const bancoCssKey=banco.replace(/[^a-zA-Z0-9]/g,'_');
     let html=`<div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border);">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
@@ -796,6 +802,8 @@ function agregarCondicionBanco(key,banco){
     div.innerHTML=renderCondicionRow(banco,key,idx,arr[idx],0);
     container.appendChild(div.firstChild);
   }
+  const btn=document.getElementById('btn-guardar-bancos');
+  if(btn){btn.style.background='var(--yellow)';btn.style.color='#000';btn.textContent='⚠ Guardar cambios';}
 }
 
 function eliminarCondicion(banco,idx){
@@ -804,6 +812,8 @@ function eliminarCondicion(banco,idx){
   arr.splice(idx,1);
   tasasBancos[banco]=arr;
   renderBancosRef();
+  const btn=document.getElementById('btn-guardar-bancos');
+  if(btn){btn.style.background='var(--yellow)';btn.style.color='#000';btn.textContent='⚠ Guardar cambios';}
 }
 
 async function guardarTasasBancos(){
