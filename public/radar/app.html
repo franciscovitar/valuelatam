@@ -529,6 +529,43 @@
   </div>
 </div>
 
+<!-- MODAL EDITAR ENTIDAD -->
+<div class="modal-overlay" id="modal-edit-ent">
+  <div class="modal modal-wide">
+    <button class="modal-close" onclick="closeModal('edit-ent')">✕</button>
+    <div class="modal-title">✏️ Editar Entidad</div>
+    <input type="hidden" id="edit-ent-id">
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Banco / Entidad</label>
+        <select id="edit-ent-nombre-app"><option value="">— seleccioná —</option></select>
+      </div>
+      <div class="form-group">
+        <label>Tipo de Línea</label>
+        <select id="edit-ent-tipo-linea-app" onchange="onEditEntTipoLineaApp()">
+          <option value="Rotativa">Rotativa</option>
+          <option value="Puntual">Puntual</option>
+        </select>
+      </div>
+      <div class="form-group" id="edit-ent-subtipo-wrap-app" style="display:none;">
+        <label>Subtipo Puntual</label>
+        <select id="edit-ent-subtipo-app">
+          <option value="Descubierto">Descubierto</option>
+          <option value="Tarjeta de Crédito">Tarjeta de Crédito</option>
+          <option value="Préstamo de Inversión">Préstamo de Inversión</option>
+          <option value="Leasing">Leasing</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Monto / Línea Total ($)</label><input type="number" id="edit-ent-linea-app"></div>
+      <div class="form-group"><label>Vencimiento Línea</label><input type="date" id="edit-ent-vto-app"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeModal('edit-ent')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarEditEntApp()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -547,6 +584,7 @@ auth.onAuthStateChanged(async user => {
   await loadEmpresa();
   await loadGlobalTNA();
   await loadData();
+  await cargarTasasPersonales();
   document.getElementById('loading-screen').style.display='none';
   document.getElementById('app').style.display='flex';
   renderAll();
@@ -978,6 +1016,47 @@ async function guardarOperacion(){
 }
 
 // =================== ELIMINAR ===================
+function onEditEntTipoLineaApp(){
+  const tipo=document.getElementById('edit-ent-tipo-linea-app')?.value;
+  const wrap=document.getElementById('edit-ent-subtipo-wrap-app');
+  if(wrap)wrap.style.display=tipo==='Puntual'?'flex':'none';
+}
+
+function abrirEditEntApp(id){
+  const e=entidades.find(x=>x.id===id);
+  if(!e)return;
+  document.getElementById('edit-ent-id').value=id;
+  populateBancoDropdownApp('edit-ent-nombre-app');
+  document.getElementById('edit-ent-nombre-app').value=e.nombre||'';
+  document.getElementById('edit-ent-tipo-linea-app').value=e.tipoLinea||'Rotativa';
+  const wrap=document.getElementById('edit-ent-subtipo-wrap-app');
+  if(wrap)wrap.style.display=e.tipoLinea==='Puntual'?'flex':'none';
+  if(e.subtipo)document.getElementById('edit-ent-subtipo-app').value=e.subtipo;
+  document.getElementById('edit-ent-linea-app').value=e.lineaTotal||0;
+  document.getElementById('edit-ent-vto-app').value=e.vtoLinea||'';
+  document.getElementById('modal-edit-ent').classList.add('open');
+}
+
+async function guardarEditEntApp(){
+  const id=document.getElementById('edit-ent-id').value;
+  const nombre=document.getElementById('edit-ent-nombre-app').value;
+  if(!nombre){toast('Seleccioná un banco','red');return;}
+  const tipoLinea=document.getElementById('edit-ent-tipo-linea-app').value;
+  const subtipo=tipoLinea==='Puntual'?document.getElementById('edit-ent-subtipo-app')?.value||'':'';
+  const linea=parseFloat(document.getElementById('edit-ent-linea-app').value)||0;
+  const vtoLinea=document.getElementById('edit-ent-vto-app').value||'';
+  const changes={nombre,tipoLinea,subtipo,lineaTotal:linea,vtoLinea};
+  await col('entidades').doc(id).update(changes);
+  const idx=entidades.findIndex(e=>e.id===id);
+  if(idx>=0)entidades[idx]={...entidades[idx],...changes};
+  // Sync operacion vinculada si existe
+  const op=operaciones.find(o=>o.entidadId===id);
+  if(op){op.entidadNombre=nombre;await col('operaciones').doc(op.id).update({entidadNombre:nombre});}
+  document.getElementById('modal-edit-ent').classList.remove('open');
+  renderAll();
+  toast('Entidad actualizada');
+}
+
 async function eliminarEntidad(id){
   if(!confirm('¿Eliminar esta entidad?'))return;
   const ops=operaciones.filter(o=>o.entidadId===id).map(o=>o.id);
@@ -1188,7 +1267,7 @@ function renderEntidades(){
     const color=pct>80?'var(--red)':pct>50?'var(--yellow)':'var(--green)';
     const dv=e.vtoLinea?daysBetween(today(),e.vtoLinea):null;
     const vs=dv!==null&&dv<30?'color:var(--red)':dv!==null&&dv<90?'color:var(--yellow)':'';
-    return`<tr><td><span class="td-bold">${e.nombre}</span></td><td><span class="kpi-badge badge-blue">${e.tipo}</span></td><td class="td-mono">${fmt(e.lineaTotal)}</td><td class="td-mono" style="color:var(--red)">${fmt(e.lineaUtilizada||0)}</td><td class="td-mono" style="color:var(--green)">${fmt(disp)}</td><td class="td-mono" style="${vs}">${fmtDate(e.vtoLinea)}</td><td><span class="kpi-badge badge-purple">${e.tipoLinea}</span></td><td><div class="progress-wrap"><div class="progress-bg"><div class="progress-fill" style="width:${pct}%;background:${color}"></div></div><div class="pct-label">${pct}%</div></div></td><td><button class="btn btn-danger btn-sm" onclick="eliminarEntidad('${e.id}')">✕</button></td></tr>`;
+    return`<tr><td><span class="td-bold">${e.nombre}</span></td><td><span class="kpi-badge badge-blue">${e.tipo}</span></td><td class="td-mono">${fmt(e.lineaTotal)}</td><td class="td-mono" style="color:var(--red)">${fmt(e.lineaUtilizada||0)}</td><td class="td-mono" style="color:var(--green)">${fmt(disp)}</td><td class="td-mono" style="${vs}">${fmtDate(e.vtoLinea)}</td><td><span class="kpi-badge badge-purple">${e.tipoLinea}</span></td><td><div class="progress-wrap"><div class="progress-bg"><div class="progress-fill" style="width:${pct}%;background:${color}"></div></div><div class="pct-label">${pct}%</div></div></td><td style="display:flex;gap:4px;"><button class="btn btn-ghost btn-sm" onclick="abrirEditEntApp('${e.id}')">✏️</button><button class="btn btn-danger btn-sm" onclick="eliminarEntidad('${e.id}')">✕</button></td></tr>`;
   }).join('');
 }
 
@@ -1357,9 +1436,8 @@ function renderAnalisisApp(){
       const saldo=cuotas.filter(c=>c.opId===op.id&&c.estado!=='pagada').reduce((s,c)=>s+(c.capital||0),0);
       const tnaEfOp=getTNAEfectivaOp(op);
       const tasaLabel=op.tipoTasa==='badlar'?`BADLAR+${fmtN(op.spread||0,1)}%`:op.tipoTasa==='tamar'?`TAMAR+${fmtN(op.spread||0,1)}%`:'Fija';
-      // Usar tasa de sesión si fue editada, sino la mínima de referencia
-      const tasaBancoSesion=tasasClienteSesion[op.entidadNombre];
-      const tasaBanco=tasaBancoSesion!==undefined?tasaBancoSesion:getTasaMinimaRefApp(op.entidadNombre);
+      // Usar tasa personal del cliente si existe, sino la mínima de referencia admin
+      const tasaBanco=getTasaBancoSesion(op.entidadNombre);
       if(tasaBanco===null){
         html+=`<tr><td class="td-bold">${op.entidadNombre}</td><td style="font-size:.75rem">${op.tipo}</td><td class="td-mono" style="color:var(--yellow)">${fmtN(tnaEfOp,2)}%</td><td colspan="4" style="color:var(--text3);font-size:.73rem;">Sin condiciones de referencia para este banco</td></tr>`;
         return;
@@ -1424,18 +1502,37 @@ function renderAnalisisApp(){
   div.innerHTML=html||'<div class="empty"><div class="empty-icon">↕</div><div class="empty-text">Sin datos para mostrar</div></div>';
 }
 
-// Tasas editadas por el cliente en sesión (no se guardan en Firebase)
-const tasasClienteSesion = {};
+// Tasas personalizadas del cliente — se guardan en Firebase por cliente
+let tasasClientePersonal = {}; // { banco: [ {amort, plazo, tipoTasa, valor}, ... ] }
 
-function getTasaBancoSesion(banco){
-  if(tasasClienteSesion[banco]!==undefined) return tasasClienteSesion[banco];
-  const adminTasa=calcTasaBancoRefApp(tasasBancosRef[banco]);
-  return adminTasa!==null?adminTasa:0;
+async function cargarTasasPersonales(){
+  try {
+    const doc=await db.collection('empresas').doc(currentUser.uid).collection('config').doc('tasas').get();
+    if(doc.exists) tasasClientePersonal=doc.data().tasasBancos||{};
+  } catch(e){ tasasClientePersonal={}; }
 }
 
-function actualizarTasaSesion(banco, valor){
-  tasasClienteSesion[banco] = parseFloat(valor)||0;
-  // Marcar visualmente el input
+async function guardarTasasPersonales(){
+  await db.collection('empresas').doc(currentUser.uid).collection('config').doc('tasas')
+    .set({tasasBancos:tasasClientePersonal},{merge:false});
+}
+
+function getTasaBancoSesion(banco){
+  // Usar tasa personal si existe, sino la mínima de referencia admin
+  const personal=tasasClientePersonal[banco];
+  if(personal!==undefined){
+    if(Array.isArray(personal)&&personal.length) return calcTasaBancoRefApp(personal.reduce((b,c)=>calcTasaBancoRefApp(c)<calcTasaBancoRefApp(b)?c:b));
+    if(typeof personal==='number') return personal;
+  }
+  return getTasaMinimaRefApp(banco);
+}
+
+async function actualizarTasaSesion(banco, valor){
+  const v=parseFloat(valor)||0;
+  // Guardar como condición simple
+  tasasClientePersonal[banco]=[{tipoTasa:'fija',valor:v,plazo:12,amort:'frances'}];
+  await guardarTasasPersonales();
+  // Marcar visualmente
   const bancoKey=banco.replace(/[^a-zA-Z0-9]/g,'_');
   const input=document.getElementById('tasa-sesion-'+bancoKey);
   if(input){
@@ -1445,14 +1542,47 @@ function actualizarTasaSesion(banco, valor){
       badge=document.createElement('span');
       badge.className='editada-badge';
       badge.style.cssText='font-size:.65rem;color:var(--accent);margin-left:2px;';
-      badge.textContent='✎';
+      badge.textContent='✎ guardada';
       input.parentElement.appendChild(badge);
     }
   }
-  // Si el panel de Análisis está activo, refrescarlo con la nueva tasa
-  if(document.getElementById('panel-analisis')?.classList.contains('active')){
-    renderAnalisisApp();
-  }
+  if(document.getElementById('panel-analisis')?.classList.contains('active')) renderAnalisisApp();
+}
+
+async function agregarCondicionPersonal(banco){
+  if(!tasasClientePersonal[banco]) tasasClientePersonal[banco]=[];
+  const arr=Array.isArray(tasasClientePersonal[banco])?tasasClientePersonal[banco]:[];
+  arr.push({tipoTasa:'fija',valor:0,plazo:12,amort:'frances'});
+  tasasClientePersonal[banco]=arr;
+  await guardarTasasPersonales();
+  renderTasas();
+}
+
+async function eliminarCondicionPersonal(banco, idx){
+  if(!tasasClientePersonal[banco]) return;
+  const arr=Array.isArray(tasasClientePersonal[banco])?tasasClientePersonal[banco]:[];
+  arr.splice(idx,1);
+  tasasClientePersonal[banco]=arr.length?arr:undefined;
+  if(!arr.length) delete tasasClientePersonal[banco];
+  await guardarTasasPersonales();
+  renderTasas();
+}
+
+async function onCondPersonalChange(el){
+  const banco=el.dataset.banco;
+  const idx=parseInt(el.dataset.idx);
+  const field=el.dataset.field;
+  if(!tasasClientePersonal[banco]) tasasClientePersonal[banco]=[];
+  const arr=Array.isArray(tasasClientePersonal[banco])?tasasClientePersonal[banco]:[];
+  if(!arr[idx]) arr[idx]={tipoTasa:'fija',valor:0,plazo:12,amort:'frances'};
+  arr[idx][field]=field==='plazo'||field==='valor'?parseFloat(el.value)||0:el.value;
+  tasasClientePersonal[banco]=arr;
+  await guardarTasasPersonales();
+  // Update efectiva
+  const key=banco.replace(/[^a-zA-Z0-9]/g,'_');
+  const row=document.getElementById('cond-pers-'+key+'-'+idx);
+  if(row){const s=row.querySelector('.tna-ef');if(s)s.textContent=fmtN(calcTasaBancoRefApp(arr[idx]),2)+'%';}
+  if(document.getElementById('panel-analisis')?.classList.contains('active')) renderAnalisisApp();
 }
 
 function renderTasas(){
@@ -1487,8 +1617,8 @@ function renderTasas(){
 
   grupos.forEach(g=>{
     html+=`<div class="table-card" style="margin-bottom:16px;">
-      <div class="table-header"><div><div class="table-title">${g.titulo}</div><div class="table-sub">Tasas editables para simulación</div></div></div>
-      <table><thead><tr><th>Banco</th><th>Límite</th><th>Utilizado</th><th>Disponible</th><th>Tasa Banco (editable)</th><th>Tasa Admin Ref.</th></tr></thead><tbody>`;
+      <div class="table-header"><div><div class="table-title">${g.titulo}</div><div class="table-sub">Cargá tus condiciones — se guardan para próximas sesiones</div></div></div>
+      <table><thead><tr><th>Banco</th><th>Límite</th><th>Utilizado</th><th>Disponible</th><th>Mis Condiciones</th><th>Ref. Admin</th></tr></thead><tbody>`;
 
     g.items.forEach(ent=>{
       const disp=Math.max(0,(ent.lineaTotal||0)-(ent.lineaUtilizada||0));
@@ -1497,35 +1627,49 @@ function renderTasas(){
       const bancoKey=ent.nombre.replace(/[^a-zA-Z0-9]/g,'_');
       const bancoEsc=ent.nombre.replace(/'/g,'&#39;').replace(/"/g,'&quot;');
       // Build condiciones rows - editable
-      let condsHtml='';
-      if(condiciones.length){
-        condiciones.forEach((c,i)=>{
-          const tnaEf=calcTasaBancoRefApp(c);
-          const tipoTasaLabel=c.tipoTasa==='badlar'?`BADLAR+${fmtN(c.valor||0,1)}%`:c.tipoTasa==='tamar'?`TAMAR+${fmtN(c.valor||0,1)}%`:`${fmtN(c.valor||0,1)}%`;
-          const amortL={'frances':'Francés','aleman':'Alemán','bullet':'Bullet puro','bullet_intereses':'Bullet c/int.'}[c.amort||'frances']||'—';
-          condsHtml+=`<div style="font-size:.7rem;color:var(--text3);margin-top:2px;">${amortL} · ${c.plazo||12}m · ${tipoTasaLabel} → <span style="color:var(--yellow)">${fmtN(tnaEf,2)}%</span></div>`;
-        });
-      } else {
-        condsHtml='<div style="font-size:.7rem;color:var(--text3);">Sin condiciones de referencia</div>';
-      }
+      // Condiciones personales del cliente para este banco
+      const condPersonal=tasasClientePersonal[ent.nombre];
+      const arrPersonal=condPersonal?(Array.isArray(condPersonal)?condPersonal:[condPersonal]):[];
       const tasaMinimaAdmin=getTasaMinimaRefApp(ent.nombre);
       const tasaMinimaFmt=tasaMinimaAdmin!==null?fmtN(tasaMinimaAdmin,2)+'%':'—';
+
+      // Build condiciones personales editables
+      let condsHtml='<div style="font-size:.68rem;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;">Mis condiciones con este banco:</div>';
+      if(arrPersonal.length){
+        arrPersonal.forEach((c,i)=>{
+          const tnaEf=calcTasaBancoRefApp(c);
+          const bancoCssKey=ent.nombre.replace(/[^a-zA-Z0-9]/g,'_');
+          const bancoEscQ=ent.nombre.replace(/"/g,'&quot;');
+          condsHtml+=`<div id="cond-pers-${bancoCssKey}-${i}" style="display:flex;align-items:center;gap:4px;margin-bottom:4px;">
+            <select data-banco="${bancoEscQ}" data-idx="${i}" data-field="amort" onchange="onCondPersonalChange(this)" style="font-size:.68rem;padding:2px 4px;">
+              <option value="frances" ${(c.amort||'frances')==='frances'?'selected':''}>Francés</option>
+              <option value="aleman" ${c.amort==='aleman'?'selected':''}>Alemán</option>
+              <option value="bullet" ${c.amort==='bullet'?'selected':''}>Bullet puro</option>
+              <option value="bullet_intereses" ${c.amort==='bullet_intereses'?'selected':''}>Bullet c/int.</option>
+            </select>
+            <input type="number" value="${c.plazo||12}" min="1" data-banco="${bancoEscQ}" data-idx="${i}" data-field="plazo" onchange="onCondPersonalChange(this)" style="width:45px;font-size:.68rem;padding:2px 4px;" placeholder="Plazo">
+            <select data-banco="${bancoEscQ}" data-idx="${i}" data-field="tipoTasa" onchange="onCondPersonalChange(this)" style="font-size:.68rem;padding:2px 4px;">
+              <option value="fija" ${(c.tipoTasa||'fija')==='fija'?'selected':''}>Fija</option>
+              <option value="tamar" ${c.tipoTasa==='tamar'?'selected':''}>TAMAR+</option>
+              <option value="badlar" ${c.tipoTasa==='badlar'?'selected':''}>BADLAR+</option>
+            </select>
+            <input type="number" value="${c.valor||0}" step="0.5" data-banco="${bancoEscQ}" data-idx="${i}" data-field="valor" onchange="onCondPersonalChange(this)" style="width:50px;font-size:.68rem;padding:2px 4px;" placeholder="TNA">
+            <span class="tna-ef" style="font-family:var(--mono);font-size:.68rem;color:var(--yellow);min-width:40px;">${fmtN(tnaEf,2)}%</span>
+            <button onclick="eliminarCondicionPersonal('${ent.nombre.replace(/'/g,"\'")}',${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.78rem;">✕</button>
+          </div>`;
+        });
+      } else {
+        condsHtml+='<div style="font-size:.7rem;color:var(--text3);margin-bottom:4px;">Sin condiciones cargadas</div>';
+      }
+      condsHtml+=`<button onclick="agregarCondicionPersonal('${ent.nombre.replace(/'/g,"\'")}')" style="font-size:.68rem;padding:2px 8px;border:1px dashed var(--border);border-radius:4px;background:none;color:var(--text3);cursor:pointer;margin-top:2px;">+ condición</button>`;
+      condsHtml+=`<div style="margin-top:6px;font-size:.68rem;color:var(--text3);">Ref. admin más baja: <span style="color:var(--yellow)">${tasaMinimaFmt}</span></div>`;
       html+=`<tr>
         <td class="td-bold">${ent.nombre}</td>
         <td class="td-mono">${fmt(ent.lineaTotal)}</td>
         <td class="td-mono" style="color:var(--red)">${fmt(ent.lineaUtilizada||0)}</td>
         <td class="td-mono" style="color:var(--green)">${fmt(disp)}</td>
-        <td>
-          <div style="display:flex;align-items:center;gap:6px;">
-            <input type="number" value="${tasaSesion!==undefined?tasaSesion:(tasaMinimaAdmin||0)}" step="0.5" min="0"
-              data-banco="${bancoEsc}"
-              style="width:75px;font-size:.78rem;padding:3px 6px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:5px;text-align:right;"
-              oninput="actualizarTasaSesion(this.dataset.banco,this.value)" id="tasa-sesion-${bancoKey}">
-            <span style="font-size:.72rem;color:var(--text3);">%</span>
-          </div>
-          <div style="font-size:.65rem;color:var(--text3);margin-top:3px;">Editás para simular</div>
-        </td>
-        <td style="font-size:.72rem;">${condsHtml}<div style="margin-top:4px;font-family:var(--mono);font-size:.7rem;color:var(--text3);">Mín. ref: <span style="color:var(--yellow)">${tasaMinimaFmt}</span></div></td>
+        <td style="font-size:.72rem;">${condsHtml}</td>
+        <td style="font-size:.72rem;">${condiciones.length?condiciones.map(c=>{const tnaEf=calcTasaBancoRefApp(c);const amortL={'frances':'Fr.','aleman':'Al.','bullet':'Bullet','bullet_intereses':'B.int.'}[c.amort||'frances']||'';const tipoL=c.tipoTasa==='badlar'?`BADLAR+${fmtN(c.valor||0,1)}%`:c.tipoTasa==='tamar'?`TAMAR+${fmtN(c.valor||0,1)}%`:`${fmtN(c.valor||0,1)}%`;return`<div style="color:var(--text3);">${amortL} ${c.plazo||12}m · ${tipoL} → <span style="color:var(--yellow)">${fmtN(tnaEf,2)}%</span></div>`;}).join(''):'<span style="color:var(--text3);">—</span>'}</td>
       </tr>`;
     });
     html+='</tbody></table></div>';
