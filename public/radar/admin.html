@@ -998,18 +998,38 @@ function htmlAnalisis(){
   return '<div id="analisis-panel-content"><div style="color:var(--text3);font-size:.78rem;padding:20px 0;">Cargando análisis...</div></div>';
 }
 
-function renderAnalisisPanel(){
+async function renderAnalisisPanel(){
   if(!clienteActivo)return;
   const div=document.getElementById('analisis-panel-content');
   if(!div)return;
-  const cuotasAll=clienteActivo.cuotas||[];
+  div.innerHTML='<div style="color:var(--text3);font-size:.78rem;padding:12px 0;">Cargando...</div>';
 
-  // Rotativos: comparar contra tasa del mismo banco en Tasas Globales
+  // Cargar tasas personales del cliente
+  let tasasPersonalesCliente={};
+  try{
+    const doc=await db.collection('empresas').doc(clienteActivo.id).collection('config').doc('tasas').get();
+    if(doc.exists) tasasPersonalesCliente=doc.data().tasasBancos||{};
+  }catch(e){}
+
+  // Función para obtener la tasa mínima: personal del cliente primero, sino global admin
+  function getTasaEfectivaCliente(banco){
+    const personal=tasasPersonalesCliente[banco];
+    if(personal){
+      const arr=Array.isArray(personal)?personal:[personal];
+      if(arr.length){
+        const min=arr.reduce((b,c)=>calcTasaBancoRef(c)<calcTasaBancoRef(b)?c:b);
+        return{tasa:calcTasaBancoRef(min),fuente:'cliente',cond:min};
+      }
+    }
+    const globalTasa=getTasaMinimaRef(banco);
+    return globalTasa!==null?{tasa:globalTasa,fuente:'admin'}:null;
+  }
+
+  const cuotasAll=clienteActivo.cuotas||[];
   const rotativos=clienteActivo.operaciones.filter(op=>
     op.esRotativa!==false&&op.activa&&
     !['Descubierto','Tarjeta de Crédito','Préstamo de Inversión','Leasing'].includes(op.tipo)
   );
-  // Descubiertos: comparar contra TNA de mercado
   const descubiertos=clienteActivo.operaciones.filter(op=>op.tipo==='Descubierto'&&op.activa);
 
   if(!rotativos.length&&!descubiertos.length){
@@ -1020,34 +1040,34 @@ function renderAnalisisPanel(){
 
   // ── MÁRGENES ROTATIVOS ──
   if(rotativos.length){
-    html+=`<div style="font-family:var(--mono);font-size:.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">↺ Márgenes Rotativos — comparado contra tasa del mismo banco</div>`;
+    html+=`<div style="font-family:var(--mono);font-size:.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">↺ Márgenes Rotativos</div>`;
 
-    if(!Object.keys(tasasBancos).length){
-      html+=`<div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:10px 14px;font-size:.75rem;color:var(--yellow);margin-bottom:16px;">⚠ Cargá tasas en <strong>Tasas Globales</strong> para ver la comparación.</div>`;
+    if(!Object.keys(tasasBancos).length&&!Object.keys(tasasPersonalesCliente).length){
+      html+=`<div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:10px 14px;font-size:.75rem;color:var(--yellow);margin-bottom:16px;">⚠ Sin condiciones de referencia cargadas.</div>`;
     } else {
       html+=`<table style="margin-bottom:24px;"><thead><tr>
-        <th>Entidad</th><th>Tipo Op.</th><th>TNA Efectiva</th><th>Tasa Banco Ref.</th><th>Diferencia</th><th>Estado</th><th>Ahorro Est.</th>
+        <th>Entidad</th><th>Tipo Op.</th><th>TNA Efectiva</th><th>Tasa Ref. (banco)</th><th>Fuente</th><th>Diferencia</th><th>Estado</th><th>Ahorro Est.</th>
       </tr></thead><tbody>`;
 
       rotativos.forEach(op=>{
         const saldo=cuotasAll.filter(c=>c.opId===op.id&&c.estado!=='pagada').reduce((s,c)=>s+(c.capital||0),0);
         const tnaEfOp=getTNAEfectivaOp(op);
         const tasaLabel=op.tipoTasa==='badlar'?`BADLAR+${fmtN(op.spread||0,1)}%`:op.tipoTasa==='tamar'?`TAMAR+${fmtN(op.spread||0,1)}%`:'Fija';
-
-        // Buscar menor tasa del mismo banco en condiciones de referencia
-        const tasaBanco=getTasaMinimaRef(op.entidadNombre);
-        if(tasaBanco===null){
-          html+=`<tr><td class="td-bold">${op.entidadNombre}</td><td style="font-size:.75rem">${op.tipo}</td><td class="td-mono" style="color:var(--yellow)">${fmtN(tnaEfOp,2)}%</td><td colspan="4" style="color:var(--text3);font-size:.73rem;">Sin condiciones de referencia para este banco</td></tr>`;
+        const ref=getTasaEfectivaCliente(op.entidadNombre);
+        if(!ref){
+          html+=`<tr><td class="td-bold">${op.entidadNombre}</td><td style="font-size:.75rem">${op.tipo}</td><td class="td-mono" style="color:var(--yellow)">${fmtN(tnaEfOp,2)}%</td><td colspan="5" style="color:var(--text3);font-size:.73rem;">Sin condiciones de referencia</td></tr>`;
           return;
         }
-        const diff=tnaEfOp-tasaBanco;
+        const diff=tnaEfOp-ref.tasa;
         const sem=diff>umbralRojo?{color:'var(--red)',dot:'🔴',label:'Cara'}:diff>umbralAmarillo?{color:'var(--yellow)',dot:'🟡',label:'Revisar'}:{color:'var(--green)',dot:'🟢',label:'OK'};
         const ahorro=diff>umbralAmarillo&&saldo>0?saldo*(diff/100/12):0;
+        const fuenteBadge=ref.fuente==='cliente'?`<span class="badge" style="background:rgba(59,130,246,.15);color:var(--accent);font-size:.62rem;">Cliente</span>`:`<span class="badge" style="background:rgba(255,255,255,.08);color:var(--text3);font-size:.62rem;">Admin</span>`;
         html+=`<tr>
           <td class="td-bold">${op.entidadNombre}</td>
           <td style="font-size:.75rem">${op.tipo}<br><span style="font-size:.65rem;color:var(--text3)">${tasaLabel}</span></td>
           <td class="td-mono" style="color:var(--yellow);font-weight:600;">${fmtN(tnaEfOp,2)}%</td>
-          <td class="td-mono" style="color:var(--text2);">${fmtN(tasaBanco,2)}%</td>
+          <td class="td-mono" style="color:var(--text2);">${fmtN(ref.tasa,2)}%</td>
+          <td>${fuenteBadge}</td>
           <td class="td-mono" style="color:${sem.color};">${diff>=0?'+':''}${fmtN(diff,2)}pp</td>
           <td>${sem.dot} <span class="badge" style="background:${sem.color}22;color:${sem.color};">${sem.label}</span></td>
           <td class="td-mono" style="color:${ahorro>0?'var(--green)':'var(--text3)'};">${ahorro>0?fmt(ahorro)+'/mes':'—'}</td>
