@@ -288,16 +288,9 @@
 
       <div class="table-card">
         <div class="table-header">
-          <div><div class="table-title">Tasas de Bancos de Referencia</div><div class="table-sub">Se usan para comparar con operaciones de clientes</div></div>
-          <button class="btn btn-success btn-sm" onclick="guardarTasasBancos()">✓ Guardar todos</button>
+          <div><div class="table-title">Condiciones de Bancos de Referencia</div><div class="table-sub">Múltiples condiciones por banco — se usa la de menor TNA en Análisis</div></div>
         </div>
         <div style="padding:16px 20px;">
-          <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:10px;margin-bottom:8px;">
-            <div style="font-family:var(--mono);font-size:.62rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;">Banco</div>
-            <div style="font-family:var(--mono);font-size:.62rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;">Tipo Tasa</div>
-            <div style="font-family:var(--mono);font-size:.62rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;">TNA / Spread (%)</div>
-            <div style="font-family:var(--mono);font-size:.62rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;">TNA Efectiva</div>
-          </div>
           <div id="bancos-ref-rows"></div>
         </div>
       </div>
@@ -599,7 +592,12 @@ async function loadTNA(){
       if(document.getElementById('umbral-amarillo'))document.getElementById('umbral-amarillo').value=umbralAmarillo;
       if(document.getElementById('umbral-rojo'))document.getElementById('umbral-rojo').value=umbralRojo;
       updateUmbralPreview();
-      if(d.tasasBancos) tasasBancos=d.tasasBancos;
+      if(d.tasasBancos){
+        tasasBancos={};
+        Object.entries(d.tasasBancos).forEach(([b,v])=>{
+          tasasBancos[b]=Array.isArray(v)?v:(v&&v.tipo?[{tipoTasa:v.tipo,valor:v.valor||0,plazo:12,amort:'frances'}]:[]);
+        });
+      }
       renderTNAPanel(d);
       renderBancosRef();
     } else renderTNAPanel({tnaRef:60,badlar:0,tamar:0});
@@ -692,55 +690,118 @@ const BANCOS_REF = [
   'Banco BBVA','Banco ICBC','Banco Hipotecario'
 ];
 
-function renderBancosRef(){
-  const container = document.getElementById('bancos-ref-rows');
-  if(!container) return;
-  container.innerHTML = BANCOS_REF.map(banco=>{
-    const saved = tasasBancos[banco]||{tipo:'fija',valor:0};
-    const efectiva = calcTasaBancoRef(saved);
-    return `<div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:10px;align-items:center;margin-bottom:8px;padding:8px 0;border-bottom:1px solid var(--border);">
-      <div style="font-size:.8rem;font-weight:500;">${banco}</div>
-      <div>
-        <select id="banco-tipo-${banco.replace(/ /g,'_')}" onchange="updateBancoEfectiva('${banco.replace(/ /g,'_')}')" style="font-size:.72rem;padding:4px 6px;">
-          <option value="fija" ${saved.tipo==='fija'?'selected':''}>Fija</option>
-          <option value="tamar" ${saved.tipo==='tamar'?'selected':''}>TAMAR + spread</option>
-          <option value="badlar" ${saved.tipo==='badlar'?'selected':''}>BADLAR + spread</option>
-        </select>
-      </div>
-      <div>
-        <input type="number" id="banco-valor-${banco.replace(/ /g,'_')}" value="${saved.valor||0}" step="0.5" style="width:80px;font-size:.75rem;" oninput="updateBancoEfectiva('${banco.replace(/ /g,'_')}')">
-      </div>
-      <div id="banco-efectiva-${banco.replace(/ /g,'_')}" style="font-family:var(--mono);font-size:.75rem;color:var(--yellow);">${efectiva.toFixed(1)}%</div>
-    </div>`;
-  }).join('');
-}
-
-function calcTasaBancoRef(saved){
-  const tipo=saved.tipo||'fija', valor=parseFloat(saved.valor)||0;
+// tasasBancos ahora es { banco: [ {plazo, amort, tipoTasa, valor}, ... ] }
+function calcTasaBancoRef(cond){
+  if(!cond)return 0;
+  const tipo=cond.tipoTasa||cond.tipo||'fija';
+  const valor=parseFloat(cond.valor)||0;
   if(tipo==='tamar') return tamarActual+valor;
   if(tipo==='badlar') return badlarActual+valor;
   return valor;
 }
 
-function updateBancoEfectiva(bancoKey){
-  const tipo=document.getElementById('banco-tipo-'+bancoKey)?.value||'fija';
-  const valor=parseFloat(document.getElementById('banco-valor-'+bancoKey)?.value)||0;
-  const efectiva=tipo==='tamar'?tamarActual+valor:tipo==='badlar'?badlarActual+valor:valor;
-  const el=document.getElementById('banco-efectiva-'+bancoKey);
-  if(el)el.textContent=efectiva.toFixed(1)+'%';
+function getTasaMinimaRef(banco){
+  const condiciones=tasasBancos[banco];
+  if(!condiciones||!condiciones.length)return null;
+  const arr=Array.isArray(condiciones)?condiciones:[condiciones];
+  return arr.reduce((min,c)=>{
+    const t=calcTasaBancoRef(c);
+    return(min===null||t<min)?t:min;
+  },null);
+}
+
+function amortLabel(a){
+  const m={'frances':'Francés','aleman':'Alemán','bullet':'Bullet puro','bullet_intereses':'Bullet c/intereses'};
+  return m[a]||a||'—';
+}
+
+function renderBancosRef(){
+  const container=document.getElementById('bancos-ref-rows');
+  if(!container)return;
+  container.innerHTML=BANCOS_REF.map(banco=>{
+    const condiciones=tasasBancos[banco]||(tasasBancos[banco]={tipo:'fija',valor:0})?[{tipoTasa:'fija',valor:0,plazo:12,amort:'frances'}]:[];
+    const arr=Array.isArray(condiciones)?condiciones:(condiciones.tipo?[{tipoTasa:condiciones.tipo,valor:condiciones.valor,plazo:12,amort:'frances'}]:[{tipoTasa:'fija',valor:0,plazo:12,amort:'frances'}]);
+    const bancoCssKey=banco.replace(/[^a-zA-Z0-9]/g,'_');
+    let html=`<div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div style="font-size:.82rem;font-weight:600;">${banco}</div>
+        <button class="btn btn-ghost btn-sm" onclick="agregarCondicionBanco('${bancoCssKey}','${banco.replace(/'/g,'&#39;')}')">+ condición</button>
+      </div>
+      <div id="conds-${bancoCssKey}">`;
+    arr.forEach((c,i)=>{
+      const tnaEf=calcTasaBancoRef(c);
+      html+=renderCondicionRow(banco,bancoCssKey,i,c,tnaEf);
+    });
+    html+=`</div></div>`;
+    return html;
+  }).join('');
+}
+
+function renderCondicionRow(banco,key,idx,c,tnaEf){
+  return `<div id="cond-${key}-${idx}" style="display:grid;grid-template-columns:60px 1fr 80px 1fr 70px 80px 24px;gap:6px;align-items:center;margin-bottom:6px;font-size:.75rem;">
+    <div style="color:var(--text3);font-family:var(--mono);font-size:.65rem;">#${idx+1}</div>
+    <select data-banco="${banco.replace(/"/g,'&quot;')}" data-idx="${idx}" data-field="amort" onchange="onCondChange(this)" style="font-size:.72rem;padding:3px 5px;">
+      <option value="frances" ${(c.amort||'frances')==='frances'?'selected':''}>Francés</option>
+      <option value="aleman" ${c.amort==='aleman'?'selected':''}>Alemán</option>
+      <option value="bullet" ${c.amort==='bullet'?'selected':''}>Bullet puro</option>
+      <option value="bullet_intereses" ${c.amort==='bullet_intereses'?'selected':''}>Bullet c/int.</option>
+    </select>
+    <input type="number" value="${c.plazo||12}" min="1" placeholder="Plazo" data-banco="${banco.replace(/"/g,'&quot;')}" data-idx="${idx}" data-field="plazo" onchange="onCondChange(this)" style="font-size:.75rem;padding:3px 5px;">
+    <select data-banco="${banco.replace(/"/g,'&quot;')}" data-idx="${idx}" data-field="tipoTasa" onchange="onCondChange(this)" style="font-size:.72rem;padding:3px 5px;">
+      <option value="fija" ${(c.tipoTasa||c.tipo||'fija')==='fija'?'selected':''}>Fija</option>
+      <option value="tamar" ${(c.tipoTasa||c.tipo)==='tamar'?'selected':''}>TAMAR+spread</option>
+      <option value="badlar" ${(c.tipoTasa||c.tipo)==='badlar'?'selected':''}>BADLAR+spread</option>
+    </select>
+    <input type="number" value="${c.valor||0}" step="0.5" placeholder="TNA/Spread" data-banco="${banco.replace(/"/g,'&quot;')}" data-idx="${idx}" data-field="valor" onchange="onCondChange(this)" style="font-size:.75rem;padding:3px 5px;">
+    <span style="font-family:var(--mono);font-size:.72rem;color:var(--yellow);">${tnaEf.toFixed(1)}%</span>
+    <button onclick="eliminarCondicion('${banco.replace(/'/g,"\'")}',${idx})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.85rem;padding:0;">✕</button>
+  </div>`;
+}
+
+function onCondChange(el){
+  const banco=el.dataset.banco;
+  const idx=parseInt(el.dataset.idx);
+  const field=el.dataset.field;
+  if(!tasasBancos[banco])tasasBancos[banco]=[];
+  const arr=Array.isArray(tasasBancos[banco])?tasasBancos[banco]:[tasasBancos[banco]];
+  if(!arr[idx])arr[idx]={tipoTasa:'fija',valor:0,plazo:12,amort:'frances'};
+  arr[idx][field]=field==='plazo'||field==='valor'?parseFloat(el.value)||0:el.value;
+  tasasBancos[banco]=arr;
+  // Update efectiva display
+  const key=banco.replace(/[^a-zA-Z0-9]/g,'_');
+  const row=document.getElementById('cond-'+key+'-'+idx);
+  if(row){
+    const spans=row.querySelectorAll('span');
+    const tnaEf=calcTasaBancoRef(arr[idx]);
+    spans[0].textContent=tnaEf.toFixed(1)+'%';
+  }
+}
+
+function agregarCondicionBanco(key,banco){
+  if(!tasasBancos[banco])tasasBancos[banco]=[];
+  const arr=Array.isArray(tasasBancos[banco])?tasasBancos[banco]:[tasasBancos[banco]];
+  arr.push({tipoTasa:'fija',valor:0,plazo:12,amort:'frances'});
+  tasasBancos[banco]=arr;
+  const container=document.getElementById('conds-'+key);
+  if(container){
+    const idx=arr.length-1;
+    const div=document.createElement('div');
+    div.innerHTML=renderCondicionRow(banco,key,idx,arr[idx],0);
+    container.appendChild(div.firstChild);
+  }
+}
+
+function eliminarCondicion(banco,idx){
+  if(!tasasBancos[banco])return;
+  const arr=Array.isArray(tasasBancos[banco])?tasasBancos[banco]:[tasasBancos[banco]];
+  arr.splice(idx,1);
+  tasasBancos[banco]=arr;
+  renderBancosRef();
 }
 
 async function guardarTasasBancos(){
-  const nuevo={};
-  BANCOS_REF.forEach(banco=>{
-    const key=banco.replace(/ /g,'_');
-    const tipo=document.getElementById('banco-tipo-'+key)?.value||'fija';
-    const valor=parseFloat(document.getElementById('banco-valor-'+key)?.value)||0;
-    nuevo[banco]={tipo,valor};
-  });
-  await db.collection('config').doc('global').set({tasasBancos:nuevo},{merge:true});
-  tasasBancos=nuevo;
-  toast('Tasas de bancos guardadas');
+  await db.collection('config').doc('global').set({tasasBancos},{merge:true});
+  toast('Condiciones de bancos guardadas');
   renderBancosRef();
 }
 
@@ -973,13 +1034,12 @@ function renderAnalisisPanel(){
         const tnaEfOp=getTNAEfectivaOp(op);
         const tasaLabel=op.tipoTasa==='badlar'?`BADLAR+${fmtN(op.spread||0,1)}%`:op.tipoTasa==='tamar'?`TAMAR+${fmtN(op.spread||0,1)}%`:'Fija';
 
-        // Buscar tasa del mismo banco en tasasBancos
-        const bancoCfg=tasasBancos[op.entidadNombre];
-        if(!bancoCfg){
-          html+=`<tr><td class="td-bold">${op.entidadNombre}</td><td style="font-size:.75rem">${op.tipo}</td><td class="td-mono" style="color:var(--yellow)">${fmtN(tnaEfOp,2)}%<br><span style="font-size:.65rem;color:var(--text3)">${tasaLabel}</span></td><td colspan="4" style="color:var(--text3);font-size:.73rem;">Sin tasa de referencia cargada para este banco</td></tr>`;
+        // Buscar menor tasa del mismo banco en condiciones de referencia
+        const tasaBanco=getTasaMinimaRef(op.entidadNombre);
+        if(tasaBanco===null){
+          html+=`<tr><td class="td-bold">${op.entidadNombre}</td><td style="font-size:.75rem">${op.tipo}</td><td class="td-mono" style="color:var(--yellow)">${fmtN(tnaEfOp,2)}%</td><td colspan="4" style="color:var(--text3);font-size:.73rem;">Sin condiciones de referencia para este banco</td></tr>`;
           return;
         }
-        const tasaBanco=calcTasaBancoRef(bancoCfg);
         const diff=tnaEfOp-tasaBanco;
         const sem=diff>umbralRojo?{color:'var(--red)',dot:'🔴',label:'Cara'}:diff>umbralAmarillo?{color:'var(--yellow)',dot:'🟡',label:'Revisar'}:{color:'var(--green)',dot:'🟢',label:'OK'};
         const ahorro=diff>umbralAmarillo&&saldo>0?saldo*(diff/100/12):0;
