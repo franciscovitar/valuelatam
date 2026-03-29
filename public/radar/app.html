@@ -1554,21 +1554,25 @@ async function agregarCondicionPersonal(banco){
   const arr=Array.isArray(tasasClientePersonal[banco])?tasasClientePersonal[banco]:[];
   arr.push({tipoTasa:'fija',valor:0,plazo:12,amort:'frances'});
   tasasClientePersonal[banco]=arr;
-  await guardarTasasPersonales();
   renderTasas();
+  // Auto-show save button after re-render
+  const key=banco.replace(/[^a-zA-Z0-9]/g,'_');
+  const saveBtn=document.getElementById('save-btn-'+key);
+  if(saveBtn)saveBtn.style.display='inline-block';
 }
 
 async function eliminarCondicionPersonal(banco, idx){
   if(!tasasClientePersonal[banco]) return;
   const arr=Array.isArray(tasasClientePersonal[banco])?tasasClientePersonal[banco]:[];
   arr.splice(idx,1);
-  tasasClientePersonal[banco]=arr.length?arr:undefined;
   if(!arr.length) delete tasasClientePersonal[banco];
+  else tasasClientePersonal[banco]=arr;
   await guardarTasasPersonales();
   renderTasas();
+  toast('Condición eliminada','yellow');
 }
 
-async function onCondPersonalChange(el){
+function onCondPersonalChange(el){
   const banco=el.dataset.banco;
   const idx=parseInt(el.dataset.idx);
   const field=el.dataset.field;
@@ -1577,11 +1581,21 @@ async function onCondPersonalChange(el){
   if(!arr[idx]) arr[idx]={tipoTasa:'fija',valor:0,plazo:12,amort:'frances'};
   arr[idx][field]=field==='plazo'||field==='valor'?parseFloat(el.value)||0:el.value;
   tasasClientePersonal[banco]=arr;
-  await guardarTasasPersonales();
-  // Update efectiva
+  // Update efectiva display in real time
   const key=banco.replace(/[^a-zA-Z0-9]/g,'_');
   const row=document.getElementById('cond-pers-'+key+'-'+idx);
   if(row){const s=row.querySelector('.tna-ef');if(s)s.textContent=fmtN(calcTasaBancoRefApp(arr[idx]),2)+'%';}
+  // Show save button for this banco
+  const saveBtn=document.getElementById('save-btn-'+key);
+  if(saveBtn){saveBtn.style.display='inline-block';}
+}
+
+async function guardarCondPersonalBanco(banco){
+  await guardarTasasPersonales();
+  const key=banco.replace(/[^a-zA-Z0-9]/g,'_');
+  const saveBtn=document.getElementById('save-btn-'+key);
+  if(saveBtn)saveBtn.style.display='none';
+  toast('Condiciones guardadas','green');
   if(document.getElementById('panel-analisis')?.classList.contains('active')) renderAnalisisApp();
 }
 
@@ -1610,7 +1624,7 @@ function renderTasas(){
       const arrPersonal=condPersonal?(Array.isArray(condPersonal)?condPersonal:[condPersonal]):[];
       const condAdmin=tasasBancosRef[banco]||[];
       const arrAdmin=Array.isArray(condAdmin)?condAdmin:(condAdmin&&condAdmin.tipo?[condAdmin]:[]);
-      html+=`<div style="margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><div style="font-size:.85rem;font-weight:600;">${banco}</div><button onclick="agregarCondicionPersonal(\'${banco.replace(/'/g,"\\'")}\')" style="font-size:.68rem;padding:3px 10px;border:1px dashed var(--accent);border-radius:5px;background:none;color:var(--accent);cursor:pointer;">+ condición</button></div>`;
+      html+=`<div style="margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><div style="font-size:.85rem;font-weight:600;">${banco}</div><div style="display:flex;gap:6px;align-items:center;"><button id="save-btn-${bancoCssKey}" data-banco="${bancoEsc}" onclick="guardarCondPersonalBanco(this.dataset.banco)" style="font-size:.68rem;padding:3px 10px;background:var(--green);color:#000;border:none;border-radius:5px;cursor:pointer;display:none;">✓ Guardar</button><button data-banco="${bancoEsc}" onclick="agregarCondicionPersonal(this.dataset.banco)" style="font-size:.68rem;padding:3px 10px;border:1px dashed var(--accent);border-radius:5px;background:none;color:var(--accent);cursor:pointer;">+ condición</button></div></div>`;
       if(arrPersonal.length){
         arrPersonal.forEach((c,i)=>{
           const tnaEf=calcTasaBancoRefApp(c)||0;
