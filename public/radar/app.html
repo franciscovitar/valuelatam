@@ -1587,119 +1587,69 @@ async function onCondPersonalChange(el){
 
 function renderTasas(){
   const contenedor=document.getElementById('rate-comp-chart');
-  const tbody=document.getElementById('tabla-tasas');
-  if(tbody)tbody.innerHTML='';
-
-  // Agrupar entidades del cliente por nombre de banco
+  if(!contenedor)return;
   const bancosCliente=new Set(entidades.map(e=>e.nombre));
+  const todosLosBancosAdmin=Object.keys(tasasBancosRef);
 
-  // Separar lineas del cliente por tipo
-  const grupos=[
-    {titulo:'↺ Líneas Rotativas',icono:'badge-green',items:entidades.filter(e=>e.tipoLinea==='Rotativa')},
-    {titulo:'◆ Descubiertos',icono:'badge-yellow',items:entidades.filter(e=>e.subtipo==='Descubierto')},
-    {titulo:'◆ Tarjetas de Crédito',icono:'badge-yellow',items:entidades.filter(e=>e.subtipo==='Tarjeta de Crédito')},
-    {titulo:'◆ Préstamos de Inversión',icono:'badge-blue',items:entidades.filter(e=>e.subtipo==='Préstamo de Inversión')},
-    {titulo:'◆ Leasing',icono:'badge-blue',items:entidades.filter(e=>e.subtipo==='Leasing')},
-  ].filter(g=>g.items.length>0);
-
-  let html='';
-
-  if(!grupos.length){
-    if(contenedor)contenedor.innerHTML='<div class="empty"><div class="empty-icon">↕</div><div class="empty-text">Cargá líneas en Entidades para comparar tasas</div></div>';
+  if(!todosLosBancosAdmin.length){
+    contenedor.innerHTML='<div class="empty"><div class="empty-icon">↕</div><div class="empty-text">El administrador aún no cargó tasas de referencia</div></div>';
     return;
   }
-  if(contenedor)contenedor.innerHTML='';
 
-  // BANCOS CON LÍNEA: editables en sesión
-  html+=`<div style="background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.15);border-radius:8px;padding:10px 14px;font-size:.72rem;color:var(--text2);margin-bottom:16px;">
-    💡 Podés editar la tasa de los bancos donde tenés línea para simular distintos escenarios. Los cambios son solo para esta sesión.
-  </div>`;
+  const bancosConLinea=todosLosBancosAdmin.filter(b=>bancosCliente.has(b));
+  const bancosSinLinea=todosLosBancosAdmin.filter(b=>!bancosCliente.has(b));
+  let html='';
 
-  grupos.forEach(g=>{
-    html+=`<div class="table-card" style="margin-bottom:16px;">
-      <div class="table-header"><div><div class="table-title">${g.titulo}</div><div class="table-sub">Cargá tus condiciones — se guardan para próximas sesiones</div></div></div>
-      <table><thead><tr><th>Banco</th><th>Límite</th><th>Utilizado</th><th>Disponible</th><th>Mis Condiciones</th><th>Ref. Admin</th></tr></thead><tbody>`;
-
-    g.items.forEach(ent=>{
-      const disp=Math.max(0,(ent.lineaTotal||0)-(ent.lineaUtilizada||0));
-      const tasaSesion=tasasClienteSesion[ent.nombre];
-      const condiciones=tasasBancosRef[ent.nombre]||[];
-      const bancoKey=ent.nombre.replace(/[^a-zA-Z0-9]/g,'_');
-      const bancoEsc=ent.nombre.replace(/'/g,'&#39;').replace(/"/g,'&quot;');
-      // Build condiciones rows - editable
-      // Condiciones personales del cliente para este banco
-      const condPersonal=tasasClientePersonal[ent.nombre];
+  // BANCOS CON LÍNEA (editables)
+  if(bancosConLinea.length){
+    html+=`<div class="table-card" style="margin-bottom:16px;"><div class="table-header"><div><div class="table-title">Bancos donde tenés línea</div><div class="table-sub">Cargá tus condiciones — se guardan para próximas sesiones</div></div></div><div style="padding:0 20px 16px;">`;
+    bancosConLinea.forEach(banco=>{
+      const bancoCssKey=banco.replace(/[^a-zA-Z0-9]/g,'_');
+      const bancoEsc=banco.replace(/"/g,'&quot;');
+      const condPersonal=tasasClientePersonal[banco];
       const arrPersonal=condPersonal?(Array.isArray(condPersonal)?condPersonal:[condPersonal]):[];
-      const tasaMinimaAdmin=getTasaMinimaRefApp(ent.nombre);
-      const tasaMinimaFmt=tasaMinimaAdmin!==null?fmtN(tasaMinimaAdmin,2)+'%':'—';
-
-      // Build condiciones personales editables
-      let condsHtml='<div style="font-size:.68rem;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;">Mis condiciones con este banco:</div>';
+      const condAdmin=tasasBancosRef[banco]||[];
+      const arrAdmin=Array.isArray(condAdmin)?condAdmin:(condAdmin&&condAdmin.tipo?[condAdmin]:[]);
+      html+=`<div style="margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><div style="font-size:.85rem;font-weight:600;">${banco}</div><button onclick="agregarCondicionPersonal(\'${banco.replace(/'/g,"\\'")}\')" style="font-size:.68rem;padding:3px 10px;border:1px dashed var(--accent);border-radius:5px;background:none;color:var(--accent);cursor:pointer;">+ condición</button></div>`;
       if(arrPersonal.length){
         arrPersonal.forEach((c,i)=>{
-          const tnaEf=calcTasaBancoRefApp(c);
-          const bancoCssKey=ent.nombre.replace(/[^a-zA-Z0-9]/g,'_');
-          const bancoEscQ=ent.nombre.replace(/"/g,'&quot;');
-          condsHtml+=`<div id="cond-pers-${bancoCssKey}-${i}" style="display:flex;align-items:center;gap:4px;margin-bottom:4px;">
-            <select data-banco="${bancoEscQ}" data-idx="${i}" data-field="amort" onchange="onCondPersonalChange(this)" style="font-size:.68rem;padding:2px 4px;">
-              <option value="frances" ${(c.amort||'frances')==='frances'?'selected':''}>Francés</option>
-              <option value="aleman" ${c.amort==='aleman'?'selected':''}>Alemán</option>
-              <option value="bullet" ${c.amort==='bullet'?'selected':''}>Bullet puro</option>
-              <option value="bullet_intereses" ${c.amort==='bullet_intereses'?'selected':''}>Bullet c/int.</option>
-            </select>
-            <input type="number" value="${c.plazo||12}" min="1" data-banco="${bancoEscQ}" data-idx="${i}" data-field="plazo" onchange="onCondPersonalChange(this)" style="width:45px;font-size:.68rem;padding:2px 4px;" placeholder="Plazo">
-            <select data-banco="${bancoEscQ}" data-idx="${i}" data-field="tipoTasa" onchange="onCondPersonalChange(this)" style="font-size:.68rem;padding:2px 4px;">
-              <option value="fija" ${(c.tipoTasa||'fija')==='fija'?'selected':''}>Fija</option>
-              <option value="tamar" ${c.tipoTasa==='tamar'?'selected':''}>TAMAR+</option>
-              <option value="badlar" ${c.tipoTasa==='badlar'?'selected':''}>BADLAR+</option>
-            </select>
-            <input type="number" value="${c.valor||0}" step="0.5" data-banco="${bancoEscQ}" data-idx="${i}" data-field="valor" onchange="onCondPersonalChange(this)" style="width:50px;font-size:.68rem;padding:2px 4px;" placeholder="TNA">
-            <span class="tna-ef" style="font-family:var(--mono);font-size:.68rem;color:var(--yellow);min-width:40px;">${fmtN(tnaEf,2)}%</span>
-            <button onclick="eliminarCondicionPersonal('${ent.nombre.replace(/'/g,"\'")}',${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.78rem;">✕</button>
-          </div>`;
+          const tnaEf=calcTasaBancoRefApp(c)||0;
+          html+=`<div id="cond-pers-${bancoCssKey}-${i}" style="display:flex;align-items:center;gap:5px;margin-bottom:5px;flex-wrap:wrap;"><select data-banco="${bancoEsc}" data-idx="${i}" data-field="amort" onchange="onCondPersonalChange(this)" style="font-size:.7rem;padding:3px 5px;"><option value="frances" ${(c.amort||'frances')==='frances'?'selected':''}>Francés</option><option value="aleman" ${c.amort==='aleman'?'selected':''}>Alemán</option><option value="bullet" ${c.amort==='bullet'?'selected':''}>Bullet puro</option><option value="bullet_intereses" ${c.amort==='bullet_intereses'?'selected':''}>Bullet c/int.</option></select><input type="number" value="${c.plazo||12}" min="1" data-banco="${bancoEsc}" data-idx="${i}" data-field="plazo" onchange="onCondPersonalChange(this)" style="width:50px;font-size:.7rem;padding:3px 5px;" placeholder="Plazo (m)"><select data-banco="${bancoEsc}" data-idx="${i}" data-field="tipoTasa" onchange="onCondPersonalChange(this)" style="font-size:.7rem;padding:3px 5px;"><option value="fija" ${(c.tipoTasa||'fija')==='fija'?'selected':''}>Fija</option><option value="tamar" ${c.tipoTasa==='tamar'?'selected':''}>TAMAR+spread</option><option value="badlar" ${c.tipoTasa==='badlar'?'selected':''}>BADLAR+spread</option></select><input type="number" value="${c.valor||0}" step="0.5" data-banco="${bancoEsc}" data-idx="${i}" data-field="valor" onchange="onCondPersonalChange(this)" style="width:55px;font-size:.7rem;padding:3px 5px;" placeholder="%"><span class="tna-ef" style="font-family:var(--mono);font-size:.72rem;color:var(--yellow);min-width:44px;">${fmtN(tnaEf,2)}%</span><button onclick="eliminarCondicionPersonal(\'${banco.replace(/'/g,"\\'")}\',$\{i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.8rem;">✕</button></div>`;
         });
       } else {
-        condsHtml+='<div style="font-size:.7rem;color:var(--text3);margin-bottom:4px;">Sin condiciones cargadas</div>';
+        html+=`<div style="font-size:.72rem;color:var(--text3);margin-bottom:6px;">Sin condiciones cargadas — hacé click en "+ condición"</div>`;
       }
-      condsHtml+=`<button onclick="agregarCondicionPersonal('${ent.nombre.replace(/'/g,"\'")}')" style="font-size:.68rem;padding:2px 8px;border:1px dashed var(--border);border-radius:4px;background:none;color:var(--text3);cursor:pointer;margin-top:2px;">+ condición</button>`;
-      condsHtml+=`<div style="margin-top:6px;font-size:.68rem;color:var(--text3);">Ref. admin más baja: <span style="color:var(--yellow)">${tasaMinimaFmt}</span></div>`;
-      html+=`<tr>
-        <td class="td-bold">${ent.nombre}</td>
-        <td class="td-mono">${fmt(ent.lineaTotal)}</td>
-        <td class="td-mono" style="color:var(--red)">${fmt(ent.lineaUtilizada||0)}</td>
-        <td class="td-mono" style="color:var(--green)">${fmt(disp)}</td>
-        <td style="font-size:.72rem;">${condsHtml}</td>
-        <td style="font-size:.72rem;">${condiciones.length?condiciones.map(c=>{const tnaEf=calcTasaBancoRefApp(c);const amortL={'frances':'Fr.','aleman':'Al.','bullet':'Bullet','bullet_intereses':'B.int.'}[c.amort||'frances']||'';const tipoL=c.tipoTasa==='badlar'?`BADLAR+${fmtN(c.valor||0,1)}%`:c.tipoTasa==='tamar'?`TAMAR+${fmtN(c.valor||0,1)}%`:`${fmtN(c.valor||0,1)}%`;return`<div style="color:var(--text3);">${amortL} ${c.plazo||12}m · ${tipoL} → <span style="color:var(--yellow)">${fmtN(tnaEf,2)}%</span></div>`;}).join(''):'<span style="color:var(--text3);">—</span>'}</td>
-      </tr>`;
+      if(arrAdmin.length){
+        html+=`<div style="margin-top:6px;padding:6px 8px;background:rgba(255,255,255,.03);border-radius:5px;"><div style="font-size:.62rem;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;">Ref. admin:</div>`;
+        arrAdmin.forEach(c=>{
+          const tnaEf=calcTasaBancoRefApp(c);
+          const amortL={frances:'Francés',aleman:'Alemán',bullet:'Bullet puro',bullet_intereses:'Bullet c/int.'}[c.amort||'frances']||'—';
+          const tipoL=(c.tipoTasa||c.tipo)==='badlar'?`BADLAR+${fmtN(c.valor||0,1)}%`:(c.tipoTasa||c.tipo)==='tamar'?`TAMAR+${fmtN(c.valor||0,1)}%`:`${fmtN(c.valor||0,1)}%`;
+          html+=`<div style="font-size:.7rem;color:var(--text3);">${amortL} · ${c.plazo||12}m · ${tipoL} → <span style="color:var(--yellow)">${fmtN(tnaEf,2)}%</span></div>`;
+        });
+        html+=`</div>`;
+      }
+      html+=`</div>`;
     });
-    html+='</tbody></table></div>';
-  });
+    html+=`</div></div>`;
+  } else {
+    html+=`<div style="background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.15);border-radius:8px;padding:10px 14px;font-size:.72rem;color:var(--text2);margin-bottom:16px;">ℹ Cuando cargues líneas en Entidades, podrás ingresar tus condiciones con cada banco.</div>`;
+  }
 
-  // BANCOS SIN LÍNEA: solo lectura
-  const bancosSinLinea=Object.entries(tasasBancosRef).filter(([b])=>!bancosCliente.has(b));
+  // BANCOS SIN LÍNEA (solo visualización)
   if(bancosSinLinea.length){
-    html+=`<div class="table-card">
-      <div class="table-header"><div><div class="table-title">Otros Bancos de Referencia</div><div class="table-sub">Bancos donde no tenés línea — solo lectura</div></div></div>
-      <div style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:7px;padding:8px 12px;font-size:.72rem;color:var(--text3);margin:12px 20px 0;">
-        ℹ Si querés operar con alguno, cargá la línea en <strong>Entidades</strong>.
-      </div>
-      <table><thead><tr><th>Banco</th><th>Tipo Tasa</th><th>TNA de Referencia</th></tr></thead><tbody>`;
-    bancosSinLinea.forEach(([banco,arr])=>{
+    html+=`<div class="table-card"><div class="table-header"><div><div class="table-title">Otros Bancos de Referencia</div><div class="table-sub">No tenés línea cargada — solo consulta</div></div></div><table><thead><tr><th>Banco</th><th>Condiciones de Referencia</th><th>TNA Mínima</th></tr></thead><tbody>`;
+    bancosSinLinea.forEach(banco=>{
+      const arr=tasasBancosRef[banco]||[];
       const condArr=Array.isArray(arr)?arr:(arr&&arr.tipo?[arr]:[]);
       const tasaMin=getTasaMinimaRefApp(banco);
-      const condsTexto=condArr.map(c=>{
-        const tnaEf=calcTasaBancoRefApp(c);
-        const amortL={'frances':'Francés','aleman':'Alemán','bullet':'Bullet puro','bullet_intereses':'Bullet c/int.'}[c.amort||'frances']||'—';
-        const tipoL=c.tipoTasa==='badlar'?`BADLAR+${fmtN(c.valor||0,1)}%`:c.tipoTasa==='tamar'?`TAMAR+${fmtN(c.valor||0,1)}%`:`${fmtN(c.valor||0,1)}%`;
-        return `${amortL} · ${c.plazo||12}m · ${tipoL} → ${fmtN(tnaEf,2)}%`;
-      }).join('<br>');
-      html+=`<tr style="opacity:.65;"><td style="color:var(--text2);">${banco}</td><td style="font-size:.72rem;color:var(--text3);">${condsTexto||'—'}</td><td class="td-mono" style="color:var(--text3);">${tasaMin!==null?fmtN(tasaMin,2)+'%':'—'}</td></tr>`;
+      const condsTexto=condArr.map(c=>{const tnaEf=calcTasaBancoRefApp(c);const amortL={frances:'Francés',aleman:'Alemán',bullet:'Bullet puro',bullet_intereses:'Bullet c/int.'}[c.amort||'frances']||'—';const tipoL=(c.tipoTasa||c.tipo)==='badlar'?`BADLAR+${fmtN(c.valor||0,1)}%`:(c.tipoTasa||c.tipo)==='tamar'?`TAMAR+${fmtN(c.valor||0,1)}%`:`${fmtN(c.valor||0,1)}%`;return`${amortL} · ${c.plazo||12}m · ${tipoL} → ${fmtN(tnaEf,2)}%`;}).join('<br>');
+      html+=`<tr style="opacity:.72;"><td style="color:var(--text2);font-weight:500;">${banco}</td><td style="font-size:.72rem;color:var(--text3);">${condsTexto||'—'}</td><td class="td-mono" style="color:var(--text3);">${tasaMin!==null?fmtN(tasaMin,2)+'%':'—'}</td></tr>`;
     });
     html+='</tbody></table></div>';
   }
 
-  // Render en contenedor (la tabla vieja queda vacía)
-  if(contenedor) contenedor.innerHTML=html;
+  contenedor.innerHTML=html||'<div class="empty"><div class="empty-icon">↕</div><div class="empty-text">Sin datos</div></div>';
 }
 
 function renderCalendario(){
