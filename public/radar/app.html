@@ -214,6 +214,7 @@
     <div class="nav-item" onclick="showTab('cuotas',this)"><span>◷</span> Cuotas</div>
     <div class="nav-section">Análisis</div>
     <div class="nav-item" onclick="showTab('tasas',this)"><span>↕</span> Comparador TNA</div>
+    <div class="nav-item" onclick="showTab('analisis',this)"><span>⬡</span> Análisis</div>
     <div class="nav-item" onclick="showTab('calendario',this)"><span>▦</span> Calendario</div>
   </nav>
   <div class="sidebar-bottom">
@@ -346,6 +347,11 @@
         <table><thead><tr><th>Operación</th><th>Entidad</th><th>TNA Actual</th><th>TNA Mercado</th><th>Diferencia</th><th>Clasificación</th><th>Saldo</th></tr></thead>
         <tbody id="tabla-tasas"></tbody></table>
       </div>
+    </div>
+
+    <!-- ANÁLISIS -->
+    <div class="panel" id="panel-analisis">
+      <div id="analisis-content-app"><div class="empty"><div class="empty-icon">↕</div><div class="empty-text">Cargando análisis...</div></div></div>
     </div>
 
     <!-- CALENDARIO -->
@@ -587,7 +593,7 @@ function toast(msg,type='green'){
 }
 
 // =================== NAV ===================
-const panelTitles={dashboard:'Dashboard Consolidado',entidades:'Entidades Financieras',operaciones:'Operaciones Activas',cuotas:'Cuotas Generadas',tasas:'Comparador de Tasas TNA',calendario:'Calendario de Vencimientos'};
+const panelTitles={dashboard:'Dashboard Consolidado',entidades:'Entidades Financieras',operaciones:'Operaciones Activas',cuotas:'Cuotas Generadas',tasas:'Comparador de Tasas TNA',analisis:'Análisis de Tasas',calendario:'Calendario de Vencimientos'};
 function showTab(name,el){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -596,6 +602,7 @@ function showTab(name,el){
   document.getElementById('page-title').textContent=panelTitles[name]||name;
   if(name==='cuotas')renderCuotas();
   if(name==='tasas'){loadGlobalTNA().then(()=>renderTasas());}
+  if(name==='analisis'){loadGlobalTNA().then(()=>renderAnalisisApp());}
   if(name==='calendario')renderCalendario();
 }
 
@@ -1147,6 +1154,111 @@ function renderCuotas(){
     const op=operaciones.find(o=>o.id===c.opId)||{};const opNroRef=op.nroPrestamo?` · Ref:${op.nroPrestamo}`:'';
     return`<tr style="${c.estado==='pagada'?'opacity:.4;':''}"><td class="td-mono">${c.numero}</td><td style="font-size:.72rem">${op.entidadNombre||'—'} – ${op.tipo||'—'}${opNroRef}</td><td class="td-mono">${fmtDate(c.fecha)}</td><td class="td-mono">${fmt(c.capital)}</td><td class="td-mono" style="color:var(--text3)">${fmt(c.interes)}</td><td class="td-mono td-bold">${fmt(c.total)}</td><td class="td-mono" style="color:var(--text3)">${fmt(c.saldo)}</td><td>${badges[c.estado]||'—'}</td><td><button class="btn btn-ghost btn-sm" onclick="marcarPagada('${c.id}')">${c.estado==='pagada'?'↩':'✓ Pagar'}</button></td></tr>`;
   }).join('');
+}
+
+function calcTasaBancoRefApp(cfg){
+  if(!cfg)return null;
+  const tipo=cfg.tipo||'fija', valor=parseFloat(cfg.valor)||0;
+  if(tipo==='tamar') return tamarRef+valor;
+  if(tipo==='badlar') return badlarRef+valor;
+  return valor;
+}
+
+function renderAnalisisApp(){
+  const div=document.getElementById('analisis-content-app');
+  if(!div)return;
+
+  // Bancos con línea cargada (por nombre de entidad)
+  const bancosConLinea=new Set(entidades.map(e=>e.nombre));
+
+  // Operaciones rotativas
+  const rotativos=operaciones.filter(op=>
+    op.esRotativa!==false&&op.activa&&
+    !['Descubierto','Tarjeta de Crédito','Préstamo de Inversión','Leasing'].includes(op.tipo)
+  );
+  // Descubiertos
+  const descubiertos=operaciones.filter(op=>op.tipo==='Descubierto'&&op.activa);
+
+  if(!rotativos.length&&!descubiertos.length){
+    div.innerHTML='<div class="empty"><div class="empty-icon">↕</div><div class="empty-text">Sin márgenes rotativos ni descubiertos para analizar</div></div>';return;
+  }
+
+  let html='';
+
+  // ── MÁRGENES ROTATIVOS ──
+  if(rotativos.length){
+    html+=`<div class="table-card" style="margin-bottom:20px;">
+      <div class="table-header"><div><div class="table-title">↺ Márgenes Rotativos</div><div class="table-sub">Comparado contra la tasa actual del mismo banco</div></div></div>
+      <table><thead><tr><th>Entidad</th><th>Tipo</th><th>TNA Operación</th><th>Tasa Banco Ref.</th><th>Diferencia</th><th>Estado</th><th>Ahorro Est.</th></tr></thead><tbody>`;
+
+    rotativos.forEach(op=>{
+      const saldo=cuotas.filter(c=>c.opId===op.id&&c.estado!=='pagada').reduce((s,c)=>s+(c.capital||0),0);
+      const tnaEfOp=getTNAEfectivaOp(op);
+      const tasaLabel=op.tipoTasa==='badlar'?`BADLAR+${fmtN(op.spread||0,1)}%`:op.tipoTasa==='tamar'?`TAMAR+${fmtN(op.spread||0,1)}%`:'Fija';
+      const bancoCfg=tasasBancosRef[op.entidadNombre];
+      if(!bancoCfg){
+        html+=`<tr><td class="td-bold">${op.entidadNombre}</td><td style="font-size:.75rem">${op.tipo}</td><td class="td-mono" style="color:var(--yellow)">${fmtN(tnaEfOp,2)}%<br><span style="font-size:.65rem;color:var(--text3)">${tasaLabel}</span></td><td colspan="4" style="color:var(--text3);font-size:.73rem;">Sin tasa de referencia para este banco</td></tr>`;
+        return;
+      }
+      const tasaBanco=calcTasaBancoRefApp(bancoCfg);
+      const diff=tnaEfOp-tasaBanco;
+      const sem=diff>umbralRojo?{color:'var(--red)',dot:'🔴',label:'Cara'}:diff>umbralAmarillo?{color:'var(--yellow)',dot:'🟡',label:'Revisar'}:{color:'var(--green)',dot:'🟢',label:'OK'};
+      const ahorro=diff>umbralAmarillo&&saldo>0?saldo*(diff/100/12):0;
+      html+=`<tr>
+        <td class="td-bold">${op.entidadNombre}</td>
+        <td style="font-size:.75rem">${op.tipo}<br><span style="font-size:.65rem;color:var(--text3)">${tasaLabel}</span></td>
+        <td class="td-mono" style="color:var(--yellow);font-weight:600;">${fmtN(tnaEfOp,2)}%</td>
+        <td class="td-mono" style="color:var(--text2);">${fmtN(tasaBanco,2)}%</td>
+        <td class="td-mono" style="color:${sem.color};">${diff>=0?'+':''}${fmtN(diff,2)}pp</td>
+        <td>${sem.dot} <span class="kpi-badge" style="background:${sem.color}22;color:${sem.color};">${sem.label}</span></td>
+        <td class="td-mono" style="color:${ahorro>0?'var(--green)':'var(--text3)'};">${ahorro>0?fmt(ahorro)+'/mes':'—'}</td>
+      </tr>`;
+    });
+    html+='</tbody></table></div>';
+  }
+
+  // ── DESCUBIERTOS ──
+  if(descubiertos.length){
+    html+=`<div class="table-card" style="margin-bottom:20px;">
+      <div class="table-header"><div><div class="table-title">◆ Descubiertos</div><div class="table-sub">Comparado contra TNA de mercado (${fmtN(tnaRef,2)}%)</div></div></div>
+      <table><thead><tr><th>Entidad</th><th>TNA Descubierto</th><th>TNA Mercado</th><th>Diferencia</th><th>Estado</th><th>Costo Mensual</th></tr></thead><tbody>`;
+
+    descubiertos.forEach(op=>{
+      const ent=entidades.find(e=>e.id===op.entidadId);
+      const tomado=parseFloat(ent?.lineaUtilizada||0);
+      const tnaDesc=parseFloat(op.tna)||0;
+      const diff=tnaDesc-tnaRef;
+      const sem=diff>umbralRojo?{color:'var(--red)',dot:'🔴',label:'Caro'}:diff>umbralAmarillo?{color:'var(--yellow)',dot:'🟡',label:'Revisar'}:{color:'var(--green)',dot:'🟢',label:'OK'};
+      const costo=tomado>0?tomado*(tnaDesc/100/12):0;
+      html+=`<tr>
+        <td class="td-bold">${op.entidadNombre}</td>
+        <td class="td-mono" style="color:var(--yellow);font-weight:600;">${fmtN(tnaDesc,2)}%</td>
+        <td class="td-mono" style="color:var(--text2);">${fmtN(tnaRef,2)}%</td>
+        <td class="td-mono" style="color:${sem.color};">${diff>=0?'+':''}${fmtN(diff,2)}pp</td>
+        <td>${sem.dot} <span class="kpi-badge" style="background:${sem.color}22;color:${sem.color};">${sem.label}</span></td>
+        <td class="td-mono" style="color:var(--text3);">${costo>0?fmt(costo)+'/mes':'—'}</td>
+      </tr>`;
+    });
+    html+='</tbody></table></div>';
+  }
+
+  // ── BANCOS SIN LÍNEA CARGADA (referencia) ──
+  const bancosRef=Object.entries(tasasBancosRef);
+  const bancosSinLinea=bancosRef.filter(([banco])=>!bancosConLinea.has(banco));
+  if(bancosSinLinea.length){
+    html+=`<div class="table-card">
+      <div class="table-header"><div><div class="table-title">Otros Bancos de Referencia</div><div class="table-sub">Bancos donde no tenés línea cargada — solo consulta</div></div></div>
+      <div style="background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.15);border-radius:7px;padding:8px 12px;font-size:.72rem;color:var(--text3);margin:12px 20px 0;">ℹ Si querés operar con alguno de estos bancos, cargá la línea en <strong>Entidades</strong>.</div>
+      <table><thead><tr><th>Banco</th><th>Tipo Tasa</th><th>TNA Referencia</th></tr></thead><tbody>`;
+    bancosSinLinea.forEach(([banco,cfg])=>{
+      const tasaBanco=calcTasaBancoRefApp(cfg);
+      const tipoLabel=cfg.tipo==='badlar'?`BADLAR+${fmtN(cfg.valor||0,1)}%`:cfg.tipo==='tamar'?`TAMAR+${fmtN(cfg.valor||0,1)}%`:'Fija';
+      html+=`<tr style="opacity:.7;"><td style="color:var(--text2);">${banco}</td><td style="font-size:.75rem;color:var(--text3);">${tipoLabel}</td><td class="td-mono" style="color:var(--text3);">${fmtN(tasaBanco,2)}%</td></tr>`;
+    });
+    html+='</tbody></table></div>';
+  }
+
+  div.innerHTML=html||'<div class="empty"><div class="empty-icon">↕</div><div class="empty-text">Sin datos para mostrar</div></div>';
 }
 
 function renderTasas(){
