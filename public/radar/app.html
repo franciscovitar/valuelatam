@@ -1431,7 +1431,7 @@ function renderAnalisisApp(){
   if(rotativos.length){
     html+=`<div class="table-card" style="margin-bottom:20px;">
       <div class="table-header"><div><div class="table-title">↺ Márgenes Rotativos</div><div class="table-sub">Comparado contra la tasa actual del mismo banco</div></div></div>
-      <table><thead><tr><th>Entidad</th><th>Tipo</th><th>TNA Operación</th><th>Tasa Banco Ref.</th><th>Diferencia</th><th>Estado</th><th>Ahorro Est.</th></tr></thead><tbody>`;
+      <table><thead><tr><th>Entidad</th><th>Tipo</th><th>Importe</th><th>Saldo</th><th>Plazo</th><th>TNA Operación</th><th>Tasa Ref.</th><th>Diferencia</th><th>Estado</th><th>Ahorro Est.</th></tr></thead><tbody>`;
 
     rotativos.forEach(op=>{
       const saldo=cuotas.filter(c=>c.opId===op.id&&c.estado!=='pagada').reduce((s,c)=>s+(c.capital||0),0);
@@ -1440,15 +1440,18 @@ function renderAnalisisApp(){
       // Usar tasa personal del cliente si existe, sino la mínima de referencia admin
       const tasaBanco=getTasaBancoSesion(op.entidadNombre);
       if(tasaBanco===null){
-        html+=`<tr><td class="td-bold">${op.entidadNombre}</td><td style="font-size:.75rem">${op.tipo}</td><td class="td-mono" style="color:var(--yellow)">${fmtN(tnaEfOp,2)}%</td><td colspan="4" style="color:var(--text3);font-size:.73rem;">Sin condiciones de referencia para este banco</td></tr>`;
+        html+=`<tr><td class="td-bold">${op.entidadNombre}</td><td style="font-size:.75rem">${op.tipo}</td><td class="td-mono">${fmt(op.monto)}</td><td class="td-mono">${fmt(saldo)}</td><td class="td-mono">${op.plazo||'—'}m</td><td class="td-mono" style="color:var(--yellow)">${fmtN(tnaEfOp,2)}%</td><td colspan="4" style="color:var(--text3);font-size:.73rem;">Sin condiciones de referencia</td></tr>`;
         return;
       }
       const diff=tnaEfOp-tasaBanco;
       const sem=diff>umbralRojo?{color:'var(--red)',dot:'🔴',label:'Cara'}:diff>umbralAmarillo?{color:'var(--yellow)',dot:'🟡',label:'Revisar'}:{color:'var(--green)',dot:'🟢',label:'OK'};
       const ahorro=diff>umbralAmarillo&&saldo>0?saldo*(diff/100/12):0;
       html+=`<tr>
-        <td class="td-bold">${op.entidadNombre}</td>
-        <td style="font-size:.75rem">${op.tipo}<br><span style="font-size:.65rem;color:var(--text3)">${tasaLabel}</span></td>
+        <td class="td-bold">${op.entidadNombre}<br><span style="font-size:.65rem;color:var(--text3)">${tasaLabel}</span></td>
+        <td style="font-size:.75rem">${op.tipo}</td>
+        <td class="td-mono">${fmt(op.monto)}</td>
+        <td class="td-mono" style="color:var(--accent)">${fmt(saldo)}</td>
+        <td class="td-mono">${op.plazo||'—'}m</td>
         <td class="td-mono" style="color:var(--yellow);font-weight:600;">${fmtN(tnaEfOp,2)}%</td>
         <td class="td-mono" style="color:var(--text2);">${fmtN(tasaBanco,2)}%</td>
         <td class="td-mono" style="color:${sem.color};">${diff>=0?'+':''}${fmtN(diff,2)}pp</td>
