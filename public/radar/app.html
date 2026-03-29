@@ -694,7 +694,7 @@ function getTNAEfectiva(){
   if(tipo==='tamar') return tamarRef+(parseFloat(document.getElementById('op-spread')?.value)||0);
   return parseFloat(document.getElementById('op-tna')?.value)||0;
 }
-const BANCOS_LISTA_APP=['Banco de la Nación Argentina','Banco de la Provincia de Buenos Aires','Banco Ciudad','Banco Galicia','Banco Santander Río','Banco Supervielle','Banco BBVA','Banco ICBC','Banco Hipotecario','SGR Acindar Pymes','SGR Argenpymes','SGR Trend','SGR Garantizar','SGR Fogaba','Portfolio Personal','IOL','PPI','Otro'];
+const BANCOS_LISTA_APP=['Banco de la Nación Argentina','Banco de la Provincia de Buenos Aires','Banco Ciudad','Banco Galicia','Banco Santander Río','Banco Supervielle','Banco BBVA','Banco ICBC','Banco Hipotecario','SGR Acindar Pymes','SGR Argenpymes','SGR Trend','SGR Garantizar','SGR Fogaba','Otro'];
 
 function populateBancoDropdownApp(selectId,selectedValue=''){
   const sel=document.getElementById(selectId);
@@ -1410,7 +1410,7 @@ function renderAnalisisApp(){
   if(!div)return;
 
   // Bancos con línea cargada (por nombre de entidad)
-  const _NO_TASA_A=new Set(['SGR Acindar Pymes','SGR Argenpymes','SGR Trend','SGR Garantizar','SGR Fogaba','Portfolio Personal','IOL','PPI','Otro']);
+  const _NO_TASA_A=new Set(['SGR Acindar Pymes','SGR Argenpymes','SGR Trend','SGR Garantizar','SGR Fogaba','Otro']);
   const bancosConLinea=new Set(entidades.map(e=>e.nombre).filter(n=>!_NO_TASA_A.has(n)));
 
   // Operaciones rotativas
@@ -1603,7 +1603,7 @@ async function guardarCondPersonalBanco(banco){
 function renderTasas(){
   const contenedor=document.getElementById('rate-comp-chart');
   if(!contenedor)return;
-  const NO_TASA=new Set(['SGR Acindar Pymes','SGR Argenpymes','SGR Trend','SGR Garantizar','SGR Fogaba','Portfolio Personal','IOL','PPI','Otro']);
+  const NO_TASA=new Set(['SGR Acindar Pymes','SGR Argenpymes','SGR Trend','SGR Garantizar','SGR Fogaba','Otro']);
   const bancosCliente=new Set(entidades.map(e=>e.nombre).filter(n=>!NO_TASA.has(n)));
   const todosLosBancosAdmin=Object.keys(tasasBancosRef).filter(b=>!NO_TASA.has(b));
 
