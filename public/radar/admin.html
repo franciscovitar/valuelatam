@@ -289,9 +289,13 @@
       <div class="table-card">
         <div class="table-header">
           <div><div class="table-title">Condiciones de Bancos de Referencia</div><div class="table-sub">Múltiples condiciones por banco — se usa la de menor TNA en Análisis</div></div>
+          <button class="btn btn-success btn-sm" onclick="guardarTasasBancos()" id="btn-guardar-bancos">✓ Guardar todo</button>
         </div>
         <div style="padding:16px 20px;">
           <div id="bancos-ref-rows"></div>
+          <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;">
+            <button class="btn btn-success" onclick="guardarTasasBancos()">✓ Guardar condiciones</button>
+          </div>
         </div>
       </div>
     </div>
@@ -775,6 +779,9 @@ function onCondChange(el){
     const tnaEf=calcTasaBancoRef(arr[idx]);
     spans[0].textContent=tnaEf.toFixed(1)+'%';
   }
+  // Mark as unsaved
+  const btn=document.getElementById('btn-guardar-bancos');
+  if(btn){btn.style.background='var(--yellow)';btn.style.color='#000';btn.textContent='⚠ Guardar cambios';}
 }
 
 function agregarCondicionBanco(key,banco){
@@ -801,7 +808,9 @@ function eliminarCondicion(banco,idx){
 
 async function guardarTasasBancos(){
   await db.collection('config').doc('global').set({tasasBancos},{merge:true});
-  toast('Condiciones de bancos guardadas');
+  const btn=document.getElementById('btn-guardar-bancos');
+  if(btn){btn.style.background='';btn.style.color='';btn.textContent='✓ Guardar todo';}
+  toast('Condiciones guardadas y disponibles para todos los clientes','green');
   renderBancosRef();
 }
 
