@@ -2104,5 +2104,12 @@ async function crearCliente(){
   }
 }
 </script>
+
+  <!-- App Check + reCAPTCHA v3 -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app-check.js"></script>
+  <script>
+    const appCheck = firebase.appCheck();
+    appCheck.activate('6LfSJp0sAAAAABWqp_I62OWV4k2LmnsmFXQWuhJj', true);
+  </script>
 </body>
 </html>
