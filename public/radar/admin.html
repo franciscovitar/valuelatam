@@ -1065,7 +1065,7 @@ async function renderAnalisisPanel(){
       html+=`<div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:10px 14px;font-size:.75rem;color:var(--yellow);margin-bottom:16px;">⚠ Sin condiciones de referencia cargadas.</div>`;
     } else {
       html+=`<table style="margin-bottom:24px;"><thead><tr>
-        <th>Entidad</th><th>Tipo Op.</th><th>TNA Efectiva</th><th>Tasa Ref. (banco)</th><th>Fuente</th><th>Diferencia</th><th>Estado</th><th>Ahorro Est.</th>
+        <th>Entidad</th><th>Tipo Op.</th><th>Importe</th><th>Saldo</th><th>Plazo</th><th>TNA Efectiva</th><th>Tasa Ref.</th><th>Diferencia</th><th>Estado</th><th>Ahorro Est.</th>
       </tr></thead><tbody>`;
 
       rotativos.forEach(op=>{
@@ -1074,19 +1074,20 @@ async function renderAnalisisPanel(){
         const tasaLabel=op.tipoTasa==='badlar'?`BADLAR+${fmtN(op.spread||0,1)}%`:op.tipoTasa==='tamar'?`TAMAR+${fmtN(op.spread||0,1)}%`:'Fija';
         const ref=getTasaEfectivaCliente(op.entidadNombre);
         if(!ref){
-          html+=`<tr><td class="td-bold">${op.entidadNombre}</td><td style="font-size:.75rem">${op.tipo}</td><td class="td-mono" style="color:var(--yellow)">${fmtN(tnaEfOp,2)}%</td><td colspan="5" style="color:var(--text3);font-size:.73rem;">Sin condiciones de referencia</td></tr>`;
+          html+=`<tr><td class="td-bold">${op.entidadNombre}</td><td style="font-size:.75rem">${op.tipo}</td><td class="td-mono">${fmt(op.monto)}</td><td class="td-mono">${fmt(saldo)}</td><td class="td-mono">${op.plazo||'—'}m</td><td class="td-mono" style="color:var(--yellow)">${fmtN(tnaEfOp,2)}%</td><td colspan="4" style="color:var(--text3);font-size:.73rem;">Sin condiciones de referencia</td></tr>`;
           return;
         }
         const diff=tnaEfOp-ref.tasa;
         const sem=diff>umbralRojo?{color:'var(--red)',dot:'🔴',label:'Cara'}:diff>umbralAmarillo?{color:'var(--yellow)',dot:'🟡',label:'Revisar'}:{color:'var(--green)',dot:'🟢',label:'OK'};
         const ahorro=diff>umbralAmarillo&&saldo>0?saldo*(diff/100/12):0;
-        const fuenteBadge=ref.fuente==='cliente'?`<span class="badge" style="background:rgba(59,130,246,.15);color:var(--accent);font-size:.62rem;">Cliente</span>`:`<span class="badge" style="background:rgba(255,255,255,.08);color:var(--text3);font-size:.62rem;">Admin</span>`;
         html+=`<tr>
-          <td class="td-bold">${op.entidadNombre}</td>
-          <td style="font-size:.75rem">${op.tipo}<br><span style="font-size:.65rem;color:var(--text3)">${tasaLabel}</span></td>
+          <td class="td-bold">${op.entidadNombre}<br><span style="font-size:.65rem;color:var(--text3)">${tasaLabel}</span></td>
+          <td style="font-size:.75rem">${op.tipo}</td>
+          <td class="td-mono">${fmt(op.monto)}</td>
+          <td class="td-mono" style="color:var(--accent)">${fmt(saldo)}</td>
+          <td class="td-mono">${op.plazo||'—'}m</td>
           <td class="td-mono" style="color:var(--yellow);font-weight:600;">${fmtN(tnaEfOp,2)}%</td>
           <td class="td-mono" style="color:var(--text2);">${fmtN(ref.tasa,2)}%</td>
-          <td>${fuenteBadge}</td>
           <td class="td-mono" style="color:${sem.color};">${diff>=0?'+':''}${fmtN(diff,2)}pp</td>
           <td>${sem.dot} <span class="badge" style="background:${sem.color}22;color:${sem.color};">${sem.label}</span></td>
           <td class="td-mono" style="color:${ahorro>0?'var(--green)':'var(--text3)'};">${ahorro>0?fmt(ahorro)+'/mes':'—'}</td>
