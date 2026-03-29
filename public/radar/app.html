@@ -573,7 +573,12 @@ async function loadGlobalTNA() {
       if(d.tamar) tamarRef=d.tamar;
       if(d.umbralAmarillo!=null) umbralAmarillo=d.umbralAmarillo;
       if(d.umbralRojo!=null) umbralRojo=d.umbralRojo;
-      if(d.tasasBancos) tasasBancosRef=d.tasasBancos;
+      if(d.tasasBancos){
+        tasasBancosRef={};
+        Object.entries(d.tasasBancos).forEach(([b,v])=>{
+          tasasBancosRef[b]=Array.isArray(v)?v:(v&&v.tipo?[{tipoTasa:v.tipo,valor:v.valor||0,plazo:12,amort:'frances'}]:[]);
+        });
+      }
     }
   } catch(e) {}
   const el=document.getElementById('tna-mercado-display');
@@ -1295,12 +1300,30 @@ function renderCuotas(){
   }).join('');
 }
 
-function calcTasaBancoRefApp(cfg){
-  if(!cfg)return null;
-  const tipo=cfg.tipo||'fija', valor=parseFloat(cfg.valor)||0;
+function calcTasaBancoRefApp(cond){
+  if(!cond)return null;
+  const tipo=cond.tipoTasa||cond.tipo||'fija', valor=parseFloat(cond.valor)||0;
   if(tipo==='tamar') return tamarRef+valor;
   if(tipo==='badlar') return badlarRef+valor;
   return valor;
+}
+
+function getTasaMinimaRefApp(banco){
+  const arr=tasasBancosRef[banco];
+  if(!arr||!arr.length)return null;
+  return arr.reduce((min,c)=>{
+    const t=calcTasaBancoRefApp(c);
+    return(min===null||t<min)?t:min;
+  },null);
+}
+
+function getMejorCondicionRef(banco){
+  const arr=tasasBancosRef[banco];
+  if(!arr||!arr.length)return null;
+  return arr.reduce((best,c)=>{
+    const t=calcTasaBancoRefApp(c);
+    return(!best||t<calcTasaBancoRefApp(best))?c:best;
+  },null);
 }
 
 function renderAnalisisApp(){
@@ -1334,10 +1357,11 @@ function renderAnalisisApp(){
       const saldo=cuotas.filter(c=>c.opId===op.id&&c.estado!=='pagada').reduce((s,c)=>s+(c.capital||0),0);
       const tnaEfOp=getTNAEfectivaOp(op);
       const tasaLabel=op.tipoTasa==='badlar'?`BADLAR+${fmtN(op.spread||0,1)}%`:op.tipoTasa==='tamar'?`TAMAR+${fmtN(op.spread||0,1)}%`:'Fija';
-      const bancoCfg=tasasBancosRef[op.entidadNombre];
-      const tasaBanco=getTasaBancoSesion(op.entidadNombre);
-      if(tasaBanco===0&&!bancoCfg){
-        html+=`<tr><td class="td-bold">${op.entidadNombre}</td><td style="font-size:.75rem">${op.tipo}</td><td class="td-mono" style="color:var(--yellow)">${fmtN(tnaEfOp,2)}%<br><span style="font-size:.65rem;color:var(--text3)">${tasaLabel}</span></td><td colspan="4" style="color:var(--text3);font-size:.73rem;">Sin tasa de referencia para este banco</td></tr>`;
+      // Usar tasa de sesión si fue editada, sino la mínima de referencia
+      const tasaBancoSesion=tasasClienteSesion[op.entidadNombre];
+      const tasaBanco=tasaBancoSesion!==undefined?tasaBancoSesion:getTasaMinimaRefApp(op.entidadNombre);
+      if(tasaBanco===null){
+        html+=`<tr><td class="td-bold">${op.entidadNombre}</td><td style="font-size:.75rem">${op.tipo}</td><td class="td-mono" style="color:var(--yellow)">${fmtN(tnaEfOp,2)}%</td><td colspan="4" style="color:var(--text3);font-size:.73rem;">Sin condiciones de referencia para este banco</td></tr>`;
         return;
       }
       const diff=tnaEfOp-tasaBanco;
@@ -1468,11 +1492,24 @@ function renderTasas(){
 
     g.items.forEach(ent=>{
       const disp=Math.max(0,(ent.lineaTotal||0)-(ent.lineaUtilizada||0));
-      const tasaAdmin=calcTasaBancoRefApp(tasasBancosRef[ent.nombre]);
-      const tasaSesion=getTasaBancoSesion(ent.nombre);
-      const tasaAdminFmt=tasaAdmin!==null?fmtN(tasaAdmin,2)+'%':'—';
+      const tasaSesion=tasasClienteSesion[ent.nombre];
+      const condiciones=tasasBancosRef[ent.nombre]||[];
       const bancoKey=ent.nombre.replace(/[^a-zA-Z0-9]/g,'_');
       const bancoEsc=ent.nombre.replace(/'/g,'&#39;').replace(/"/g,'&quot;');
+      // Build condiciones rows - editable
+      let condsHtml='';
+      if(condiciones.length){
+        condiciones.forEach((c,i)=>{
+          const tnaEf=calcTasaBancoRefApp(c);
+          const tipoTasaLabel=c.tipoTasa==='badlar'?`BADLAR+${fmtN(c.valor||0,1)}%`:c.tipoTasa==='tamar'?`TAMAR+${fmtN(c.valor||0,1)}%`:`${fmtN(c.valor||0,1)}%`;
+          const amortL={'frances':'Francés','aleman':'Alemán','bullet':'Bullet puro','bullet_intereses':'Bullet c/int.'}[c.amort||'frances']||'—';
+          condsHtml+=`<div style="font-size:.7rem;color:var(--text3);margin-top:2px;">${amortL} · ${c.plazo||12}m · ${tipoTasaLabel} → <span style="color:var(--yellow)">${fmtN(tnaEf,2)}%</span></div>`;
+        });
+      } else {
+        condsHtml='<div style="font-size:.7rem;color:var(--text3);">Sin condiciones de referencia</div>';
+      }
+      const tasaMinimaAdmin=getTasaMinimaRefApp(ent.nombre);
+      const tasaMinimaFmt=tasaMinimaAdmin!==null?fmtN(tasaMinimaAdmin,2)+'%':'—';
       html+=`<tr>
         <td class="td-bold">${ent.nombre}</td>
         <td class="td-mono">${fmt(ent.lineaTotal)}</td>
@@ -1480,14 +1517,15 @@ function renderTasas(){
         <td class="td-mono" style="color:var(--green)">${fmt(disp)}</td>
         <td>
           <div style="display:flex;align-items:center;gap:6px;">
-            <input type="number" value="${tasaSesion||0}" step="0.5" min="0"
+            <input type="number" value="${tasaSesion!==undefined?tasaSesion:(tasaMinimaAdmin||0)}" step="0.5" min="0"
               data-banco="${bancoEsc}"
               style="width:75px;font-size:.78rem;padding:3px 6px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:5px;text-align:right;"
               oninput="actualizarTasaSesion(this.dataset.banco,this.value)" id="tasa-sesion-${bancoKey}">
             <span style="font-size:.72rem;color:var(--text3);">%</span>
           </div>
+          <div style="font-size:.65rem;color:var(--text3);margin-top:3px;">Editás para simular</div>
         </td>
-        <td class="td-mono" style="color:var(--text3);font-size:.75rem;">${tasaAdminFmt}</td>
+        <td style="font-size:.72rem;">${condsHtml}<div style="margin-top:4px;font-family:var(--mono);font-size:.7rem;color:var(--text3);">Mín. ref: <span style="color:var(--yellow)">${tasaMinimaFmt}</span></div></td>
       </tr>`;
     });
     html+='</tbody></table></div>';
@@ -1502,10 +1540,16 @@ function renderTasas(){
         ℹ Si querés operar con alguno, cargá la línea en <strong>Entidades</strong>.
       </div>
       <table><thead><tr><th>Banco</th><th>Tipo Tasa</th><th>TNA de Referencia</th></tr></thead><tbody>`;
-    bancosSinLinea.forEach(([banco,cfg])=>{
-      const tasa=calcTasaBancoRefApp(cfg);
-      const tipoLabel=cfg.tipo==='badlar'?`BADLAR+${fmtN(cfg.valor||0,1)}%`:cfg.tipo==='tamar'?`TAMAR+${fmtN(cfg.valor||0,1)}%`:'Fija';
-      html+=`<tr style="opacity:.65;"><td style="color:var(--text2);">${banco}</td><td style="font-size:.75rem;color:var(--text3);">${tipoLabel}</td><td class="td-mono" style="color:var(--text3);">${fmtN(tasa,2)}%</td></tr>`;
+    bancosSinLinea.forEach(([banco,arr])=>{
+      const condArr=Array.isArray(arr)?arr:(arr&&arr.tipo?[arr]:[]);
+      const tasaMin=getTasaMinimaRefApp(banco);
+      const condsTexto=condArr.map(c=>{
+        const tnaEf=calcTasaBancoRefApp(c);
+        const amortL={'frances':'Francés','aleman':'Alemán','bullet':'Bullet puro','bullet_intereses':'Bullet c/int.'}[c.amort||'frances']||'—';
+        const tipoL=c.tipoTasa==='badlar'?`BADLAR+${fmtN(c.valor||0,1)}%`:c.tipoTasa==='tamar'?`TAMAR+${fmtN(c.valor||0,1)}%`:`${fmtN(c.valor||0,1)}%`;
+        return `${amortL} · ${c.plazo||12}m · ${tipoL} → ${fmtN(tnaEf,2)}%`;
+      }).join('<br>');
+      html+=`<tr style="opacity:.65;"><td style="color:var(--text2);">${banco}</td><td style="font-size:.72rem;color:var(--text3);">${condsTexto||'—'}</td><td class="td-mono" style="color:var(--text3);">${tasaMin!==null?fmtN(tasaMin,2)+'%':'—'}</td></tr>`;
     });
     html+='</tbody></table></div>';
   }
