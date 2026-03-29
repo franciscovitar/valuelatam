@@ -1196,16 +1196,13 @@ function htmlOperaciones(){
   // TABLA ROTATIVAS
   if(rotativas.length){
     html+=`<div style="font-family:var(--mono);font-size:.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">↺ Operaciones Rotativas</div>`;
-    html+=`<table style="margin-bottom:20px;"><thead><tr><th>Entidad</th><th>Tipo</th><th>Monto</th><th>Saldo Rest.</th><th>TNA Efectiva</th><th>vs Mercado</th><th>Semáforo</th><th>Tipo Tasa</th><th>Plazo</th><th></th></tr></thead><tbody>`;
+    html+=`<table style="margin-bottom:20px;"><thead><tr><th>Entidad</th><th>Tipo</th><th>Monto</th><th>Saldo Rest.</th><th>TNA</th><th>Tipo Tasa</th><th>Plazo</th><th></th></tr></thead><tbody>`;
     rotativas.forEach(op=>{
       const saldo=cuotas.filter(c=>c.opId===op.id&&c.estado!=='pagada').reduce((s,c)=>s+(c.capital||0),0);
       const tasaLabel=op.tipoTasa==='badlar'?`BADLAR+${fmtN(op.spread||0,1)}%`:op.tipoTasa==='tamar'?`TAMAR+${fmtN(op.spread||0,1)}%`:'Fija';
       const tnaEfectiva=getTNAEfectivaOp(op);
-      const sem=getSemaforoOp(tnaEfectiva);
-      const diffStr=(sem.diff>=0?'+':'')+fmtN(sem.diff,1)+'pp';
-      const ahorro=getAhorroMensual(op);
-      const refinBadge=ahorro>0?`<span class="badge" style="background:rgba(59,130,246,.15);color:var(--accent);margin-left:4px;" title="${fmt(ahorro)}/mes">💡</span>`:'';
-      const nroRef=op.nroPrestamo?`<div style="font-size:.62rem;color:var(--text3);font-family:var(--mono);">Ref: ${op.nroPrestamo}</div>`:'';html+=`<tr><td class="td-bold">${op.entidadNombre}${nroRef}</td><td style="font-size:.75rem">${op.tipo}</td><td class="td-mono">${fmt(op.monto)}</td><td class="td-mono" style="color:var(--accent)">${fmt(saldo)}</td><td class="td-mono" style="color:${sem.color};font-weight:600;">${fmtN(tnaEfectiva,2)}%</td><td class="td-mono" style="color:${sem.color};">${diffStr}</td><td><span style="font-size:1rem;">${sem.dot}</span><span class="badge" style="background:${sem.color}22;color:${sem.color};margin-left:4px;">${sem.label}</span>${refinBadge}</td><td style="font-size:.7rem">${tasaLabel}</td><td class="td-mono">${op.plazo}m</td><td style="display:flex;gap:4px;"><button class="btn btn-ghost btn-sm" onclick="abrirEditOperacion('${op.id}')">✏️</button><button class="btn btn-danger btn-sm" onclick="eliminarOpCliente('${op.id}')">✕</button></td></tr>`;
+      const nroRef=op.nroPrestamo?`<div style="font-size:.62rem;color:var(--text3);font-family:var(--mono);">Ref: ${op.nroPrestamo}</div>`:'';
+      html+=`<tr><td class="td-bold">${op.entidadNombre}${nroRef}</td><td style="font-size:.75rem">${op.tipo}</td><td class="td-mono">${fmt(op.monto)}</td><td class="td-mono" style="color:var(--accent)">${fmt(saldo)}</td><td class="td-mono" style="color:var(--yellow);font-weight:600;">${fmtN(tnaEfectiva,2)}%</td><td style="font-size:.7rem">${tasaLabel}</td><td class="td-mono">${op.plazo}m</td><td style="display:flex;gap:4px;"><button class="btn btn-ghost btn-sm" onclick="abrirEditOperacion('${op.id}')">✏️</button><button class="btn btn-danger btn-sm" onclick="eliminarOpCliente('${op.id}')">✕</button></td></tr>`;
     });
     html+='</tbody></table>';
   }
