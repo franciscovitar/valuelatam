@@ -336,17 +336,8 @@
 
     <!-- TASAS -->
     <div class="panel" id="panel-tasas">
-      <div class="info-bar">ℹ La TNA de referencia de mercado la actualiza Value Latam Radar globalmente para todos los clientes.</div>
-      <div style="margin-bottom:16px;">
-        <span style="font-size:.8rem;color:var(--text2)">TNA de mercado actual: </span>
-        <strong style="font-family:var(--mono);color:var(--yellow)" id="tna-mercado-display">— %</strong>
-      </div>
-      <div class="table-card">
-        <div class="table-header"><div><div class="table-title">Comparador de Tasas TNA</div><div class="table-sub">Tu TNA vs mercado</div></div></div>
-        <div class="rate-comp" id="rate-comp-chart"><div class="empty"><div class="empty-icon">↕</div><div class="empty-text">Sin operaciones</div></div></div>
-        <table><thead><tr><th>Operación</th><th>Entidad</th><th>TNA Actual</th><th>TNA Mercado</th><th>Diferencia</th><th>Clasificación</th><th>Saldo</th></tr></thead>
-        <tbody id="tabla-tasas"></tbody></table>
-      </div>
+      <div class="info-bar">ℹ Las tasas de referencia las actualiza Value Latam Radar. Podés editar las tasas de tus bancos para simular escenarios — los cambios son solo para esta sesión.</div>
+      <div class="rate-comp" id="rate-comp-chart"><div class="empty"><div class="empty-icon">↕</div><div class="empty-text">Cargando...</div></div></div>
     </div>
 
     <!-- ANÁLISIS -->
@@ -1261,20 +1252,113 @@ function renderAnalisisApp(){
   div.innerHTML=html||'<div class="empty"><div class="empty-icon">↕</div><div class="empty-text">Sin datos para mostrar</div></div>';
 }
 
+// Tasas editadas por el cliente en sesión (no se guardan en Firebase)
+const tasasClienteSesion = {};
+
+function getTasaBancoSesion(banco){
+  if(tasasClienteSesion[banco]!==undefined) return tasasClienteSesion[banco];
+  const adminTasa=calcTasaBancoRefApp(tasasBancosRef[banco]);
+  return adminTasa!==null?adminTasa:0;
+}
+
+function actualizarTasaSesion(banco, valor){
+  tasasClienteSesion[banco] = parseFloat(valor)||0;
+  // No re-renderizar todo — solo marcar como editada visualmente
+  const bancoKey=banco.replace(/[^a-zA-Z0-9]/g,'_');
+  const input=document.getElementById('tasa-sesion-'+bancoKey);
+  if(input){
+    // Marcar visualmente que fue editada
+    let badge=input.parentElement.querySelector('.editada-badge');
+    if(!badge){
+      badge=document.createElement('span');
+      badge.className='editada-badge';
+      badge.style.cssText='font-size:.65rem;color:var(--accent);';
+      badge.textContent='✎ editada';
+      input.parentElement.appendChild(badge);
+    }
+    input.style.borderColor='var(--accent)';
+  }
+}
+
 function renderTasas(){
-  const tbody=document.getElementById('tabla-tasas'),rc=document.getElementById('rate-comp-chart');
-  if(!operaciones.length){tbody.innerHTML='';rc.innerHTML='<div class="empty"><div class="empty-icon">↕</div><div class="empty-text">Sin operaciones</div></div>';return;}
-  const maxTNA=Math.max(tnaRef,...operaciones.map(o=>o.tna))*1.2;
-  rc.innerHTML=operaciones.map(op=>{
-    const pct=(op.tna/maxTNA)*100,mktPct=(tnaRef/maxTNA)*100,diff=op.tna-tnaRef;
-    const color=diff>5?'var(--red)':diff<-5?'var(--green)':'var(--yellow)';
-    return`<div class="rate-row"><div class="rate-entity" title="${op.entidadNombre}">${op.entidadNombre}</div><div class="rate-bar-wrap"><div class="rate-bar" style="width:${pct}%;background:${color}">${fmtN(op.tna,1)}%</div><div class="rate-market" style="left:${mktPct}%"></div></div></div>`;
-  }).join('');
-  tbody.innerHTML=operaciones.map(op=>{
-    const diff=op.tna-tnaRef,pend=cuotas.filter(c=>c.opId===op.id&&c.estado!=='pagada'),saldo=pend.reduce((s,c)=>s+c.capital,0);
-    const[clasif,badge]=diff>5?['Cara','badge-red']:diff<-5?['Oportunidad de refinanciación','badge-green']:['Alineada','badge-yellow'];
-    return`<tr><td>${op.tipo}</td><td class="td-bold">${op.entidadNombre}</td><td class="td-mono" style="color:var(--yellow)">${fmtN(op.tna,2)}%</td><td class="td-mono" style="color:var(--text3)">${fmtN(tnaRef,2)}%</td><td class="td-mono" style="color:${diff>0?'var(--red)':'var(--green)'}">${diff>0?'+':''}${fmtN(diff,2)}%</td><td><span class="kpi-badge ${badge}">${clasif}</span></td><td class="td-mono">${fmt(saldo)}</td></tr>`;
-  }).join('');
+  const contenedor=document.getElementById('rate-comp-chart');
+  const tbody=document.getElementById('tabla-tasas');
+  if(tbody)tbody.innerHTML='';
+
+  // Agrupar entidades del cliente por nombre de banco
+  const bancosCliente=new Set(entidades.map(e=>e.nombre));
+
+  // Separar lineas del cliente por tipo
+  const grupos=[
+    {titulo:'↺ Líneas Rotativas',icono:'badge-green',items:entidades.filter(e=>e.tipoLinea==='Rotativa')},
+    {titulo:'◆ Descubiertos',icono:'badge-yellow',items:entidades.filter(e=>e.subtipo==='Descubierto')},
+    {titulo:'◆ Tarjetas de Crédito',icono:'badge-yellow',items:entidades.filter(e=>e.subtipo==='Tarjeta de Crédito')},
+    {titulo:'◆ Préstamos de Inversión',icono:'badge-blue',items:entidades.filter(e=>e.subtipo==='Préstamo de Inversión')},
+    {titulo:'◆ Leasing',icono:'badge-blue',items:entidades.filter(e=>e.subtipo==='Leasing')},
+  ].filter(g=>g.items.length>0);
+
+  let html='';
+
+  if(!grupos.length){
+    if(contenedor)contenedor.innerHTML='<div class="empty"><div class="empty-icon">↕</div><div class="empty-text">Cargá líneas en Entidades para comparar tasas</div></div>';
+    return;
+  }
+  if(contenedor)contenedor.innerHTML='';
+
+  // BANCOS CON LÍNEA: editables en sesión
+  html+=`<div style="background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.15);border-radius:8px;padding:10px 14px;font-size:.72rem;color:var(--text2);margin-bottom:16px;">
+    💡 Podés editar la tasa de los bancos donde tenés línea para simular distintos escenarios. Los cambios son solo para esta sesión.
+  </div>`;
+
+  grupos.forEach(g=>{
+    html+=`<div class="table-card" style="margin-bottom:16px;">
+      <div class="table-header"><div><div class="table-title">${g.titulo}</div><div class="table-sub">Tasas editables para simulación</div></div></div>
+      <table><thead><tr><th>Banco</th><th>Límite</th><th>Utilizado</th><th>Disponible</th><th>Tasa Banco (editable)</th><th>Tasa Admin Ref.</th></tr></thead><tbody>`;
+
+    g.items.forEach(ent=>{
+      const disp=Math.max(0,(ent.lineaTotal||0)-(ent.lineaUtilizada||0));
+      const tasaAdmin=calcTasaBancoRefApp(tasasBancosRef[ent.nombre]);
+      const tasaSesion=getTasaBancoSesion(ent.nombre);
+      const tasaAdminFmt=tasaAdmin!==null?fmtN(tasaAdmin,2)+'%':'—';
+      const bancoKey=ent.nombre.replace(/[^a-zA-Z0-9]/g,'_');
+      html+=`<tr>
+        <td class="td-bold">${ent.nombre}</td>
+        <td class="td-mono">${fmt(ent.lineaTotal)}</td>
+        <td class="td-mono" style="color:var(--red)">${fmt(ent.lineaUtilizada||0)}</td>
+        <td class="td-mono" style="color:var(--green)">${fmt(disp)}</td>
+        <td>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <input type="number" value="${fmtN(tasaSesion||0,2).replace(',','.')}" step="0.5" min="0"
+              style="width:75px;font-size:.78rem;padding:3px 6px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:5px;text-align:right;"
+              oninput="actualizarTasaSesion('${ent.nombre}',this.value)" id="tasa-sesion-${bancoKey}">
+            <span style="font-size:.72rem;color:var(--text3);">%</span>
+          </div>
+        </td>
+        <td class="td-mono" style="color:var(--text3);font-size:.75rem;">${tasaAdminFmt}</td>
+      </tr>`;
+    });
+    html+='</tbody></table></div>';
+  });
+
+  // BANCOS SIN LÍNEA: solo lectura
+  const bancosSinLinea=Object.entries(tasasBancosRef).filter(([b])=>!bancosCliente.has(b));
+  if(bancosSinLinea.length){
+    html+=`<div class="table-card">
+      <div class="table-header"><div><div class="table-title">Otros Bancos de Referencia</div><div class="table-sub">Bancos donde no tenés línea — solo lectura</div></div></div>
+      <div style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:7px;padding:8px 12px;font-size:.72rem;color:var(--text3);margin:12px 20px 0;">
+        ℹ Si querés operar con alguno, cargá la línea en <strong>Entidades</strong>.
+      </div>
+      <table><thead><tr><th>Banco</th><th>Tipo Tasa</th><th>TNA de Referencia</th></tr></thead><tbody>`;
+    bancosSinLinea.forEach(([banco,cfg])=>{
+      const tasa=calcTasaBancoRefApp(cfg);
+      const tipoLabel=cfg.tipo==='badlar'?`BADLAR+${fmtN(cfg.valor||0,1)}%`:cfg.tipo==='tamar'?`TAMAR+${fmtN(cfg.valor||0,1)}%`:'Fija';
+      html+=`<tr style="opacity:.65;"><td style="color:var(--text2);">${banco}</td><td style="font-size:.75rem;color:var(--text3);">${tipoLabel}</td><td class="td-mono" style="color:var(--text3);">${fmtN(tasa,2)}%</td></tr>`;
+    });
+    html+='</tbody></table></div>';
+  }
+
+  // Render en contenedor (la tabla vieja queda vacía)
+  if(contenedor) contenedor.innerHTML=html;
 }
 
 function renderCalendario(){
