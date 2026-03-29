@@ -1187,11 +1187,11 @@ function renderAnalisisApp(){
       const tnaEfOp=getTNAEfectivaOp(op);
       const tasaLabel=op.tipoTasa==='badlar'?`BADLAR+${fmtN(op.spread||0,1)}%`:op.tipoTasa==='tamar'?`TAMAR+${fmtN(op.spread||0,1)}%`:'Fija';
       const bancoCfg=tasasBancosRef[op.entidadNombre];
-      if(!bancoCfg){
+      const tasaBanco=getTasaBancoSesion(op.entidadNombre);
+      if(tasaBanco===0&&!bancoCfg){
         html+=`<tr><td class="td-bold">${op.entidadNombre}</td><td style="font-size:.75rem">${op.tipo}</td><td class="td-mono" style="color:var(--yellow)">${fmtN(tnaEfOp,2)}%<br><span style="font-size:.65rem;color:var(--text3)">${tasaLabel}</span></td><td colspan="4" style="color:var(--text3);font-size:.73rem;">Sin tasa de referencia para este banco</td></tr>`;
         return;
       }
-      const tasaBanco=calcTasaBancoRefApp(bancoCfg);
       const diff=tnaEfOp-tasaBanco;
       const sem=diff>umbralRojo?{color:'var(--red)',dot:'🔴',label:'Cara'}:diff>umbralAmarillo?{color:'var(--yellow)',dot:'🟡',label:'Revisar'}:{color:'var(--green)',dot:'🟢',label:'OK'};
       const ahorro=diff>umbralAmarillo&&saldo>0?saldo*(diff/100/12):0;
@@ -1263,20 +1263,23 @@ function getTasaBancoSesion(banco){
 
 function actualizarTasaSesion(banco, valor){
   tasasClienteSesion[banco] = parseFloat(valor)||0;
-  // No re-renderizar todo — solo marcar como editada visualmente
+  // Marcar visualmente el input
   const bancoKey=banco.replace(/[^a-zA-Z0-9]/g,'_');
   const input=document.getElementById('tasa-sesion-'+bancoKey);
   if(input){
-    // Marcar visualmente que fue editada
+    input.style.borderColor='var(--accent)';
     let badge=input.parentElement.querySelector('.editada-badge');
     if(!badge){
       badge=document.createElement('span');
       badge.className='editada-badge';
-      badge.style.cssText='font-size:.65rem;color:var(--accent);';
-      badge.textContent='✎ editada';
+      badge.style.cssText='font-size:.65rem;color:var(--accent);margin-left:2px;';
+      badge.textContent='✎';
       input.parentElement.appendChild(badge);
     }
-    input.style.borderColor='var(--accent)';
+  }
+  // Si el panel de Análisis está activo, refrescarlo con la nueva tasa
+  if(document.getElementById('panel-analisis')?.classList.contains('active')){
+    renderAnalisisApp();
   }
 }
 
@@ -1321,6 +1324,7 @@ function renderTasas(){
       const tasaSesion=getTasaBancoSesion(ent.nombre);
       const tasaAdminFmt=tasaAdmin!==null?fmtN(tasaAdmin,2)+'%':'—';
       const bancoKey=ent.nombre.replace(/[^a-zA-Z0-9]/g,'_');
+      const bancoEsc=ent.nombre.replace(/'/g,'&#39;').replace(/"/g,'&quot;');
       html+=`<tr>
         <td class="td-bold">${ent.nombre}</td>
         <td class="td-mono">${fmt(ent.lineaTotal)}</td>
@@ -1328,9 +1332,10 @@ function renderTasas(){
         <td class="td-mono" style="color:var(--green)">${fmt(disp)}</td>
         <td>
           <div style="display:flex;align-items:center;gap:6px;">
-            <input type="number" value="${fmtN(tasaSesion||0,2).replace(',','.')}" step="0.5" min="0"
+            <input type="number" value="${tasaSesion||0}" step="0.5" min="0"
+              data-banco="${bancoEsc}"
               style="width:75px;font-size:.78rem;padding:3px 6px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:5px;text-align:right;"
-              oninput="actualizarTasaSesion('${ent.nombre}',this.value)" id="tasa-sesion-${bancoKey}">
+              oninput="actualizarTasaSesion(this.dataset.banco,this.value)" id="tasa-sesion-${bancoKey}">
             <span style="font-size:.72rem;color:var(--text3);">%</span>
           </div>
         </td>
