@@ -841,6 +841,33 @@ function onEditTipoOpChange(){
   [plazoF,primerF,frecF,amortF].forEach(el=>{if(el)el.style.display=esSimple?'none':'flex';});
 }
 
+// Ordena operaciones: primero por línea de entidad (mayor→menor), luego por desembolso (más antiguo→más nuevo)
+function sortOps(arr, ents){
+  return [...arr].sort((a,b)=>{
+    const entA=ents.find(e=>e.id===a.entidadId);
+    const entB=ents.find(e=>e.id===b.entidadId);
+    const lineaA=parseFloat(entA?.lineaTotal||a.monto||0);
+    const lineaB=parseFloat(entB?.lineaTotal||b.monto||0);
+    if(lineaB!==lineaA) return lineaB-lineaA;
+    const desA=a.desembolso||'9999-99-99';
+    const desB=b.desembolso||'9999-99-99';
+    return desA.localeCompare(desB);
+  });
+}
+// Ordena entidades: Rotativas primero (mayor línea→menor), luego Puntuales siguiendo el mismo ranking de bancos de las rotativas
+function sortEntidades(arr){
+  const rotativas=[...arr].filter(e=>e.tipoLinea==='Rotativa').sort((a,b)=>parseFloat(b.lineaTotal||0)-parseFloat(a.lineaTotal||0));
+  const rankBanco={};
+  rotativas.forEach((e,i)=>{ if(!(e.nombre in rankBanco)) rankBanco[e.nombre]=i; });
+  const puntuales=[...arr].filter(e=>e.tipoLinea!=='Rotativa').sort((a,b)=>{
+    const rA=a.nombre in rankBanco?rankBanco[a.nombre]:9999;
+    const rB=b.nombre in rankBanco?rankBanco[b.nombre]:9999;
+    if(rA!==rB) return rA-rB;
+    return parseFloat(b.lineaTotal||0)-parseFloat(a.lineaTotal||0);
+  });
+  return [...rotativas,...puntuales];
+}
+
 function getTNAEfectivaOp(op){
   // Calcula la TNA efectiva real de una operación según su tipo de tasa
   const tipo=op.tipoTasa||'fija';
@@ -1259,7 +1286,7 @@ function htmlEntidades(){
   let html=`<div style="display:flex;justify-content:flex-end;margin-bottom:12px;"><button class="btn btn-primary btn-sm" onclick="openModalEnt()">+ Nueva Entidad</button></div>`;
   if(!ents.length) return html+'<div class="empty"><div class="empty-icon">⬡</div><div class="empty-text">Sin entidades. Cargá la primera.</div></div>';
   html+=`<table><thead><tr><th>Entidad</th><th>Tipo</th><th>Línea Total</th><th>Utilizada</th><th>Disponible</th><th>Vto.</th><th>Uso</th><th></th></tr></thead><tbody>`;
-  ents.forEach(e=>{
+  sortEntidades(ents).forEach(e=>{
     const disp=Math.max(0,(e.lineaTotal||0)-(e.lineaUtilizada||0));
     const pct=e.lineaTotal>0?Math.round((e.lineaUtilizada||0)/e.lineaTotal*100):0;
     const color=pct>80?'var(--red)':pct>50?'var(--yellow)':'var(--green)';
@@ -1289,9 +1316,10 @@ function htmlOperaciones(){
   let html=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><div style="font-size:.72rem;color:var(--text3);">Las operaciones puntuales se cargan desde <strong>Entidades</strong></div><button class="btn btn-primary btn-sm" onclick="openModalOp()">+ Nueva Operación Rotativa</button></div>${resumen}`;
   if(!ops.length) return html+'<div class="empty"><div class="empty-icon">◎</div><div class="empty-text">Sin operaciones cargadas</div></div>';
 
-  // Separar rotativas y puntuales
-  const rotativas=ops.filter(op=>op.esRotativa!==false||(!op.esOpSimple&&!['Descubierto','Tarjeta de Crédito','Préstamo de Inversión'].includes(op.tipo)));
-  const puntuales=ops.filter(op=>op.esRotativa===false||['Descubierto','Tarjeta de Crédito','Préstamo de Inversión'].includes(op.tipo));
+  // Separar rotativas y puntuales, ordenadas por línea de entidad (mayor→menor) y desembolso (más antiguo→más nuevo)
+  const entsActivo=clienteActivo?.entidades||[];
+  const rotativas=sortOps(ops.filter(op=>op.esRotativa!==false||(!op.esOpSimple&&!['Descubierto','Tarjeta de Crédito','Préstamo de Inversión'].includes(op.tipo))), entsActivo);
+  const puntuales=sortOps(ops.filter(op=>op.esRotativa===false||['Descubierto','Tarjeta de Crédito','Préstamo de Inversión'].includes(op.tipo)), entsActivo);
 
   // TABLA ROTATIVAS
   if(rotativas.length){
@@ -2152,6 +2180,7 @@ async function guardarEditOperacion(){
   // Regenerar cuotas desde el saldo restante
   const opCalc={
     ...op,...changes,id:opId,
+    amortizacion:amort,
     monto:saldoRestante,
     primeraCuota:primeraFechaPend,
     plazo:plazoRestante,
@@ -2159,11 +2188,11 @@ async function guardarEditOperacion(){
     numero_inicio:nroPagadas+1
   };
 
-  const editAmort=changes.amortizacion||op.amortizacion||'frances';
+  const editAmort=amort;
   const esBulletEdit=editAmort==='bullet'||editAmort==='bullet_intereses';
   let nuevas;
   if(esBulletEdit){
-    nuevas=generarCuotasBullet({...op,...changes,id:opId});
+    nuevas=generarCuotasBullet({...op,...changes,id:opId,amortizacion:amort});
   } else {
     nuevas=generarCuotasConGracia(opCalc).map((c,i)=>({...c,numero:nroPagadas+1+i}));
   }
