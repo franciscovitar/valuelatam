@@ -1735,37 +1735,61 @@ function renderCalendario(){
 }
 
 function renderDashboard(){
-  const pend=cuotas.filter(c=>c.estado!=='pagada');
-  const deuda=pend.reduce((s,c)=>s+c.capital,0);
+  // Tarjeta de Crédito se excluye de deuda y TNA; Préstamo de Inversión y Leasing se incluyen en deuda
+  const EXCLUIR_DEUDA=['Tarjeta de Crédito'];
+  const EXCLUIR_TNA=['Tarjeta de Crédito'];
+  // Ops activas (con cuotas pendientes)
   const opsAct=operaciones.filter(op=>cuotas.some(c=>c.opId===op.id&&c.estado!=='pagada'));
+  // Deuda total: excluye tarjeta
+  const opsDeuda=opsAct.filter(op=>!EXCLUIR_DEUDA.includes(op.tipo));
+  const deuda=opsDeuda.reduce((s,op)=>s+cuotas.filter(c=>c.opId===op.id&&c.estado!=='pagada').reduce((a,c)=>a+c.capital,0),0);
   document.getElementById('kpi-deuda').textContent=fmt(deuda);
   document.getElementById('kpi-ops').textContent=opsAct.length+' operaciones activas';
   const disp=entidades.reduce((s,e)=>s+Math.max(0,(e.lineaTotal||0)-(e.lineaUtilizada||0)),0);
   document.getElementById('kpi-disp').textContent=fmt(disp);
   document.getElementById('kpi-lineas').textContent=entidades.length+' entidades';
+  // TNA ponderada: excluye tarjeta
   let tnaPond=0,totSaldo=0;
-  opsAct.forEach(op=>{const s=cuotas.filter(c=>c.opId===op.id&&c.estado!=='pagada').reduce((a,c)=>a+c.capital,0);tnaPond+=op.tna*s;totSaldo+=s;});
+  opsAct.filter(op=>!EXCLUIR_TNA.includes(op.tipo)).forEach(op=>{
+    const s=cuotas.filter(c=>c.opId===op.id&&c.estado!=='pagada').reduce((a,c)=>a+c.capital,0);
+    tnaPond+=op.tna*s;totSaldo+=s;
+  });
   const tnaF=totSaldo>0?tnaPond/totSaldo:0;
   document.getElementById('kpi-tna').textContent=fmtN(tnaF,1)+'%';
   const diff=tnaF-tnaRef;
   document.getElementById('kpi-tna-badge').textContent=`vs mercado ${diff>=0?'+':''}${fmtN(diff,1)}%`;
   const prox=[...cuotas].filter(c=>c.estado!=='pagada').sort((a,b)=>a.fecha.localeCompare(b.fecha));
   if(prox.length){const p=prox[0],op=operaciones.find(o=>o.id===p.opId)||{};document.getElementById('kpi-prox-fecha').textContent=fmtDate(p.fecha);document.getElementById('kpi-prox-desc').textContent=`${op.entidadNombre||'—'} · Cuota ${p.numero}`;document.getElementById('kpi-prox-monto').textContent=fmt(p.total);}
-  // Util
+  // Utilización por entidad: solo Rotativos + Descubiertos (excluye Préstamo Inv, Leasing, Tarjeta)
   const uc=document.getElementById('util-chart');
   if(!entidades.length){uc.innerHTML='<div class="empty"><div class="empty-icon">⬡</div><div class="empty-text">Sin entidades</div></div>';}
-  else{uc.innerHTML=entidades.map(e=>{const disp2=Math.max(0,(e.lineaTotal||0)-(e.lineaUtilizada||0));const pct=e.lineaTotal>0?Math.round((e.lineaUtilizada||0)/e.lineaTotal*100):0;const color=pct>80?'var(--red)':pct>50?'var(--yellow)':'var(--green)';return`<div class="util-row"><div class="util-name" title="${e.nombre}">${e.nombre}</div><div class="util-bar-wrap"><div class="util-bar" style="width:${pct}%;background:${color}"></div></div><div class="util-nums">${fmt(e.lineaUtilizada||0)} / ${fmt(e.lineaTotal)}</div></div>`;}).join('');}
+  else{
+    // Entidades rotativas ordenadas
+    const entRot=sortEntidades(entidades).filter(e=>e.tipoLinea==='Rotativa');
+    // Entidades puntual descubierto
+    const entDesc=sortEntidades(entidades).filter(e=>e.tipoLinea==='Puntual'&&e.subtipo==='Descubierto');
+    const entUtil=[...entRot,...entDesc];
+    if(!entUtil.length){uc.innerHTML='<div class="empty"><div class="empty-icon">⬡</div><div class="empty-text">Sin líneas rotativas ni descubiertos</div></div>';}
+    else{uc.innerHTML=entUtil.map(e=>{
+      const esDesc=e.tipoLinea==='Puntual'&&e.subtipo==='Descubierto';
+      const label=esDesc?`${e.nombre} <span style="font-family:var(--mono);font-size:.6rem;color:var(--text3);margin-left:4px;">DESCUBIERTO</span>`:e.nombre;
+      const disp2=Math.max(0,(e.lineaTotal||0)-(e.lineaUtilizada||0));
+      const pct=e.lineaTotal>0?Math.round((e.lineaUtilizada||0)/e.lineaTotal*100):0;
+      const color=pct>80?'var(--red)':pct>50?'var(--yellow)':'var(--green)';
+      return`<div class="util-row"><div class="util-name" title="${e.nombre}">${label}</div><div class="util-bar-wrap"><div class="util-bar" style="width:${pct}%;background:${color}"></div></div><div class="util-nums">${fmt(e.lineaUtilizada||0)} / ${fmt(e.lineaTotal)}</div></div>`;
+    }).join('');}
+  }
   // Prox 30d
   const hoy=today(),lim30=new Date();lim30.setDate(lim30.getDate()+30);
   const p30=cuotas.filter(c=>c.estado!=='pagada'&&c.fecha<=lim30.toISOString().slice(0,10)).sort((a,b)=>a.fecha.localeCompare(b.fecha)).slice(0,8);
   const dv=document.getElementById('dash-venc');
   if(!p30.length)dv.innerHTML='<div class="empty"><div class="empty-icon">◷</div><div class="empty-text">Sin vencimientos próximos</div></div>';
   else dv.innerHTML=p30.map(c=>{const op=operaciones.find(o=>o.id===c.opId)||{};const d=daysBetween(hoy,c.fecha);const cls=d<=7?'venc-urgente':d<=14?'venc-proximo':'';return`<div class="venc-row ${cls}"><div class="venc-date">${fmtDate(c.fecha)}</div><div class="venc-desc">${op.entidadNombre||'—'} · ${op.tipo||'—'} #${c.numero}</div><div class="venc-monto">${fmt(c.total)}</div></div>`;}).join('');
-  // Deuda tipo
-  const td={};opsAct.forEach(op=>{const s=cuotas.filter(c=>c.opId===op.id&&c.estado!=='pagada').reduce((a,c)=>a+c.capital,0);td[op.tipo]=(td[op.tipo]||0)+s;});
+  // Deuda por tipo (excluye tarjeta)
+  const td={};opsDeuda.forEach(op=>{const s=cuotas.filter(c=>c.opId===op.id&&c.estado!=='pagada').reduce((a,c)=>a+c.capital,0);td[op.tipo]=(td[op.tipo]||0)+s;});
   const dtd=document.getElementById('deuda-tipo-chart');
   if(!Object.keys(td).length)dtd.innerHTML='<div class="empty"><div class="empty-icon">◎</div><div class="empty-text">Sin operaciones</div></div>';
-  else{const colors=['var(--accent)','var(--green)','var(--yellow)','var(--purple)','var(--cyan)','var(--red)'],max=Math.max(...Object.values(td));dtd.innerHTML=Object.entries(td).map(([tipo,monto],i)=>{const pct2=Math.round(monto/deuda*100),w=Math.round(monto/max*100);return`<div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="font-size:.75rem;color:var(--text2)">${tipo}</span><span style="font-family:var(--mono);font-size:.72rem;color:var(--text3)">${fmt(monto)} · ${pct2}%</span></div><div class="progress-bg"><div class="progress-fill" style="width:${w}%;background:${colors[i%colors.length]}"></div></div></div>`;}).join('');}
+  else{const colors=['var(--accent)','var(--green)','var(--yellow)','var(--purple)','var(--cyan)','var(--red)'],max=Math.max(...Object.values(td));dtd.innerHTML=Object.entries(td).map(([tipo,monto],i)=>{const pct2=deuda>0?Math.round(monto/deuda*100):0;const w=Math.round(monto/max*100);return`<div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="font-size:.75rem;color:var(--text2)">${tipo}</span><span style="font-family:var(--mono);font-size:.72rem;color:var(--text3)">${fmt(monto)} · ${pct2}%</span></div><div class="progress-bg"><div class="progress-fill" style="width:${w}%;background:${colors[i%colors.length]}"></div></div></div>`;}).join('');}
   // Alertas
   const ad=document.getElementById('alertas'),alerts=[];
   const venc=cuotas.filter(c=>c.estado==='vencida');if(venc.length)alerts.push({t:'red',m:`⚠ ${venc.length} cuota(s) vencida(s)`});
