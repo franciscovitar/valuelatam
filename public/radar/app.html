@@ -1761,10 +1761,13 @@ function renderDashboard(){
   const opsDeuda=opsAct.filter(op=>!EXCLUIR_DEUDA.includes(op.tipo));
   const deuda=opsDeuda.reduce((s,op)=>s+cuotas.filter(c=>c.opId===op.id&&c.estado!=='pagada').reduce((a,c)=>a+c.capital,0),0);
   document.getElementById('kpi-deuda').textContent=fmt(deuda);
-  document.getElementById('kpi-ops').textContent=opsAct.length+' operaciones activas';
+  // Operaciones activas: todas menos tarjeta de crédito
+  document.getElementById('kpi-ops').textContent=opsDeuda.length+' operaciones activas';
   const disp=entidades.reduce((s,e)=>s+Math.max(0,(e.lineaTotal||0)-(e.lineaUtilizada||0)),0);
   document.getElementById('kpi-disp').textContent=fmt(disp);
-  document.getElementById('kpi-lineas').textContent=entidades.length+' entidades';
+  // Entidades únicas por nombre (una entidad puede tener múltiples operaciones)
+  const entNombresUnicos=new Set(entidades.map(e=>e.nombre)).size;
+  document.getElementById('kpi-lineas').textContent=entNombresUnicos+' entidades';
   // TNA ponderada: excluye tarjeta
   let tnaPond=0,totSaldo=0;
   opsAct.filter(op=>!EXCLUIR_TNA.includes(op.tipo)).forEach(op=>{
