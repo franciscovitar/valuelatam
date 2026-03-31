@@ -290,12 +290,35 @@ async function doForgot() {
 
 auth.onAuthStateChanged(async user => {
   if(user) {
-    // Verificar si es admin
     if(user.email === ADMIN_EMAIL) {
       window.location.href = 'admin.html';
     } else {
-      window.location.href = 'app.html';
+      // Verificar que tenga perfil habilitado en Firestore antes de redirigir
+      try {
+        const doc = await db.collection('empresas').doc(user.uid).get();
+        if(doc.exists) {
+          window.location.href = 'app.html';
+        } else {
+          // Sesión activa pero sin perfil — cerrar sesión y mostrar aviso
+          await auth.signOut();
+          showError('login-error', 'Tu acceso aún no fue habilitado. Contactá a Value Latam.');
+        }
+      } catch(e) {
+        await auth.signOut();
+        showError('login-error', 'Error al verificar acceso. Intentá de nuevo.');
+      }
     }
+  }
+});
+
+// Mostrar aviso si vienen redirigidos desde app.html por acceso denegado
+window.addEventListener('DOMContentLoaded', () => {
+  if(new URLSearchParams(window.location.search).get('acceso') === 'denegado') {
+    const el = document.getElementById('login-error');
+    el.textContent = 'Tu acceso aún no fue habilitado. Contactá a Value Latam.';
+    el.style.display = 'block';
+    // Limpiar la URL sin recargar
+    history.replaceState({}, '', window.location.pathname);
   }
 });
 </script>
