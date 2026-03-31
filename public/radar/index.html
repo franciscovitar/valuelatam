@@ -87,6 +87,12 @@
 </head>
 <body>
 <!-- Firebase SDKs -->
+<!-- EmailJS SDK para notificación de solicitudes -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+  // CONFIGURAR: reemplazá con tu Public Key de EmailJS (https://dashboard.emailjs.com/admin)
+  emailjs.init({ publicKey: 'PUBLIC_KEY' }); // <-- reemplazá PUBLIC_KEY
+</script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -114,32 +120,37 @@
     <div class="forgot"><a onclick="showForgot()">¿Olvidaste tu contraseña?</a></div>
     <div class="loading" id="login-loading"><span class="spinner"></span>Verificando...</div>
     <button class="btn btn-primary" id="btn-login" onclick="doLogin()">Ingresar</button>
-    <div class="toggle">¿No tenés cuenta? <a onclick="showRegister()">Registrate</a></div>
+    <div class="toggle">¿No tenés acceso? <a onclick="showRegister()">Solicitá el tuyo</a></div>
   </div>
 
   <!-- REGISTRO -->
   <div class="card" id="card-register" style="display:none;">
-    <div class="card-title">Crear cuenta</div>
-    <div class="card-sub">Ingresá los datos de tu empresa</div>
+    <div class="card-title">Solicitar acceso</div>
+    <div class="card-sub">Completá tus datos y te habilitamos el acceso en breve</div>
     <div class="error" id="reg-error"></div>
+    <div class="success" id="reg-ok"></div>
     <div class="form-group">
-      <label>Nombre de la empresa</label>
-      <input type="text" id="reg-empresa" placeholder="Acme S.A.">
+      <label>Nombre de la empresa *</label>
+      <input type="text" id="sol-empresa" placeholder="Acme S.A.">
     </div>
     <div class="form-group">
-      <label>CUIT</label>
-      <input type="text" id="reg-cuit" placeholder="30-12345678-9">
+      <label>CUIT *</label>
+      <input type="text" id="sol-cuit" placeholder="30-12345678-9">
     </div>
     <div class="form-group">
-      <label>Email</label>
-      <input type="email" id="reg-email" placeholder="empresa@mail.com">
+      <label>Nombre del responsable *</label>
+      <input type="text" id="sol-nombre" placeholder="Juan Pérez">
     </div>
     <div class="form-group">
-      <label>Contraseña</label>
-      <input type="password" id="reg-pass" placeholder="Mínimo 6 caracteres">
+      <label>Email de contacto *</label>
+      <input type="email" id="sol-email" placeholder="juan@empresa.com">
     </div>
-    <div class="loading" id="reg-loading"><span class="spinner"></span>Creando cuenta...</div>
-    <button class="btn btn-primary" id="btn-reg" onclick="doRegister()">Crear cuenta</button>
+    <div class="form-group">
+      <label>Teléfono de contacto</label>
+      <input type="tel" id="sol-telefono" placeholder="+54 11 1234-5678">
+    </div>
+    <div class="loading" id="reg-loading"><span class="spinner"></span>Enviando solicitud...</div>
+    <button class="btn btn-primary" id="btn-reg" onclick="doSolicitud()">Enviar solicitud</button>
     <div class="toggle">¿Ya tenés cuenta? <a onclick="showLogin()">Ingresá</a></div>
   </div>
 
@@ -207,32 +218,60 @@ async function doLogin() {
   }
 }
 
-async function doRegister() {
-  const empresa = document.getElementById('reg-empresa').value.trim();
-  const cuit = document.getElementById('reg-cuit').value.trim();
-  const email = document.getElementById('reg-email').value.trim();
-  const pass = document.getElementById('reg-pass').value;
-  if(!empresa||!email||!pass) { showError('reg-error','Completá todos los campos'); return; }
-  if(pass.length < 6) { showError('reg-error','La contraseña debe tener al menos 6 caracteres'); return; }
+async function doSolicitud() {
+  const empresa  = document.getElementById('sol-empresa').value.trim();
+  const cuit     = document.getElementById('sol-cuit').value.trim();
+  const nombre   = document.getElementById('sol-nombre').value.trim();
+  const email    = document.getElementById('sol-email').value.trim();
+  const telefono = document.getElementById('sol-telefono').value.trim();
+  if(!empresa||!cuit||!nombre||!email){ showError('reg-error','Completá todos los campos obligatorios (*)'); return; }
+  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if(!emailRe.test(email)){ showError('reg-error','El email no es válido'); return; }
   document.getElementById('btn-reg').disabled = true;
   setLoading('reg-loading', true);
   try {
-    const cred = await auth.createUserWithEmailAndPassword(email, pass);
-    await db.collection('empresas').doc(cred.user.uid).set({
-      nombre: empresa, cuit, email,
-      creado: firebase.firestore.FieldValue.serverTimestamp(),
-      tnaRef: 60
+    // 1. Guardar solicitud en Firestore
+    await db.collection('solicitudes').add({
+      empresa, cuit, nombre, email, telefono: telefono||'',
+      estado: 'pendiente',
+      fecha: firebase.firestore.FieldValue.serverTimestamp()
     });
-    // onAuthStateChanged redirige
+    // 2. Enviar email a mauricio@valuelatam.com via EmailJS
+    // CONFIGURAR: reemplazá SERVICE_ID, TEMPLATE_ID y PUBLIC_KEY con los de tu cuenta EmailJS
+    // Instrucciones: https://www.emailjs.com/docs/sdk/send/
+    try {
+      await emailjs.send(
+        'SERVICE_ID',     // <-- tu Service ID de EmailJS
+        'TEMPLATE_ID',    // <-- tu Template ID de EmailJS
+        {
+          to_email:  'mauricio@valuelatam.com',
+          empresa,
+          cuit,
+          nombre,
+          email_contacto: email,
+          telefono:  telefono||'(no ingresado)',
+          fecha:     new Date().toLocaleString('es-AR')
+        }
+      );
+    } catch(emailErr) {
+      // Si falla el email, la solicitud igual quedó guardada en Firestore
+      console.warn('EmailJS error (solicitud guardada igual):', emailErr);
+    }
+    // 3. Mostrar confirmación
+    setLoading('reg-loading', false);
+    const ok = document.getElementById('reg-ok');
+    ok.textContent = '✓ Solicitud enviada. Nos pondremos en contacto a la brevedad.';
+    ok.style.display = 'block';
+    document.getElementById('btn-reg').disabled = true;
+    ['sol-empresa','sol-cuit','sol-nombre','sol-email','sol-telefono'].forEach(id=>{
+      document.getElementById(id).value='';
+      document.getElementById(id).disabled=true;
+    });
   } catch(e) {
     setLoading('reg-loading', false);
     document.getElementById('btn-reg').disabled = false;
-    const msgs = {
-      'auth/email-already-in-use': 'Ya existe una cuenta con ese email',
-      'auth/weak-password': 'La contraseña es muy débil',
-      'auth/invalid-email': 'Email inválido'
-    };
-    showError('reg-error', msgs[e.code]||'Error al registrar. Intentá de nuevo.');
+    showError('reg-error','Error al enviar la solicitud. Intentá de nuevo.');
+    console.error(e);
   }
 }
 
