@@ -591,13 +591,17 @@ auth.onAuthStateChanged(async user => {
 
 async function loadEmpresa() {
   const doc = await db.collection('empresas').doc(currentUser.uid).get();
-  if(doc.exists) {
-    empresaData = doc.data();
-    const initials = empresaData.nombre ? empresaData.nombre.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() : '??';
-    document.getElementById('sb-avatar').textContent = initials;
-    document.getElementById('sb-nombre').textContent = empresaData.nombre || 'Mi Empresa';
-    document.getElementById('sb-cuit').textContent = 'CUIT ' + (empresaData.cuit||'—');
+  if(!doc.exists) {
+    // Usuario autenticado pero sin perfil habilitado por el admin → redirigir
+    await auth.signOut();
+    window.location.href = 'index.html?acceso=denegado';
+    return;
   }
+  empresaData = doc.data();
+  const initials = empresaData.nombre ? empresaData.nombre.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() : '??';
+  document.getElementById('sb-avatar').textContent = initials;
+  document.getElementById('sb-nombre').textContent = empresaData.nombre || 'Mi Empresa';
+  document.getElementById('sb-cuit').textContent = 'CUIT ' + (empresaData.cuit||'—');
 }
 
 async function loadGlobalTNA() {
