@@ -942,10 +942,35 @@ async function loadClientes(){
     emp.operaciones=opS.docs.map(d=>({id:d.id,...d.data()}));
     emp.cuotas=cuS.docs.map(d=>({id:d.id,...d.data()}));
     emp.entidades=entS.docs.map(d=>({id:d.id,...d.data()}));
+    // Auto-corregir lineaUtilizada al cargar
+    await recalcularLineaUtilizadaAdmin(emp);
     allClientes.push(emp);
   }
   renderOverview();renderClientes();renderRelevamientoList();
   if(clienteActivo){clienteActivo=allClientes.find(e=>e.id===clienteActivo.id)||null;if(clienteActivo)renderDetalleCliente();}
+}
+
+// Recalcula lineaUtilizada de todas las entidades Rotativas de un cliente
+// y corrige Firestore si el valor guardado difiere
+async function recalcularLineaUtilizadaAdmin(emp){
+  const batch=db.batch();
+  let hayDiferencias=false;
+  (emp.entidades||[]).forEach(ent=>{
+    if(ent.tipoLinea!=='Rotativa')return;
+    const opsDeEnt=(emp.operaciones||[]).filter(op=>op.entidadId===ent.id);
+    const capitalPendiente=opsDeEnt.reduce((total,op)=>{
+      return total+(emp.cuotas||[])
+        .filter(c=>c.opId===op.id&&c.estado!=='pagada')
+        .reduce((s,c)=>s+(parseFloat(c.capital)||0),0);
+    },0);
+    const valorGuardado=parseFloat(ent.lineaUtilizada)||0;
+    if(Math.abs(capitalPendiente-valorGuardado)>1){
+      ent.lineaUtilizada=capitalPendiente;
+      batch.update(colCli(emp.id,'entidades').doc(ent.id),{lineaUtilizada:capitalPendiente});
+      hayDiferencias=true;
+    }
+  });
+  if(hayDiferencias)await batch.commit();
 }
 
 function getStats(emp){
@@ -1221,15 +1246,13 @@ async function toggleCuotaPagada(cuotaId){
 
   // Reconstituir cupo: solo si la línea es Rotativa
   if(ent&&ent.tipoLinea==='Rotativa'){
-    const capital=parseFloat(c.capital)||0;
-    if(c.estado==='pagada'){
-      // Pagando → libera capital (baja lineaUtilizada)
-      ent.lineaUtilizada=Math.max(0,(ent.lineaUtilizada||0)-capital);
-    } else {
-      // Revirtiendo → vuelve a usar el cupo
-      ent.lineaUtilizada=(ent.lineaUtilizada||0)+capital;
-    }
-    batch.update(colCli(clienteActivo.id,'entidades').doc(ent.id),{lineaUtilizada:ent.lineaUtilizada});
+    // Recalcular desde cuotas reales (ya actualizado el estado en memoria)
+    const opsDeEnt=clienteActivo.operaciones.filter(o=>o.entidadId===ent.id);
+    const capitalPendiente=opsDeEnt.reduce((total,op)=>{
+      return total+clienteActivo.cuotas.filter(c2=>c2.opId===op.id&&c2.estado!=='pagada').reduce((s,c2)=>s+(parseFloat(c2.capital)||0),0);
+    },0);
+    ent.lineaUtilizada=capitalPendiente;
+    batch.update(colCli(clienteActivo.id,'entidades').doc(ent.id),{lineaUtilizada:capitalPendiente});
   }
 
   await batch.commit();
@@ -1988,7 +2011,6 @@ async function guardarOperacion(){
   const op={entidadId:entId,entidadNombre:ent?ent.nombre:'Desconocida',tipo:tipoOpVal,monto,plazo:esOpSimple?0:plazo,tna,tnaBase:esVariable?tnaBase:tna,spread,tipoTasa:tipoTasaVal,amortizacion:esOpSimple?'ninguno':document.getElementById('op-amortizacion')?.value||'frances',desembolso:document.getElementById('op-desembolso').value,vencimiento:(esOpSimple||document.getElementById('op-amortizacion')?.value==='bullet')?document.getElementById('op-vencimiento')?.value||'':pc,primeraCuota:esOpSimple?'':pc,frecuencia:esOpSimple?0:parseInt(document.getElementById('op-frecuencia').value)||1,garantia:document.getElementById('op-garantia').value||'Sin garantía',nroPrestamo:document.getElementById('op-nro')?.value||'',esOpSimple,esRotativa,activa:true,creado:firebase.firestore.FieldValue.serverTimestamp()};
   const opRef=await colCli(clienteActivo.id,'operaciones').add(op);
   op.id=opRef.id;clienteActivo.operaciones.push(op);
-  if(ent){ent.lineaUtilizada=(ent.lineaUtilizada||0)+monto;await colCli(clienteActivo.id,'entidades').doc(entId).update({lineaUtilizada:ent.lineaUtilizada});}
   let nuevas=[];
   if(!esOpSimple){
     const amortVal=op.amortizacion||'frances';
@@ -2002,6 +2024,15 @@ async function guardarOperacion(){
     await batch.commit();
     clienteActivo.cuotas=clienteActivo.cuotas.concat(nuevas);
   }
+  // Recalcular lineaUtilizada desde cuotas reales
+  if(ent&&ent.tipoLinea==='Rotativa'){
+    const opsDeEnt=clienteActivo.operaciones.filter(o=>o.entidadId===ent.id);
+    const capitalPendiente=opsDeEnt.reduce((total,o)=>{
+      return total+clienteActivo.cuotas.filter(c=>c.opId===o.id&&c.estado!=='pagada').reduce((s,c)=>s+(parseFloat(c.capital)||0),0);
+    },0);
+    ent.lineaUtilizada=capitalPendiente;
+    await colCli(clienteActivo.id,'entidades').doc(entId).update({lineaUtilizada:capitalPendiente});
+  }
   const idx=allClientes.findIndex(e=>e.id===clienteActivo.id);if(idx>=0)allClientes[idx]=clienteActivo;
   closeModal('op');renderDetalleCliente();
   toast(esOpSimple?'Operación guardada':`Operación guardada · ${nuevas.length} cuotas generadas`);
@@ -2014,10 +2045,8 @@ async function eliminarOpCliente(opId){
   const msg=esPuntual?'¿Eliminar esta operación y su entidad vinculada?':'¿Eliminar esta operación y sus cuotas?';
   if(!confirm(msg))return;
   const batch=db.batch();
-  // Eliminar operación y sus cuotas
   batch.delete(colCli(clienteActivo.id,'operaciones').doc(opId));
   clienteActivo.cuotas.filter(c=>c.opId===opId).forEach(c=>batch.delete(colCli(clienteActivo.id,'cuotas').doc(c.id)));
-  // Si es puntual, eliminar también la entidad vinculada
   if(esPuntual){
     const entId=op.entidadLinkeada||op.entidadId;
     const ent=clienteActivo.entidades.find(e=>e.id===entId);
@@ -2025,14 +2054,22 @@ async function eliminarOpCliente(opId){
       batch.delete(colCli(clienteActivo.id,'entidades').doc(entId));
       clienteActivo.entidades=clienteActivo.entidades.filter(e=>e.id!==entId);
     }
-  } else {
-    // Rotativa: revertir lineaUtilizada de la entidad
-    const ent=clienteActivo.entidades.find(e=>e.id===op.entidadId);
-    if(ent){ent.lineaUtilizada=Math.max(0,(ent.lineaUtilizada||0)-op.monto);batch.update(colCli(clienteActivo.id,'entidades').doc(ent.id),{lineaUtilizada:ent.lineaUtilizada});}
   }
   await batch.commit();
   clienteActivo.cuotas=clienteActivo.cuotas.filter(c=>c.opId!==opId);
   clienteActivo.operaciones=clienteActivo.operaciones.filter(o=>o.id!==opId);
+  // Recalcular lineaUtilizada de la entidad rotativa desde cuotas reales
+  if(!esPuntual){
+    const ent=clienteActivo.entidades.find(e=>e.id===op.entidadId);
+    if(ent&&ent.tipoLinea==='Rotativa'){
+      const opsDeEnt=clienteActivo.operaciones.filter(o=>o.entidadId===ent.id);
+      const capitalPendiente=opsDeEnt.reduce((total,o)=>{
+        return total+clienteActivo.cuotas.filter(c=>c.opId===o.id&&c.estado!=='pagada').reduce((s,c)=>s+(parseFloat(c.capital)||0),0);
+      },0);
+      ent.lineaUtilizada=capitalPendiente;
+      await colCli(clienteActivo.id,'entidades').doc(ent.id).update({lineaUtilizada:capitalPendiente});
+    }
+  }
   renderDetalleCliente();toast('Operación eliminada','yellow');
 }
 
