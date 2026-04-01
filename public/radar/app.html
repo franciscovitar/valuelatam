@@ -321,7 +321,7 @@
         <select id="filtro-op" onchange="renderCuotas()" style="width:280px;"><option value="">Todas las operaciones</option></select>
         <select id="filtro-estado-cuota" onchange="renderCuotas()" style="width:160px;">
           <option value="">Todos los estados</option>
-          <option value="pendiente">Pendiente</option>
+          <option value="pendiente" selected>Pendiente</option>
           <option value="pagada">Pagada</option>
           <option value="vencida">Vencida</option>
         </select>
@@ -814,33 +814,30 @@ function previewEntCuotasApp(){
 }
 
 function generarCuotasConGracia(op){
-  // plazo = cuotas TOTALES. gracia = primeras X son solo interés
   const cuotasOp=[],monto=parseFloat(op.monto),plazo=parseInt(op.plazo),frecuencia=parseInt(op.frecuencia||1);
   const gracia=Math.min(parseInt(op.gracia||0),plazo);
   const periodosAmort=plazo-gracia;
   const tna=parseFloat(op.tna)/100,tpm=tna/(12/frecuencia);
-  const diasPorPeriodo=frecuencia*30,primerFecha=op.primeraCuota;
+  const primerFecha=op.primeraCuota;
   let saldo=monto,numero=1;
-  // Gracia: solo interés
   for(let i=0;i<gracia;i++){
-    const fecha=i===0?primerFecha:addDias(primerFecha,i*diasPorPeriodo);
+    const fecha=i===0?primerFecha:addMeses(primerFecha,i*frecuencia);
     const interes=saldo*tpm;
     cuotasOp.push({opId:op.id,numero:numero++,fecha,capital:0,interes,total:interes,saldo,estado:calcEstadoCuota(fecha),esGracia:true});
   }
-  // Amortización sobre el resto
   if(periodosAmort>0){
     const sistema=op.amortizacion||'frances';
     if(sistema==='aleman'){
       const capitalFijo=monto/periodosAmort;
       for(let i=0;i<periodosAmort;i++){
-        const fecha=addDias(primerFecha,(gracia+i)*diasPorPeriodo);
+        const fecha=addMeses(primerFecha,(gracia+i)*frecuencia);
         const interes=saldo*tpm,total=capitalFijo+interes;saldo=Math.max(0,saldo-capitalFijo);
         cuotasOp.push({opId:op.id,numero:numero++,fecha,capital:capitalFijo,interes,total,saldo,estado:calcEstadoCuota(fecha)});
       }
     } else {
       const cf=tpm===0?monto/periodosAmort:monto*tpm*Math.pow(1+tpm,periodosAmort)/(Math.pow(1+tpm,periodosAmort)-1);
       for(let i=0;i<periodosAmort;i++){
-        const fecha=addDias(primerFecha,(gracia+i)*diasPorPeriodo);
+        const fecha=addMeses(primerFecha,(gracia+i)*frecuencia);
         const interes=saldo*tpm,capital=cf-interes;saldo=Math.max(0,saldo-capital);
         cuotasOp.push({opId:op.id,numero:numero++,fecha,capital,interes,total:cf,saldo,estado:calcEstadoCuota(fecha)});
       }
@@ -933,6 +930,17 @@ function generarCuotasBulletApp(op){
 }
 
 // =================== GENERACIÓN DE CUOTAS (FRANCÉS / ALEMÁN) ===================
+// Suma N meses calendario respetando el día original (ej: dia 15 → siempre día 15)
+function addMeses(fechaStr, meses){
+  const d = new Date(fechaStr + 'T00:00:00');
+  const diaOriginal = d.getDate();
+  d.setMonth(d.getMonth() + meses);
+  // Si el mes destino tiene menos días que el original, usar el último día del mes
+  const ultimoDia = new Date(d.getFullYear(), d.getMonth()+1, 0).getDate();
+  d.setDate(Math.min(diaOriginal, ultimoDia));
+  return d.toISOString().slice(0, 10);
+}
+// Mantener addDias solo para compatibilidad con bullet_intereses
 function addDias(fechaStr,dias){
   const d=new Date(fechaStr+'T00:00:00');
   d.setDate(d.getDate()+dias);
@@ -944,13 +952,12 @@ function generarCuotas(op){
   const monto=parseFloat(op.monto),plazo=parseInt(op.plazo),frecuencia=parseInt(op.frecuencia||1);
   const tna=parseFloat(op.tna)/100,periodos=Math.ceil(plazo/frecuencia),tpm=tna/(12/frecuencia);
   const sistema=op.amortizacion||'frances';
-  const diasPorPeriodo=frecuencia*30;
   const primerFecha=op.primeraCuota;
   let saldo=monto;
   if(sistema==='aleman'){
     const capitalFijo=monto/periodos;
     for(let i=1;i<=periodos;i++){
-      const fecha=i===1?primerFecha:addDias(primerFecha,(i-1)*diasPorPeriodo);
+      const fecha=i===1?primerFecha:addMeses(primerFecha,(i-1)*frecuencia);
       const interes=saldo*tpm,total=capitalFijo+interes;
       saldo=Math.max(0,saldo-capitalFijo);
       cuotasOp.push({opId:op.id,numero:i,fecha,capital:capitalFijo,interes,total,saldo,estado:calcEstadoCuota(fecha)});
@@ -958,7 +965,7 @@ function generarCuotas(op){
   } else {
     const cuotaFija=tpm===0?monto/periodos:monto*tpm*Math.pow(1+tpm,periodos)/(Math.pow(1+tpm,periodos)-1);
     for(let i=1;i<=periodos;i++){
-      const fecha=i===1?primerFecha:addDias(primerFecha,(i-1)*diasPorPeriodo);
+      const fecha=i===1?primerFecha:addMeses(primerFecha,(i-1)*frecuencia);
       const interes=saldo*tpm,capital=cuotaFija-interes;
       saldo=Math.max(0,saldo-capital);
       cuotasOp.push({opId:op.id,numero:i,fecha,capital,interes,total:cuotaFija,saldo,estado:calcEstadoCuota(fecha)});
@@ -1216,13 +1223,11 @@ async function guardarEditOperacionApp(){
   const capitalPagado=cuotasPagadas.reduce((s,c)=>s+(c.capital||0),0);
   const saldoRestante=Math.max(0,monto-capitalPagado);
   const nroPagadas=cuotasPagadas.length;
-  const diasPorPeriodo=frec*30;
   const cuotasPagadasOrd=[...cuotasPagadas].sort((a,b)=>a.fecha.localeCompare(b.fecha));
   let primeraFechaPend;
   if(cuotasPagadas.length>0){
     const ultimaPagada=cuotasPagadasOrd[cuotasPagadasOrd.length-1];
-    const d=new Date(ultimaPagada.fecha+'T00:00:00');d.setDate(d.getDate()+diasPorPeriodo);
-    primeraFechaPend=d.toISOString().slice(0,10);
+    primeraFechaPend=addMeses(ultimaPagada.fecha,frec);
   } else {primeraFechaPend=pc;}
   const opCalc={...op,...changes,id:opId,amortizacion:amort,monto:saldoRestante,primeraCuota:primeraFechaPend,plazo:Math.max(1,plazo-nroPagadas),gracia:Math.max(0,(op.gracia||0)-nroPagadas)};
   let nuevas=[];
@@ -1349,8 +1354,10 @@ function renderEntidades(){
   const puntuales=sorted.filter(e=>e.tipoLinea!=='Rotativa');
   const THEAD=`<thead><tr><th>Entidad</th><th>Tipo</th><th>Línea Total</th><th>Utilizada</th><th>Disponible</th><th>Vto. Línea</th><th>Uso %</th><th></th></tr></thead>`;
   function rowEnt(e){
-    const disp=Math.max(0,(e.lineaTotal||0)-(e.lineaUtilizada||0));
-    const pct=e.lineaTotal>0?Math.round((e.lineaUtilizada||0)/e.lineaTotal*100):0;
+    const hoy=today();
+    const lineaVencida=e.vtoLinea&&e.vtoLinea<hoy;
+    const disp=lineaVencida?0:Math.max(0,(e.lineaTotal||0)-(e.lineaUtilizada||0));
+    const pct=e.lineaTotal>0?Math.round((lineaVencida?e.lineaTotal:e.lineaUtilizada||0)/e.lineaTotal*100):0;
     const color=pct>80?'var(--red)':pct>50?'var(--yellow)':'var(--green)';
     const dv=e.vtoLinea?daysBetween(today(),e.vtoLinea):null;
     const vs=dv!==null&&dv<30?'color:var(--red)':dv!==null&&dv<90?'color:var(--yellow)':'';
@@ -1385,7 +1392,10 @@ function getSemaforoOp(tnaEfectiva){
 }
 function getAhorroMensual(op){
   const tnaEfectiva=getTNAEfectivaOp(op);
-  const diff=tnaEfectiva-tnaRef;
+  // Usar tasa de referencia del banco específico (igual que el análisis)
+  const tasaRef=getTasaBancoSesion(op.entidadNombre);
+  const referencia=tasaRef!==null?tasaRef:tnaRef;
+  const diff=tnaEfectiva-referencia;
   if(diff<=umbralAmarillo) return 0;
   const saldo=cuotas.filter(c=>c.opId===op.id&&c.estado!=='pagada').reduce((s,c)=>s+(c.capital||0),0);
   return saldo*(diff/100/12);
@@ -1428,15 +1438,17 @@ function renderOperaciones(){
   // ROTATIVAS
   if(rotativas.length){
     html+=`<div style="font-family:var(--mono);font-size:.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin:0 0 8px;">↺ Operaciones Rotativas</div>`;
-    html+=`<table style="margin-bottom:20px;"><thead><tr><th>Entidad</th><th>Tipo</th><th>Monto</th><th>Saldo Rest.</th><th>TNA</th><th>Tipo Tasa</th><th>Desembolso</th><th></th></tr></thead><tbody>`;
+    html+=`<table style="margin-bottom:20px;"><thead><tr><th>Entidad</th><th>Tipo</th><th>Monto</th><th>Saldo Rest.</th><th>Cuotas</th><th>TNA</th><th>Tipo Tasa</th><th>Desembolso</th><th></th></tr></thead><tbody>`;
     rotativas.forEach(op=>{
       const pend=cuotas.filter(c=>c.opId===op.id&&c.estado!=='pagada');
+      const total_cuotas=cuotas.filter(c=>c.opId===op.id).length;
       const saldo=pend.reduce((s,c)=>s+(c.capital||0),0);
       const tnaEfectiva=getTNAEfectivaOp(op);
       const tasaLabel=op.tipoTasa==='badlar'?`BADLAR+${fmtN(op.spread||0,1)}%`:op.tipoTasa==='tamar'?`TAMAR+${fmtN(op.spread||0,1)}%`:'Fija';
       const nroR=op.nroPrestamo?`<div style="font-size:.62rem;color:var(--text3);font-family:var(--mono);">Ref: ${op.nroPrestamo}</div>`:'';
       const desembolsoShow=op.desembolso?fmtDate(op.desembolso):'—';
-      html+=`<tr><td class="td-bold">${op.entidadNombre}${nroR}</td><td>${op.tipo}</td><td class="td-mono">${fmt(op.monto)}</td><td class="td-mono" style="color:var(--accent)">${fmt(saldo)}</td><td class="td-mono" style="color:var(--yellow);font-weight:600;">${fmtN(tnaEfectiva,2)}%</td><td style="font-size:.72rem;">${tasaLabel}</td><td class="td-mono" style="font-size:.7rem;">${desembolsoShow}</td><td style="display:flex;gap:4px;"><button class="btn btn-ghost btn-sm" onclick="abrirEditOpApp('${op.id}')">✏️</button><button class="btn btn-danger btn-sm" onclick="eliminarOperacion('${op.id}')">✕</button></td></tr>`;
+      const cuotasLabel=total_cuotas>0?`<span style="font-family:var(--mono);font-size:.75rem;">${pend.length}<span style="color:var(--text3)">/${total_cuotas}</span></span>`:'—';
+      html+=`<tr><td class="td-bold">${op.entidadNombre}${nroR}</td><td>${op.tipo}</td><td class="td-mono">${fmt(op.monto)}</td><td class="td-mono" style="color:var(--accent)">${fmt(saldo)}</td><td class="td-mono">${cuotasLabel}</td><td class="td-mono" style="color:var(--yellow);font-weight:600;">${fmtN(tnaEfectiva,2)}%</td><td style="font-size:.72rem;">${tasaLabel}</td><td class="td-mono" style="font-size:.7rem;">${desembolsoShow}</td><td style="display:flex;gap:4px;"><button class="btn btn-ghost btn-sm" onclick="abrirEditOpApp('${op.id}')">✏️</button><button class="btn btn-danger btn-sm" onclick="eliminarOperacion('${op.id}')">✕</button></td></tr>`;
     });
     html+='</tbody></table>';
   }
@@ -1850,10 +1862,12 @@ function renderDashboard(){
     else{uc.innerHTML=entUtil.map(e=>{
       const esDesc=e.tipoLinea==='Puntual'&&e.subtipo==='Descubierto';
       const label=esDesc?`${e.nombre} <span style="font-family:var(--mono);font-size:.6rem;color:var(--text3);margin-left:4px;">DESCUBIERTO</span>`:e.nombre;
-      const disp2=Math.max(0,(e.lineaTotal||0)-(e.lineaUtilizada||0));
-      const pct=e.lineaTotal>0?Math.round((e.lineaUtilizada||0)/e.lineaTotal*100):0;
-      const color=pct>80?'var(--red)':pct>50?'var(--yellow)':'var(--green)';
-      return`<div class="util-row"><div class="util-name" title="${e.nombre}">${label}</div><div class="util-bar-wrap"><div class="util-bar" style="width:${pct}%;background:${color}"></div></div><div class="util-nums">${fmt(e.lineaUtilizada||0)} / ${fmt(e.lineaTotal)}</div></div>`;
+      const lineaVencida=e.vtoLinea&&e.vtoLinea<today();
+      const dispUtil=lineaVencida?0:Math.max(0,(e.lineaTotal||0)-(e.lineaUtilizada||0));
+      const pct=e.lineaTotal>0?lineaVencida?100:Math.round((e.lineaUtilizada||0)/e.lineaTotal*100):0;
+      const color=lineaVencida?'var(--red)':pct>80?'var(--red)':pct>50?'var(--yellow)':'var(--green)';
+      const vencidaLabel=lineaVencida?` <span style="font-family:var(--mono);font-size:.6rem;color:var(--red);">VENCIDA</span>`:'';
+      return`<div class="util-row"><div class="util-name" title="${e.nombre}">${label}${vencidaLabel}</div><div class="util-bar-wrap"><div class="util-bar" style="width:${pct}%;background:${color}"></div></div><div class="util-nums">${fmt(e.lineaUtilizada||0)} / ${fmt(e.lineaTotal)}</div></div>`;
     }).join('');}
   }
   // Prox 30d
