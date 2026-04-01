@@ -638,6 +638,40 @@ async function loadData() {
   cuotas = cuotaSnap.docs.map(d=>({id:d.id,...d.data()}));
   // Recalcular estados
   cuotas = cuotas.map(c=>({...c, estado: c.estado==='pagada' ? 'pagada' : calcEstadoCuota(c.fecha)}));
+  // Auto-corregir lineaUtilizada desde las cuotas reales
+  await recalcularLineaUtilizada();
+}
+
+// Recalcula lineaUtilizada para cada entidad Rotativa desde las cuotas reales
+// y corrige Firestore si el valor guardado difiere.
+async function recalcularLineaUtilizada() {
+  const batch = db.batch();
+  let hayDiferencias = false;
+
+  entidades.forEach(ent => {
+    if (ent.tipoLinea !== 'Rotativa') return; // Descubierto/Tarjeta se manejan manual
+
+    // Capital pendiente = suma del capital de cuotas no pagadas de operaciones de esta entidad
+    const opsDeEnt = operaciones.filter(op => op.entidadId === ent.id);
+    const capitalPendiente = opsDeEnt.reduce((total, op) => {
+      return total + cuotas
+        .filter(c => c.opId === op.id && c.estado !== 'pagada')
+        .reduce((s, c) => s + (parseFloat(c.capital) || 0), 0);
+    }, 0);
+
+    const valorGuardado = parseFloat(ent.lineaUtilizada) || 0;
+    const diff = Math.abs(capitalPendiente - valorGuardado);
+
+    if (diff > 1) { // tolerancia de $1 por redondeos
+      ent.lineaUtilizada = capitalPendiente;
+      batch.update(col('entidades').doc(ent.id), { lineaUtilizada: capitalPendiente });
+      hayDiferencias = true;
+    }
+  });
+
+  if (hayDiferencias) {
+    await batch.commit();
+  }
 }
 
 function doLogout() {
@@ -1014,9 +1048,7 @@ async function guardarOperacion(){
   const op={entidadId:entId,entidadNombre:ent?ent.nombre:'Desconocida',tipo:tipoOpVal,esOpSimple,monto,plazo:esOpSimple?0:plazo,tna:tnaFinal,tnaBase,spread,tipoTasa:tipoTasaVal,esRotativa:entidades.find(e=>e.id===entId)?.tipoLinea==='Rotativa',amortizacion:document.getElementById('op-amortizacion')?.value||'frances',desembolso:document.getElementById('op-desembolso').value,vencimiento:(esOpSimple||document.getElementById('op-amortizacion')?.value==='bullet')?document.getElementById('op-vencimiento')?.value||'':'',primeraCuota:esOpSimple?'':primeraCuota,frecuencia:esOpSimple?0:parseInt(document.getElementById('op-frecuencia').value)||1,garantia:document.getElementById('op-garantia').value||'Sin garantía',nroPrestamo:document.getElementById('op-nro')?.value||'',activa:true,creadoPor:'cliente',creado:firebase.firestore.FieldValue.serverTimestamp()};
   const opRef=await col('operaciones').add(op);
   op.id=opRef.id;operaciones.push(op);
-  // Actualizar entidad
-  if(ent){ent.lineaUtilizada=(ent.lineaUtilizada||0)+monto;await col('entidades').doc(entId).update({lineaUtilizada:ent.lineaUtilizada});}
-  // Generar cuotas
+  // Recalcular lineaUtilizada desde cuotas (se generan abajo)
   let nuevas=[];
   if(!esOpSimple){
     const amortVal2=op.amortizacion||'frances';
@@ -1025,6 +1057,15 @@ async function guardarOperacion(){
     nuevas.forEach(c=>{const r=col('cuotas').doc();c.id=r.id;batch.set(r,c);});
     await batch.commit();
     cuotas=cuotas.concat(nuevas);
+  }
+  // Actualizar lineaUtilizada de la entidad recalculando desde cuotas reales
+  if(ent&&ent.tipoLinea==='Rotativa'){
+    const opsDeEnt=operaciones.filter(o=>o.entidadId===ent.id);
+    const capitalPendiente=opsDeEnt.reduce((total,o)=>{
+      return total+cuotas.filter(c=>c.opId===o.id&&c.estado!=='pagada').reduce((s,c)=>s+(parseFloat(c.capital)||0),0);
+    },0);
+    ent.lineaUtilizada=capitalPendiente;
+    await col('entidades').doc(ent.id).update({lineaUtilizada:capitalPendiente});
   }
   closeModal('op');renderAll();
   toast(esOpSimple?'Operación guardada':`Operación guardada · ${nuevas.length} cuotas generadas`);
@@ -1207,13 +1248,26 @@ async function guardarEditOperacionApp(){
 async function eliminarOperacion(id){
   if(!confirm('¿Eliminar esta operación y sus cuotas?'))return;
   const op=operaciones.find(o=>o.id===id);
-  if(op){const ent=entidades.find(e=>e.id===op.entidadId);if(ent){ent.lineaUtilizada=Math.max(0,(ent.lineaUtilizada||0)-op.monto);await col('entidades').doc(ent.id).update({lineaUtilizada:ent.lineaUtilizada});}}
+  // Eliminar en Firestore
   const batch=db.batch();
   batch.delete(col('operaciones').doc(id));
   cuotas.filter(c=>c.opId===id).forEach(c=>batch.delete(col('cuotas').doc(c.id)));
   await batch.commit();
+  // Actualizar memoria
   cuotas=cuotas.filter(c=>c.opId!==id);
   operaciones=operaciones.filter(o=>o.id!==id);
+  // Recalcular lineaUtilizada de la entidad afectada desde cuotas reales
+  if(op){
+    const ent=entidades.find(e=>e.id===op.entidadId);
+    if(ent&&ent.tipoLinea==='Rotativa'){
+      const opsDeEnt=operaciones.filter(o=>o.entidadId===ent.id);
+      const capitalPendiente=opsDeEnt.reduce((total,o)=>{
+        return total+cuotas.filter(c=>c.opId===o.id&&c.estado!=='pagada').reduce((s,c)=>s+(parseFloat(c.capital)||0),0);
+      },0);
+      ent.lineaUtilizada=capitalPendiente;
+      await col('entidades').doc(ent.id).update({lineaUtilizada:capitalPendiente});
+    }
+  }
   renderAll();toast('Operación eliminada','yellow');
 }
 
@@ -1222,24 +1276,23 @@ async function marcarPagada(id){
   if(!c)return;
   c.estado=c.estado==='pagada'?calcEstadoCuota(c.fecha):'pagada';
 
-  // Reconstituir cupo si la línea es rotativa
   const op=operaciones.find(o=>o.id===c.opId);
   const ent=op?entidades.find(e=>e.id===op.entidadId):null;
   const batch=db.batch();
   batch.update(col('cuotas').doc(id),{estado:c.estado});
 
   if(ent&&ent.tipoLinea==='Rotativa'){
-    const capital=parseFloat(c.capital)||0;
-    if(c.estado==='pagada'){
-      ent.lineaUtilizada=Math.max(0,(ent.lineaUtilizada||0)-capital);
-    } else {
-      ent.lineaUtilizada=(ent.lineaUtilizada||0)+capital;
-    }
-    batch.update(col('entidades').doc(ent.id),{lineaUtilizada:ent.lineaUtilizada});
+    // Recalcular desde cuotas reales (ya actualizado en memoria arriba)
+    const opsDeEnt=operaciones.filter(o=>o.entidadId===ent.id);
+    const capitalPendiente=opsDeEnt.reduce((total,op)=>{
+      return total+cuotas.filter(c2=>c2.opId===op.id&&c2.estado!=='pagada').reduce((s,c2)=>s+(parseFloat(c2.capital)||0),0);
+    },0);
+    ent.lineaUtilizada=capitalPendiente;
+    batch.update(col('entidades').doc(ent.id),{lineaUtilizada:capitalPendiente});
   }
 
   await batch.commit();
-  renderCuotas();renderDashboard();
+  renderCuotas();renderDashboard();renderEntidades();
 }
 
 // =================== PREVIEW ===================
