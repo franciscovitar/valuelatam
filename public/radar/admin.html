@@ -1241,9 +1241,10 @@ function renderCuotasPanel(){
       </select>
       <select id="filtro-cuota-estado" onchange="renderCuotasPanel()" style="width:140px;font-size:.75rem;padding:5px 8px;">
         <option value="">Todos los estados</option>
-        <option value="pendiente">Pendiente</option>
-        <option value="pagada">Pagada</option>
-        <option value="vencida">Vencida</option>
+        <option value="pendiente">Pendientes (inc. urgentes)</option>
+        <option value="urgente">Solo urgentes ⚡</option>
+        <option value="vencida">Vencidas</option>
+        <option value="pagada">Pagadas</option>
       </select>
     </div>`;
 
@@ -1251,7 +1252,8 @@ function renderCuotasPanel(){
   const filtroEst=document.getElementById('filtro-cuota-estado')?.value||'';
   let lista=sorted;
   if(filtroOp)lista=lista.filter(c=>c.opId===filtroOp);
-  if(filtroEst)lista=lista.filter(c=>c.estado===filtroEst||(filtroEst==='vencida'&&c.estado==='urgente'));
+  if(filtroEst==='pendiente') lista=lista.filter(c=>c.estado==='pendiente'||c.estado==='urgente');
+  else if(filtroEst) lista=lista.filter(c=>c.estado===filtroEst);
 
   if(!lista.length){div.innerHTML=html+'<div class="empty"><div class="empty-icon">◷</div><div class="empty-text">Sin cuotas con ese filtro</div></div>';return;}
 
@@ -2387,7 +2389,7 @@ async function enviarAlertasVencimiento(soloResumen=false) {
               to_email:          emp.email,
               empresa:           emp.nombre || 'Empresa',
               descripcion_op:    `${op.entidadNombre} — ${op.tipo}`,
-              numero_cuota:      `Cuota N° ${cuota.numero} de ${cuotas.filter(c=>c.opId===op.id).length}`,
+              numero_cuota:      `Cuota N° ${cuota.numero} de ${emp.cuotas.filter(c=>c.opId===op.id).length}`,
               referencia:        op.nroPrestamo || '—',
               fecha_vencimiento: fmtDate(cuota.fecha),
               monto_total:       fmt(cuota.total),
@@ -2431,7 +2433,9 @@ function mostrarResumenAlertas(resumen, enviados, errores, omitidos, soloResumen
           <td style="font-size:.75rem;color:var(--text2)">${r.op}</td>
           <td class="td-mono" style="font-size:.75rem">${r.fecha ? fmtDate(r.fecha) : '—'}</td>
           <td>${r.ok
-            ? '<span class="kpi-badge badge-green">✓ Enviado</span>'
+            ? (soloResumen
+                ? '<span class="kpi-badge badge-blue">📤 Pendiente</span>'
+                : '<span class="kpi-badge badge-green">✓ Enviado</span>')
             : `<span class="kpi-badge badge-red">✗ ${r.error||'Error'}</span>`}
           </td>
         </tr>`).join('')
