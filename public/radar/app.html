@@ -321,9 +321,10 @@
         <select id="filtro-op" onchange="renderCuotas()" style="width:280px;"><option value="">Todas las operaciones</option></select>
         <select id="filtro-estado-cuota" onchange="renderCuotas()" style="width:160px;">
           <option value="">Todos los estados</option>
-          <option value="pendiente" selected>Pendiente</option>
-          <option value="pagada">Pagada</option>
-          <option value="vencida">Vencida</option>
+          <option value="pendiente" selected>Pendientes (inc. urgentes)</option>
+          <option value="urgente">Solo urgentes ⚡</option>
+          <option value="vencida">Vencidas</option>
+          <option value="pagada">Pagadas</option>
         </select>
       </div>
       <div class="table-card">
@@ -1496,7 +1497,10 @@ function renderCuotas(){
   const fOp=sel.value,fEst=document.getElementById('filtro-estado-cuota').value;
   let lista=[...cuotas].sort((a,b)=>a.fecha.localeCompare(b.fecha));
   if(fOp)lista=lista.filter(c=>c.opId===fOp);
-  if(fEst)lista=lista.filter(c=>c.estado===fEst||(fEst==='vencida'&&c.estado==='urgente'));
+  // "pendiente" incluye urgentes (son pendientes próximas a vencer, no vencidas)
+  // "vencida" es solo las realmente vencidas
+  if(fEst==='pendiente') lista=lista.filter(c=>c.estado==='pendiente'||c.estado==='urgente');
+  else if(fEst) lista=lista.filter(c=>c.estado===fEst);
   const tbody=document.getElementById('tabla-cuotas');
   if(!lista.length){tbody.innerHTML='<tr><td colspan="9"><div class="empty"><div class="empty-icon">◷</div><div class="empty-text">Sin cuotas</div></div></td></tr>';return;}
   const badges={'pagada':'<span class="kpi-badge badge-green">✓ Pagada</span>','vencida':'<span class="kpi-badge badge-red">Vencida</span>','urgente':'<span class="kpi-badge badge-yellow">⚡ Urgente</span>','pendiente':'<span class="kpi-badge badge-blue">Pendiente</span>'};
