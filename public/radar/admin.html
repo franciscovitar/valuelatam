@@ -155,6 +155,7 @@
     <div class="topbar-actions">
       <button class="btn btn-ghost btn-sm" onclick="loadClientes()">↺ Actualizar</button>
       <button class="btn btn-ghost btn-sm" style="color:var(--yellow);border-color:var(--yellow);" onclick="recalcularTodasLasCuotas()" title="Regenera las fechas de cuotas pendientes de todos los clientes usando meses calendario">⚙ Recalcular cuotas</button>
+      <button class="btn btn-ghost btn-sm" style="color:var(--cyan);border-color:var(--cyan);" onclick="enviarAlertasVencimiento(true)" title="Ver y enviar alertas de vencimiento a clientes">📅 Alertas vencimiento</button>
     </div>
   </div>
   <div class="content">
@@ -2304,6 +2305,165 @@ async function crearCliente(){
     const msgs={'auth/email-already-in-use':'Ese email ya tiene cuenta','auth/weak-password':'Contraseña muy débil','auth/invalid-email':'Email inválido'};
     errEl.textContent=msgs[e.code]||'Error: '+e.message;errEl.style.display='block';
   }
+}
+</script>
+
+<!-- EmailJS SDK — para envío de alertas de vencimiento a clientes -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+// CONFIGURAR: reemplazá con tu Public Key de EmailJS
+emailjs.init({ publicKey: 'ebYNiyi7kKlM3yb2_' });
+
+// ── ALERTAS DE VENCIMIENTO ────────────────────────────────────────────────────
+const DIAS_ALERTA_VENCIMIENTO = 3;
+
+// Para no mandar el mismo aviso dos veces el mismo día,
+// guardamos en Firestore /alertas_enviadas/{clienteId}_{cuotaId}_{fecha}
+async function alertaYaEnviada(clienteId, cuotaId) {
+  const hoy = today();
+  const key = `${clienteId}_${cuotaId}_${hoy}`;
+  try {
+    const doc = await db.collection('alertas_vencimiento').doc(key).get();
+    return doc.exists;
+  } catch(e) { return false; }
+}
+
+async function marcarAlertaEnviada(clienteId, cuotaId) {
+  const hoy = today();
+  const key = `${clienteId}_${cuotaId}_${hoy}`;
+  try {
+    await db.collection('alertas_vencimiento').doc(key).set({
+      clienteId, cuotaId, fecha: hoy,
+      enviadoEn: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } catch(e) { console.warn('No se pudo registrar alerta enviada:', e); }
+}
+
+async function enviarAlertasVencimiento(soloResumen=false) {
+  if(!allClientes || !allClientes.length) {
+    toast('Primero cargá los clientes', 'yellow'); return;
+  }
+
+  const hoy = today();
+  const limite = new Date();
+  limite.setDate(limite.getDate() + DIAS_ALERTA_VENCIMIENTO);
+  const limiteStr = limite.toISOString().slice(0, 10);
+
+  let enviados = 0, errores = 0, omitidos = 0;
+  const resumen = [];
+
+  for (const emp of allClientes) {
+    if (!emp.email) { omitidos++; continue; }
+
+    // Buscar cuotas que vencen dentro del período de alerta y no están pagadas
+    const cuotasAlerta = (emp.cuotas || []).filter(c =>
+      c.estado !== 'pagada' &&
+      c.fecha >= hoy &&
+      c.fecha <= limiteStr
+    );
+
+    for (const cuota of cuotasAlerta) {
+      const op = (emp.operaciones || []).find(o => o.id === cuota.opId);
+      if (!op) continue;
+
+      // No mandar si ya enviamos hoy
+      const yaEnviado = await alertaYaEnviada(emp.id, cuota.id);
+      if (yaEnviado) { omitidos++; continue; }
+
+      const diasRestantes = daysBetween(hoy, cuota.fecha);
+      const nroRef = op.nroPrestamo ? ` (Ref: ${op.nroPrestamo})` : '';
+      const descripcionOp = `${op.entidadNombre} — ${op.tipo}${nroRef}`;
+
+      if (!soloResumen) {
+        try {
+          // CONFIGURAR: reemplazá TEMPLATE_VENCIMIENTO con tu Template ID de EmailJS
+          // El template debe tener estas variables:
+          //   {{to_email}}, {{empresa}}, {{descripcion_op}}, {{numero_cuota}},
+          //   {{fecha_vencimiento}}, {{monto_total}}, {{dias_restantes}}
+          await emailjs.send(
+            'service_00fu2pi',
+            'template_hnmpfio',
+            {
+              to_email:          emp.email,
+              empresa:           emp.nombre || 'Empresa',
+              descripcion_op:    `${op.entidadNombre} — ${op.tipo}`,
+              numero_cuota:      `Cuota N° ${cuota.numero} de ${cuotas.filter(c=>c.opId===op.id).length}`,
+              referencia:        op.nroPrestamo || '—',
+              fecha_vencimiento: fmtDate(cuota.fecha),
+              monto_total:       fmt(cuota.total),
+              capital:           fmt(cuota.capital),
+              interes:           fmt(cuota.interes),
+              dias_restantes:    diasRestantes === 0 ? 'HOY' : `${diasRestantes} día${diasRestantes !== 1 ? 's' : ''}`,
+            }
+          );
+          await marcarAlertaEnviada(emp.id, cuota.id);
+          enviados++;
+          resumen.push({ ok: true, empresa: emp.nombre, op: descripcionOp, fecha: cuota.fecha });
+          log.info && log.info(`Alerta enviada: ${emp.nombre} — ${descripcionOp}`);
+        } catch(e) {
+          errores++;
+          resumen.push({ ok: false, empresa: emp.nombre, op: descripcionOp, error: e.message });
+          console.error(`Error enviando alerta a ${emp.email}:`, e);
+        }
+      } else {
+        // Modo resumen: solo mostrar qué se enviaría
+        resumen.push({ ok: true, empresa: emp.nombre, op: descripcionOp, fecha: cuota.fecha });
+      }
+    }
+  }
+
+  // Mostrar resultado en pantalla
+  mostrarResumenAlertas(resumen, enviados, errores, omitidos, soloResumen);
+}
+
+function mostrarResumenAlertas(resumen, enviados, errores, omitidos, soloResumen) {
+  const existente = document.getElementById('modal-alertas-venc');
+  if (existente) existente.remove();
+
+  const titulo = soloResumen
+    ? `Vista previa — ${resumen.length} alerta(s) pendiente(s)`
+    : `Alertas enviadas: ${enviados} ✓  Errores: ${errores}  Omitidas: ${omitidos}`;
+
+  const filas = resumen.length
+    ? resumen.map(r => `
+        <tr style="opacity:${r.ok ? 1 : 0.6}">
+          <td class="td-bold" style="font-size:.8rem">${r.empresa}</td>
+          <td style="font-size:.75rem;color:var(--text2)">${r.op}</td>
+          <td class="td-mono" style="font-size:.75rem">${r.fecha ? fmtDate(r.fecha) : '—'}</td>
+          <td>${r.ok
+            ? '<span class="kpi-badge badge-green">✓ Enviado</span>'
+            : `<span class="kpi-badge badge-red">✗ ${r.error||'Error'}</span>`}
+          </td>
+        </tr>`).join('')
+    : `<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:20px;">
+        No hay cuotas próximas a vencer en los próximos ${DIAS_ALERTA_VENCIMIENTO} días.
+       </td></tr>`;
+
+  const modal = document.createElement('div');
+  modal.id = 'modal-alertas-venc';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:100%;max-width:760px;max-height:80vh;overflow-y:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <div>
+          <div style="font-family:var(--display);font-size:1rem;font-weight:700;">📅 Alertas de Vencimiento</div>
+          <div style="font-size:.75rem;color:var(--text3);margin-top:4px;">${titulo}</div>
+        </div>
+        <button onclick="document.getElementById('modal-alertas-venc').remove()" class="btn btn-ghost btn-sm">✕</button>
+      </div>
+      <table style="margin-bottom:16px;">
+        <thead><tr><th>Empresa</th><th>Operación</th><th>Vencimiento</th><th>Estado</th></tr></thead>
+        <tbody>${filas}</tbody>
+      </table>
+      ${soloResumen && resumen.length > 0 ? `
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('modal-alertas-venc').remove()">Cancelar</button>
+          <button class="btn btn-primary btn-sm" onclick="document.getElementById('modal-alertas-venc').remove();enviarAlertasVencimiento(false)">
+            📤 Enviar ${resumen.length} alerta(s)
+          </button>
+        </div>` : ''}
+    </div>`;
+  document.body.appendChild(modal);
 }
 </script>
 
