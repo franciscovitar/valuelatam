@@ -877,23 +877,24 @@ function getTNAEfectivaOp(op){
   return parseFloat(op.tna)||0;
 }
 
-function getSemaforoOp(tnaEfectiva){
-  const diff=tnaEfectiva-tnaActual;
-  if(diff>umbralRojo) return {color:'var(--red)',dot:'🔴',label:'Cara',diff};
-  if(diff>umbralAmarillo) return {color:'var(--yellow)',dot:'🟡',label:'Revisar',diff};
-  return {color:'var(--green)',dot:'🟢',label:'OK',diff};
+function getSemaforoOp(tnaEfectiva, entidadNombre){
+  // Usar la tasa mínima del banco específico (igual que el análisis)
+  const tasaMinBanco=getTasaMinimaRef(entidadNombre);
+  const referencia=tasaMinBanco!==null?tasaMinBanco:tnaActual;
+  const diff=tnaEfectiva-referencia;
+  if(diff>umbralRojo) return {color:'var(--red)',dot:'🔴',label:'Cara',diff,referencia};
+  if(diff>umbralAmarillo) return {color:'var(--yellow)',dot:'🟡',label:'Revisar',diff,referencia};
+  return {color:'var(--green)',dot:'🟢',label:'OK',diff,referencia};
 }
 
 function getAhorroMensual(op){
-  // Ahorro potencial si refinancia al mercado
   const tnaEfectiva=getTNAEfectivaOp(op);
-  const diff=tnaEfectiva-tnaActual;
-  if(diff<=umbralAmarillo) return 0;
+  const sem=getSemaforoOp(tnaEfectiva, op.entidadNombre);
+  if(sem.diff<=umbralAmarillo) return 0;
   const cuotas=clienteActivo?.cuotas||[];
   const saldo=cuotas.filter(c=>c.opId===op.id&&c.estado!=='pagada').reduce((s,c)=>s+(c.capital||0),0);
   if(saldo<=0) return 0;
-  // Ahorro mensual = diferencia de interés sobre saldo
-  return saldo*(diff/100/12);
+  return saldo*(sem.diff/100/12);
 }
 
 async function recalcularCuotasVariables(tipoTasa, nuevaTasa){
@@ -1161,8 +1162,8 @@ async function renderAnalisisPanel(){
           return;
         }
         const diff=tnaEfOp-ref.tasa;
-        const sem=diff>umbralRojo?{color:'var(--red)',dot:'🔴',label:'Cara'}:diff>umbralAmarillo?{color:'var(--yellow)',dot:'🟡',label:'Revisar'}:{color:'var(--green)',dot:'🟢',label:'OK'};
-        const ahorro=diff>umbralAmarillo&&saldo>0?saldo*(diff/100/12):0;
+        const sem=getSemaforoOp(tnaEfOp, op.entidadNombre);
+        const ahorro=sem.diff>umbralAmarillo&&saldo>0?saldo*(sem.diff/100/12):0;
         html+=`<tr>
           <td class="td-bold">${op.entidadNombre}<br><span style="font-size:.65rem;color:var(--text3)">${tasaLabel}</span></td>
           <td style="font-size:.75rem">${op.tipo}</td>
@@ -1170,8 +1171,8 @@ async function renderAnalisisPanel(){
           <td class="td-mono" style="color:var(--accent)">${fmt(saldo)}</td>
           <td class="td-mono">${op.plazo||'—'}m</td>
           <td class="td-mono" style="color:var(--yellow);font-weight:600;">${fmtN(tnaEfOp,2)}%</td>
-          <td class="td-mono" style="color:var(--text2);">${fmtN(ref.tasa,2)}%</td>
-          <td class="td-mono" style="color:${sem.color};">${diff>=0?'+':''}${fmtN(diff,2)}pp</td>
+          <td class="td-mono" style="color:var(--text2);">${fmtN(sem.referencia,2)}%</td>
+          <td class="td-mono" style="color:${sem.color};">${sem.diff>=0?'+':''}${fmtN(sem.diff,2)}pp</td>
           <td>${sem.dot} <span class="badge" style="background:${sem.color}22;color:${sem.color};">${sem.label}</span></td>
           <td class="td-mono" style="color:${ahorro>0?'var(--green)':'var(--text3)'};">${ahorro>0?fmt(ahorro)+'/mes':'—'}</td>
         </tr>`;
@@ -1360,7 +1361,7 @@ function htmlEntidades(){
 
 function htmlOperaciones(){
   const ops=clienteActivo?.operaciones||[], cuotas=clienteActivo?.cuotas||[];
-  const opsCara=ops.filter(op=>op.esRotativa&&getSemaforoOp(getTNAEfectivaOp(op)).label!=='OK');
+  const opsCara=ops.filter(op=>op.esRotativa&&getSemaforoOp(getTNAEfectivaOp(op),op.entidadNombre).label!=='OK');
   const ahorroTotal=ops.filter(op=>op.esRotativa).reduce((s,op)=>s+getAhorroMensual(op),0);
 
   let resumen='';
