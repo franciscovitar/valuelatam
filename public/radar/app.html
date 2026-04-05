@@ -216,6 +216,7 @@
     <div class="nav-item" onclick="showTab('tasas',this)"><span>↕</span> Comparador TNA</div>
     <div class="nav-item" onclick="showTab('analisis',this)"><span>⬡</span> Análisis</div>
     <div class="nav-item" onclick="showTab('calendario',this)"><span>▦</span> Calendario</div>
+    <div class="nav-item" onclick="showTab('reporte',this)"><span>⬇</span> Reporte Financiero</div>
   </nav>
   <div class="sidebar-bottom">
     <div class="company-pill">
@@ -365,6 +366,71 @@
         <table><thead><tr><th>Vencimiento</th><th>Días</th><th>Operación</th><th>Entidad</th><th>Capital</th><th>Interés</th><th>Total</th><th>Estado</th></tr></thead>
         <tbody id="tabla-calendario"><tr><td colspan="8"><div class="empty"><div class="empty-icon">▦</div><div class="empty-text">Sin cuotas</div></div></td></tr></tbody></table>
       </div>
+    </div>
+
+    <!-- REPORTE FINANCIERO -->
+    <div class="panel" id="panel-reporte">
+
+      <!-- Header acciones -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+        <div>
+          <div style="font-family:var(--display);font-size:1rem;font-weight:700;">Reporte Financiero</div>
+          <div style="font-size:.72rem;color:var(--text3);margin-top:2px;">Posición de deuda al <span id="rep-fecha-corte">—</span></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <label style="font-family:var(--mono);font-size:.65rem;color:var(--text3);">Fecha de corte</label>
+          <input type="date" id="rep-fecha-input" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:.8rem;" onchange="renderReporte()">
+          <button class="btn btn-primary btn-sm" onclick="descargarReporteExcel()" id="btn-descargar-rep">
+            ⬇ Descargar Excel
+          </button>
+        </div>
+      </div>
+
+      <!-- KPIs resumen -->
+      <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px;" id="rep-kpis">
+        <div class="kpi-card blue"><div class="kpi-label">Deuda Total</div><div class="kpi-value" id="rep-deuda">$0</div><div class="kpi-sub">Capital pendiente</div></div>
+        <div class="kpi-card green"><div class="kpi-label">Disponible Total</div><div class="kpi-value" id="rep-disp">$0</div><div class="kpi-sub">Cupo libre en líneas</div></div>
+        <div class="kpi-card yellow"><div class="kpi-label">TNA Ponderada</div><div class="kpi-value" id="rep-tna">—%</div><div class="kpi-sub">Promedio por saldo</div></div>
+        <div class="kpi-card" style="border-top-color:var(--text3)"><div class="kpi-label">Próx. Vencimiento</div><div class="kpi-value" id="rep-prox" style="font-size:1.1rem;">—</div><div class="kpi-sub" id="rep-prox-monto">—</div></div>
+      </div>
+
+      <!-- Tabla deuda por entidad -->
+      <div class="table-card" style="margin-bottom:20px;">
+        <div class="table-header"><div><div class="table-title">Posición de Deuda por Entidad</div><div class="table-sub">Líneas calificadas, tomadas y disponibles</div></div></div>
+        <div id="rep-tabla-entidades"><div class="empty"><div class="empty-icon">⬡</div><div class="empty-text">Cargando...</div></div></div>
+      </div>
+
+      <!-- Tabla operaciones detalle -->
+      <div class="table-card" style="margin-bottom:20px;">
+        <div class="table-header"><div><div class="table-title">Detalle de Operaciones</div><div class="table-sub">Condiciones, saldos y próxima cuota</div></div></div>
+        <div id="rep-tabla-ops"><div class="empty"><div class="empty-icon">◎</div><div class="empty-text">Cargando...</div></div></div>
+      </div>
+
+      <!-- Concentración de vencimientos -->
+      <div class="table-card">
+        <div class="table-header">
+          <div><div class="table-title">Concentración de Vencimientos</div><div class="table-sub">Distribución por semana y por entidad</div></div>
+          <select id="rep-conc-periodo" onchange="renderConcentracion()" style="font-size:.75rem;padding:5px 8px;">
+            <option value="30">Próximos 30 días</option>
+            <option value="60">Próximos 60 días</option>
+            <option value="90" selected>Próximos 90 días</option>
+            <option value="180">Próximos 180 días</option>
+          </select>
+        </div>
+
+        <!-- Barras por semana -->
+        <div style="margin-bottom:20px;">
+          <div style="font-family:var(--mono);font-size:.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">Por semana del mes</div>
+          <div id="rep-conc-semanas" style="display:grid;gap:8px;"></div>
+        </div>
+
+        <!-- Por entidad -->
+        <div>
+          <div style="font-family:var(--mono);font-size:.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">Por entidad</div>
+          <div id="rep-conc-entidades" style="display:grid;gap:8px;"></div>
+        </div>
+      </div>
+
     </div>
 
   </div>
@@ -722,7 +788,7 @@ function toast(msg,type='green'){
 }
 
 // =================== NAV ===================
-const panelTitles={dashboard:'Dashboard Consolidado',entidades:'Entidades Financieras',operaciones:'Operaciones Activas',cuotas:'Cuotas Generadas',tasas:'Comparador de Tasas TNA',analisis:'Análisis de Tasas',calendario:'Calendario de Vencimientos'};
+const panelTitles={dashboard:'Dashboard Consolidado',entidades:'Entidades Financieras',operaciones:'Operaciones Activas',cuotas:'Cuotas Generadas',tasas:'Comparador de Tasas TNA',analisis:'Análisis de Tasas',calendario:'Calendario de Vencimientos',reporte:'Reporte Financiero'};
 function showTab(name,el){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -733,6 +799,7 @@ function showTab(name,el){
   if(name==='tasas'){loadGlobalTNA().then(()=>renderTasas());}
   if(name==='analisis'){loadGlobalTNA().then(()=>renderAnalisisApp());}
   if(name==='calendario')renderCalendario();
+  if(name==='reporte')renderReporte();
 }
 
 // =================== MODALS ===================
@@ -1918,6 +1985,283 @@ function renderDashboard(){
   ad.innerHTML=!alerts.length?'<div class="alert alert-green">✓ Sin alertas activas.</div>':alerts.map(a=>`<div class="alert alert-${a.t}">${a.m}</div>`).join('');
 }
 
+// =================== REPORTE FINANCIERO ===================
+function renderReporte(){
+  const hoy=today();
+  const fechaInput=document.getElementById('rep-fecha-input');
+  if(!fechaInput.value) fechaInput.value=hoy;
+  const fechaCorte=fechaInput.value;
+  document.getElementById('rep-fecha-corte').textContent=fmtDate(fechaCorte);
+
+  // Cuotas al corte: no pagadas con fecha <= fechaCorte se tratan como pendientes en esa fecha
+  const EXCLUIR=['Tarjeta de Crédito'];
+  const cuotasCorte=cuotas.filter(c=>c.estado!=='pagada');
+
+  // ── KPIs ──
+  const opsDeuda=operaciones.filter(op=>!EXCLUIR.includes(op.tipo));
+  const deuda=opsDeuda.reduce((s,op)=>s+cuotasCorte.filter(c=>c.opId===op.id).reduce((a,c)=>a+(c.capital||0),0),0);
+  const disp=entidades.reduce((s,e)=>{
+    const lineaVenc=e.vtoLinea&&e.vtoLinea<hoy;
+    return s+(lineaVenc?0:Math.max(0,(e.lineaTotal||0)-(e.lineaUtilizada||0)));
+  },0);
+  let tnaPond=0,totSaldo=0;
+  opsDeuda.filter(op=>cuotasCorte.some(c=>c.opId===op.id)).forEach(op=>{
+    const s=cuotasCorte.filter(c=>c.opId===op.id).reduce((a,c)=>a+c.capital,0);
+    tnaPond+=op.tna*s;totSaldo+=s;
+  });
+  const tnaF=totSaldo>0?tnaPond/totSaldo:0;
+  const prox=[...cuotasCorte].sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const proxC=prox[0];
+  const proxOp=proxC?operaciones.find(o=>o.id===proxC?.opId):null;
+
+  document.getElementById('rep-deuda').textContent=fmt(deuda);
+  document.getElementById('rep-disp').textContent=fmt(disp);
+  document.getElementById('rep-tna').textContent=fmtN(tnaF,1)+'%';
+  document.getElementById('rep-prox').textContent=proxC?fmtDate(proxC.fecha):'—';
+  document.getElementById('rep-prox-monto').textContent=proxC?`${proxOp?.entidadNombre||'—'} · ${fmt(proxC.total)}`:'—';
+
+  // ── TABLA ENTIDADES ──
+  const sortedEnts=sortEntidades(entidades);
+  const rotsHTML=sortedEnts.filter(e=>e.tipoLinea==='Rotativa').map(e=>{
+    const lineaVenc=e.vtoLinea&&e.vtoLinea<hoy;
+    const dispE=lineaVenc?0:Math.max(0,(e.lineaTotal||0)-(e.lineaUtilizada||0));
+    const pct=e.lineaTotal>0?Math.round((lineaVenc?100:e.lineaUtilizada||0)/e.lineaTotal*100):0;
+    const col=lineaVenc?'var(--red)':pct>80?'var(--red)':pct>50?'var(--yellow)':'var(--green)';
+    const vencLabel=lineaVenc?'<span class="kpi-badge badge-red">VENCIDA</span>':'';
+    return`<tr><td class="td-bold">${e.nombre}${vencLabel}</td><td><span class="kpi-badge badge-green">↺ Rotativa</span></td><td class="td-mono">${fmt(e.lineaTotal)}</td><td class="td-mono" style="color:var(--red)">${fmt(e.lineaUtilizada||0)}</td><td class="td-mono" style="color:${col};font-weight:600">${fmt(dispE)}</td><td class="td-mono">${fmtDate(e.vtoLinea)}</td><td><div class="progress-wrap"><div class="progress-bg"><div class="progress-fill" style="width:${pct}%;background:${col}"></div></div><div class="pct-label">${pct}%</div></div></td></tr>`;
+  }).join('');
+  const puntsHTML=sortedEnts.filter(e=>e.tipoLinea!=='Rotativa').map(e=>{
+    const dispE=Math.max(0,(e.lineaTotal||0)-(e.lineaUtilizada||0));
+    const pct=e.lineaTotal>0?Math.round((e.lineaUtilizada||0)/e.lineaTotal*100):0;
+    const col=pct>80?'var(--red)':pct>50?'var(--yellow)':'var(--green)';
+    return`<tr><td class="td-bold">${e.nombre}</td><td><span class="kpi-badge badge-yellow">◆ ${e.subtipo||'Puntual'}</span></td><td class="td-mono">${fmt(e.lineaTotal)}</td><td class="td-mono" style="color:var(--red)">${fmt(e.lineaUtilizada||0)}</td><td class="td-mono" style="color:${col};font-weight:600">${fmt(dispE)}</td><td class="td-mono">${fmtDate(e.vtoLinea)}</td><td><div class="progress-wrap"><div class="progress-bg"><div class="progress-fill" style="width:${pct}%;background:${col}"></div></div><div class="pct-label">${pct}%</div></div></td></tr>`;
+  }).join('');
+  const THEAD_E=`<table><thead><tr><th>Entidad</th><th>Tipo</th><th>Línea Calificada</th><th>Línea Tomada</th><th>Disponible</th><th>Vto. Línea</th><th>Uso %</th></tr></thead><tbody>`;
+  let htmlE='';
+  if(rotsHTML){htmlE+=`<div style="font-family:var(--mono);font-size:.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin:0 0 6px;">↺ Líneas Rotativas</div>${THEAD_E}${rotsHTML}</tbody></table><br>`;}
+  if(puntsHTML){htmlE+=`<div style="font-family:var(--mono);font-size:.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin:0 0 6px;">◆ Líneas Puntuales</div>${THEAD_E}${puntsHTML}</tbody></table>`;}
+  document.getElementById('rep-tabla-entidades').innerHTML=htmlE||'<div class="empty"><div class="empty-icon">⬡</div><div class="empty-text">Sin entidades</div></div>';
+
+  // ── TABLA OPERACIONES ──
+  const PUNTUAL_AMORT=['Préstamo de Inversión','Leasing'];
+  const rots=sortOps(operaciones.filter(op=>op.esRotativa!==false&&!['Descubierto','Tarjeta de Crédito','Préstamo de Inversión','Leasing'].includes(op.tipo)),entidades);
+  const punts=sortOps(operaciones.filter(op=>op.esRotativa===false||['Descubierto','Tarjeta de Crédito','Préstamo de Inversión','Leasing'].includes(op.tipo)),entidades);
+
+  function opRow(op, showSaldo=true){
+    const pend=cuotasCorte.filter(c=>c.opId===op.id);
+    const saldo=pend.reduce((s,c)=>s+(c.capital||0),0);
+    const proxCuota=pend.sort((a,b)=>a.fecha.localeCompare(b.fecha))[0];
+    const tnaEf=getTNAEfectivaOp(op);
+    const sem=getSemaforoOp(tnaEf,op.entidadNombre);
+    const tasaLabel=op.tipoTasa==='badlar'?`BADLAR+${fmtN(op.spread||0,1)}%`:op.tipoTasa==='tamar'?`TAMAR+${fmtN(op.spread||0,1)}%`:'Fija';
+    const nroRef=op.nroPrestamo?`<div style="font-size:.62rem;color:var(--text3)">Ref: ${op.nroPrestamo}</div>`:'';
+    const totalCuotas=cuotas.filter(c=>c.opId===op.id).length;
+    const cuotasLabel=totalCuotas>0?`${pend.length}/${totalCuotas}`:'—';
+    return`<tr>
+      <td class="td-bold">${op.entidadNombre}${nroRef}</td>
+      <td style="font-size:.75rem">${op.tipo}</td>
+      <td class="td-mono">${fmt(op.monto)}</td>
+      <td class="td-mono" style="color:var(--accent)">${showSaldo?fmt(saldo):'—'}</td>
+      <td class="td-mono" style="color:var(--yellow);font-weight:600">${fmtN(tnaEf,2)}%</td>
+      <td style="font-size:.72rem">${tasaLabel}</td>
+      <td class="td-mono">${op.plazo?op.plazo+'m':'—'}</td>
+      <td class="td-mono" style="font-size:.7rem">${op.desembolso?fmtDate(op.desembolso):'—'}</td>
+      <td class="td-mono">${cuotasLabel}</td>
+      <td class="td-mono">${proxCuota?fmtDate(proxCuota.fecha):'—'}</td>
+      <td class="td-mono td-bold">${proxCuota?fmt(proxCuota.total):'—'}</td>
+      <td>${sem.dot} <span class="kpi-badge" style="background:${sem.color}22;color:${sem.color};font-size:.65rem">${sem.label}</span></td>
+    </tr>`;
+  }
+
+  const THEAD_O=`<table style="margin-bottom:20px"><thead><tr><th>Entidad</th><th>Tipo</th><th>Monto Orig.</th><th>Saldo Pend.</th><th>TNA</th><th>Tipo Tasa</th><th>Plazo</th><th>Desembolso</th><th>Cuotas</th><th>Próx. Vto.</th><th>Próx. Cuota</th><th>Estado</th></tr></thead><tbody>`;
+  let htmlO='';
+  if(rots.length){htmlO+=`<div style="font-family:var(--mono);font-size:.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin:0 0 6px;">↺ Operaciones Rotativas</div>${THEAD_O}${rots.map(op=>opRow(op,true)).join('')}</tbody></table>`;}
+  const pm=punts.filter(op=>!PUNTUAL_AMORT.includes(op.tipo));
+  const pa=punts.filter(op=>PUNTUAL_AMORT.includes(op.tipo));
+  if(pm.length){htmlO+=`<div style="font-family:var(--mono);font-size:.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin:0 0 6px;">◆ Márgenes Puntuales</div>${THEAD_O}${pm.map(op=>opRow(op,false)).join('')}</tbody></table>`;}
+  if(pa.length){htmlO+=`<div style="font-family:var(--mono);font-size:.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin:0 0 6px;">◆ Créditos Amortizables</div>${THEAD_O}${pa.map(op=>opRow(op,true)).join('')}</tbody></table>`;}
+  document.getElementById('rep-tabla-ops').innerHTML=htmlO||'<div class="empty"><div class="empty-icon">◎</div><div class="empty-text">Sin operaciones</div></div>';
+
+  renderConcentracion();
+}
+
+function renderConcentracion(){
+  const dias=parseInt(document.getElementById('rep-conc-periodo')?.value)||90;
+  const hoy=today();
+  const limite=new Date();limite.setDate(limite.getDate()+dias);
+  const limStr=limite.toISOString().slice(0,10);
+  const lista=cuotas.filter(c=>c.estado!=='pagada'&&c.fecha>=hoy&&c.fecha<=limStr);
+  if(!lista.length){
+    document.getElementById('rep-conc-semanas').innerHTML='<div style="color:var(--text3);font-size:.8rem">Sin vencimientos en el período</div>';
+    document.getElementById('rep-conc-entidades').innerHTML='';
+    return;
+  }
+  const totalPeriodo=lista.reduce((s,c)=>s+c.total,0);
+  const maxSem=Math.max(1,...[0,1,2,3].map(s=>lista.filter(c=>{const d=daysBetween(hoy,c.fecha);return d>=s*7&&d<(s+1)*7;}).reduce((s,c)=>s+c.total,0)));
+
+  // Por semana
+  const semNames=['Esta semana (0-7d)','2ª semana (8-14d)','3ª semana (15-21d)','4ª semana (22-28d)'];
+  const colores=['var(--red)','var(--yellow)','var(--blue, #3b82f6)','var(--text2)'];
+  const semHTML=[0,1,2,3].map(s=>{
+    const semTotal=lista.filter(c=>{const d=daysBetween(hoy,c.fecha);return d>=s*7&&d<(s+1)*7;}).reduce((a,c)=>a+c.total,0);
+    if(semTotal===0)return'';
+    const pct=Math.round(semTotal/totalPeriodo*100);
+    const w=Math.round(semTotal/maxSem*100);
+    return`<div><div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:.78rem"><span style="color:var(--text2)">${semNames[s]}</span><span style="font-family:var(--mono);color:var(--text3)">${fmt(semTotal)} · ${pct}%</span></div><div class="progress-bg"><div class="progress-fill" style="width:${w}%;background:${colores[s]}"></div></div></div>`;
+  }).join('');
+  document.getElementById('rep-conc-semanas').innerHTML=semHTML||'<div style="color:var(--text3);font-size:.8rem">Sin vencimientos esta semana</div>';
+
+  // Por entidad
+  const porEnt={};
+  lista.forEach(c=>{
+    const op=operaciones.find(o=>o.id===c.opId);
+    if(!op)return;
+    porEnt[op.entidadNombre]=(porEnt[op.entidadNombre]||0)+c.total;
+  });
+  const maxEnt=Math.max(1,...Object.values(porEnt));
+  const entHTML=Object.entries(porEnt).sort((a,b)=>b[1]-a[1]).map(([nombre,monto])=>{
+    const pct=Math.round(monto/totalPeriodo*100);
+    const w=Math.round(monto/maxEnt*100);
+    return`<div><div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:.78rem"><span style="color:var(--text2)">${nombre}</span><span style="font-family:var(--mono);color:var(--text3)">${fmt(monto)} · ${pct}%</span></div><div class="progress-bg"><div class="progress-fill" style="width:${w}%;background:var(--accent)"></div></div></div>`;
+  }).join('');
+  document.getElementById('rep-conc-entidades').innerHTML=entHTML;
+}
+
+async function descargarReporteExcel(){
+  const btn=document.getElementById('btn-descargar-rep');
+  btn.disabled=true;btn.textContent='⏳ Generando...';
+  try{
+    const fechaCorte=document.getElementById('rep-fecha-input').value||today();
+    const empresa=empresaData.nombre||'Empresa';
+    const cuotasCorte=cuotas.filter(c=>c.estado!=='pagada');
+
+    // Armar datos para el script Python
+    const datos={
+      empresa,
+      cuit:empresaData.cuit||'',
+      fechaCorte:fmtDate(fechaCorte),
+      tnaRef:tnaRef,
+      entidades:sortEntidades(entidades).map(e=>{
+        const lineaVenc=e.vtoLinea&&e.vtoLinea<today();
+        const disp=lineaVenc?0:Math.max(0,(e.lineaTotal||0)-(e.lineaUtilizada||0));
+        return{nombre:e.nombre,tipoLinea:e.tipoLinea,subtipo:e.subtipo||'',lineaTotal:e.lineaTotal||0,lineaUtilizada:e.lineaUtilizada||0,disponible:disp,vtoLinea:fmtDate(e.vtoLinea),lineaVencida:lineaVenc};
+      }),
+      operaciones:operaciones.map(op=>{
+        const pend=cuotasCorte.filter(c=>c.opId===op.id);
+        const saldo=pend.reduce((s,c)=>s+(c.capital||0),0);
+        const proxC=[...pend].sort((a,b)=>a.fecha.localeCompare(b.fecha))[0];
+        const tnaEf=getTNAEfectivaOp(op);
+        const sem=getSemaforoOp(tnaEf,op.entidadNombre);
+        const totalCuotas=cuotas.filter(c=>c.opId===op.id).length;
+        const tasaLabel=op.tipoTasa==='badlar'?`BADLAR+${fmtN(op.spread||0,1)}%`:op.tipoTasa==='tamar'?`TAMAR+${fmtN(op.spread||0,1)}%`:'Fija';
+        return{
+          entidad:op.entidadNombre,tipo:op.tipo,esRotativa:op.esRotativa,
+          montoOrigen:op.monto||0,saldoPendiente:saldo,tna:tnaEf,
+          tipoTasa:tasaLabel,plazo:op.plazo||0,desembolso:op.desembolso?fmtDate(op.desembolso):'—',
+          nroPrestamo:op.nroPrestamo||'—',garantia:op.garantia||'Sin garantía',
+          cuotasPagadas:cuotas.filter(c=>c.opId===op.id&&c.estado==='pagada').length,
+          cuotasTotal:totalCuotas,
+          proxVto:proxC?fmtDate(proxC.fecha):'—',
+          proxCuotaTotal:proxC?proxC.total:0,
+          proxCapital:proxC?proxC.capital:0,
+          proxInteres:proxC?proxC.interes:0,
+          semaforo:sem.label,diferencia:sem.diff
+        };
+      }),
+      concentracion:[0,1,2,3].map(s=>{
+        const sem=cuotasCorte.filter(c=>{const d=daysBetween(today(),c.fecha);return d>=s*7&&d<(s+1)*7;});
+        return{semana:`Semana ${s+1} (${s*7}-${(s+1)*7-1}d)`,total:sem.reduce((a,c)=>a+c.total,0),cantidad:sem.length};
+      })
+    };
+
+    // Generar Excel via script Python en el servidor (Claude Code)
+    // Como estamos en browser, usamos la API de Anthropic para generar el Excel en base64
+    const response=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        messages:[{role:'user',content:`Generá un script Python de una sola línea que use openpyxl para crear un reporte financiero Excel con los datos que te paso. Solo respondé con el script Python listo para ejecutar, sin explicaciones.\n\nDatos: ${JSON.stringify(datos)}`}]
+      })
+    });
+    // Si no hay API key en browser, generar con librería SheetJS directamente
+    generarExcelLocal(datos, empresa);
+  }catch(e){
+    console.error(e);
+    // Fallback: generar con SheetJS
+    const fechaCorte=document.getElementById('rep-fecha-input').value||today();
+    const empresa=empresaData.nombre||'Empresa';
+    const cuotasCorte=cuotas.filter(c=>c.estado!=='pagada');
+    const datos={empresa,cuit:empresaData.cuit||'',fechaCorte:fmtDate(fechaCorte),tnaRef,
+      entidades:sortEntidades(entidades).map(e=>({nombre:e.nombre,tipoLinea:e.tipoLinea,subtipo:e.subtipo||'',lineaTotal:e.lineaTotal||0,lineaUtilizada:e.lineaUtilizada||0,disponible:Math.max(0,(e.lineaTotal||0)-(e.lineaUtilizada||0)),vtoLinea:fmtDate(e.vtoLinea)})),
+      operaciones:operaciones.map(op=>{const pend=cuotasCorte.filter(c=>c.opId===op.id);const saldo=pend.reduce((s,c)=>s+(c.capital||0),0);const proxC=[...pend].sort((a,b)=>a.fecha.localeCompare(b.fecha))[0];const tnaEf=getTNAEfectivaOp(op);const sem=getSemaforoOp(tnaEf,op.entidadNombre);return{entidad:op.entidadNombre,tipo:op.tipo,montoOrigen:op.monto||0,saldoPendiente:saldo,tna:tnaEf,tipoTasa:op.tipoTasa==='badlar'?`BADLAR+${fmtN(op.spread||0,1)}%`:op.tipoTasa==='tamar'?`TAMAR+${fmtN(op.spread||0,1)}%`:'Fija',plazo:op.plazo||0,desembolso:op.desembolso?fmtDate(op.desembolso):'—',nroPrestamo:op.nroPrestamo||'—',cuotasTotal:cuotas.filter(c=>c.opId===op.id).length,cuotasPendientes:pend.length,proxVto:proxC?fmtDate(proxC.fecha):'—',proxCuotaTotal:proxC?proxC.total:0,proxCapital:proxC?proxC.capital:0,proxInteres:proxC?proxC.interes:0,semaforo:sem.label,diferencia:sem.diff};})
+    };
+    generarExcelLocal(datos, empresa);
+  }
+  btn.disabled=false;btn.textContent='⬇ Descargar Excel';
+}
+
+function generarExcelLocal(datos, empresa){
+  // SheetJS para generar Excel en el browser
+  const XLSX=window.XLSX;
+  if(!XLSX){toast('Cargando librería Excel, intentá de nuevo...','yellow');return;}
+  const wb=XLSX.utils.book_new();
+  const hoy=fmtDate(today());
+
+  // ── HOJA 1: RESUMEN ──
+  const resumen=[
+    ['REPORTE FINANCIERO — VALUE LATAM RADAR','','',''],
+    ['Empresa:',datos.empresa,'',''],
+    ['CUIT:',datos.cuit,'',''],
+    ['Fecha de corte:',datos.fechaCorte,'',''],
+    ['Generado:',hoy,'',''],
+    ['','','',''],
+    ['RESUMEN EJECUTIVO','','',''],
+    ['Deuda Total (sin tarjeta)','Disponible Total','TNA Ponderada',''],
+    [datos.operaciones.filter(o=>o.tipo!=='Tarjeta de Crédito').reduce((s,o)=>s+o.saldoPendiente,0),
+     datos.entidades.reduce((s,e)=>s+e.disponible,0),
+     (()=>{let p=0,t=0;datos.operaciones.filter(o=>o.tipo!=='Tarjeta de Crédito').forEach(o=>{p+=o.tna*o.saldoPendiente;t+=o.saldoPendiente;});return t>0?Math.round(p/t*10)/10:0;})()+'%',''],
+  ];
+  const ws1=XLSX.utils.aoa_to_sheet(resumen);
+  ws1['!cols']=[{wch:32},{wch:20},{wch:20},{wch:20}];
+  XLSX.utils.book_append_sheet(wb,ws1,'Resumen');
+
+  // ── HOJA 2: ENTIDADES ──
+  const entHeader=[['Entidad','Tipo','Subtipo','Línea Calificada ($)','Línea Tomada ($)','Disponible ($)','% Uso','Vto. Línea']];
+  const entRows=datos.entidades.map(e=>[e.nombre,e.tipoLinea,e.subtipo,e.lineaTotal,e.lineaUtilizada,e.disponible,e.lineaTotal>0?Math.round(e.lineaUtilizada/e.lineaTotal*100)+'%':'0%',e.vtoLinea]);
+  const ws2=XLSX.utils.aoa_to_sheet([...entHeader,...entRows]);
+  ws2['!cols']=[{wch:28},{wch:12},{wch:20},{wch:20},{wch:18},{wch:18},{wch:8},{wch:14}];
+  XLSX.utils.book_append_sheet(wb,ws2,'Entidades');
+
+  // ── HOJA 3: OPERACIONES ──
+  const opHeader=[['Entidad','Tipo de Operación','Nro. Referencia','Monto Origen ($)','Saldo Pendiente ($)','TNA Efectiva (%)','Tipo Tasa','Plazo (m)','Desembolso','Cuotas Totales','Cuotas Pend.','Próx. Vto.','Próx. Cuota ($)','Capital ($)','Interés ($)','Estado TNA']];
+  const opRows=datos.operaciones.map(o=>[o.entidad,o.tipo,o.nroPrestamo,o.montoOrigen,o.saldoPendiente,o.tna,o.tipoTasa,o.plazo,o.desembolso,o.cuotasTotal,o.cuotasPendientes,o.proxVto,o.proxCuotaTotal,o.proxCapital,o.proxInteres,o.semaforo+(o.diferencia?` (${o.diferencia>=0?'+':''}${Math.round(o.diferencia*10)/10}pp)`:'')]);
+  const ws3=XLSX.utils.aoa_to_sheet([...opHeader,...opRows]);
+  ws3['!cols']=[{wch:24},{wch:22},{wch:16},{wch:18},{wch:18},{wch:14},{wch:16},{wch:10},{wch:14},{wch:12},{wch:12},{wch:14},{wch:16},{wch:14},{wch:14},{wch:20}];
+  XLSX.utils.book_append_sheet(wb,ws3,'Operaciones');
+
+  // ── HOJA 4: CONCENTRACIÓN ──
+  const concHeader=[['Semana','Monto Total ($)','Cantidad Cuotas']];
+  const concRows=datos.concentracion.map(c=>[c.semana,c.total,c.cantidad]);
+  // Por entidad
+  const porEnt={};
+  cuotas.filter(c=>c.estado!=='pagada').forEach(c=>{
+    const op=operaciones.find(o=>o.id===c.opId);if(!op)return;
+    porEnt[op.entidadNombre]=(porEnt[op.entidadNombre]||0)+c.total;
+  });
+  const concEntRows=Object.entries(porEnt).sort((a,b)=>b[1]-a[1]).map(([n,t])=>[n,t]);
+  const concData=[...concHeader,...concRows,['','',''],['Por Entidad','Monto Total ($)',''],...concEntRows];
+  const ws4=XLSX.utils.aoa_to_sheet(concData);
+  ws4['!cols']=[{wch:30},{wch:20},{wch:16}];
+  XLSX.utils.book_append_sheet(wb,ws4,'Concentración');
+
+  // Descargar
+  const nombreArchivo=`Reporte_${empresa.replace(/[^a-zA-Z0-9]/g,'_')}_${today()}.xlsx`;
+  XLSX.writeFile(wb,nombreArchivo);
+  toast('✓ Reporte descargado','green');
+}
+
 function renderAll(){renderDashboard();renderEntidades();renderOperaciones();renderCuotas();renderTasas();renderCalendario();}
 
 function exportData(){
@@ -1929,6 +2273,9 @@ function exportData(){
 </script>
 
   <!-- App Check + reCAPTCHA v3 -->
+<!-- SheetJS para generación de Excel en el browser -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app-check.js"></script>
   <script>
     const appCheck = firebase.appCheck();
