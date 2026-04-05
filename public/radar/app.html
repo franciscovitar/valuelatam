@@ -2203,60 +2203,170 @@ async function descargarReporteExcel(){
 }
 
 function generarExcelLocal(datos, empresa){
-  // SheetJS para generar Excel en el browser
   const XLSX=window.XLSX;
   if(!XLSX){toast('Cargando librería Excel, intentá de nuevo...','yellow');return;}
+
+  // ── PALETA VALUE LATAM ──
+  const C={
+    navy:'0A1628', teal:'0D9488', teal_lt:'CCFBF1',
+    white:'FFFFFF', off:'F8FAFC',
+    hdr:'1E293B', row:'F1F5F9', brd:'CBD5E1',
+    dk:'0F172A', md:'475569',
+    green:'059669', green_lt:'D1FAE5',
+    yellow:'D97706', yellow_lt:'FEF3C7',
+    red:'DC2626', red_lt:'FEE2E2',
+    blue:'2563EB', blue_lt:'DBEAFE',
+  };
+
+  function argbFill(hex){return{patternType:'solid',fgColor:{rgb:hex}};}
+  function semColor(label){
+    const l=(label||'').toLowerCase();
+    if(l.includes('cara'))   return{fg:C.red,   bg:C.red_lt};
+    if(l.includes('revisar'))return{fg:C.yellow, bg:C.yellow_lt};
+    return{fg:C.green, bg:C.green_lt};
+  }
+  function money(n){return typeof n==='number'?'$'+Math.round(n).toLocaleString('es-AR'):'—';}
+  function pct(n){return typeof n==='number'?(n*100).toFixed(1)+'%':'—';}
+
   const wb=XLSX.utils.book_new();
   const hoy=fmtDate(today());
+  const ops=datos.operaciones||[];
+  const ents=datos.entidades||[];
+  const conc=datos.concentracion||[];
 
-  // ── HOJA 1: RESUMEN ──
-  const resumen=[
-    ['REPORTE FINANCIERO — VALUE LATAM RADAR','','',''],
-    ['Empresa:',datos.empresa,'',''],
-    ['CUIT:',datos.cuit,'',''],
-    ['Fecha de corte:',datos.fechaCorte,'',''],
-    ['Generado:',hoy,'',''],
-    ['','','',''],
-    ['RESUMEN EJECUTIVO','','',''],
-    ['Deuda Total (sin tarjeta)','Disponible Total','TNA Ponderada',''],
-    [datos.operaciones.filter(o=>o.tipo!=='Tarjeta de Crédito').reduce((s,o)=>s+o.saldoPendiente,0),
-     datos.entidades.reduce((s,e)=>s+e.disponible,0),
-     (()=>{let p=0,t=0;datos.operaciones.filter(o=>o.tipo!=='Tarjeta de Crédito').forEach(o=>{p+=o.tna*o.saldoPendiente;t+=o.saldoPendiente;});return t>0?Math.round(p/t*10)/10:0;})()+'%',''],
+  // Calcular KPIs
+  const deuda=ops.filter(o=>o.tipo!=='Tarjeta de Crédito').reduce((s,o)=>s+(o.saldoPendiente||0),0);
+  const disp=ents.reduce((s,e)=>s+(e.disponible||0),0);
+  let tnN=0,tnD=0;ops.filter(o=>o.tipo!=='Tarjeta de Crédito').forEach(o=>{tnN+=o.tna*o.saldoPendiente;tnD+=o.saldoPendiente;});
+  const tnaP=tnD>0?tnN/tnD:0;
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // HOJA 1 — RESUMEN EJECUTIVO
+  // ────────────────────────────────────────────────────────────────────────────
+  const s1data=[
+    // Fila vacía top
+    [''],
+    // Título
+    ['REPORTE FINANCIERO  ·  VALUE LATAM RADAR'],
+    [''],
+    // Info empresa
+    ['Empresa',       datos.empresa||'—', '', '', ''],
+    ['CUIT',          datos.cuit||'—',    '', '', ''],
+    ['Fecha de corte',datos.fechaCorte||hoy,'','',''],
+    ['Generado por',  'Value Latam Radar · valuelatam.com','','',''],
+    [''],
+    // KPI header
+    ['DEUDA TOTAL','DISPONIBLE','TNA PONDERADA','OPERACIONES ACT.',''],
+    // KPI values
+    [money(deuda), money(disp), pct(tnaP/100), ops.filter(o=>o.saldoPendiente>0).length+'', ''],
+    [''],
+    // Separador
+    ['POSICIÓN POR ENTIDAD','','','','','','',''],
+    ['Entidad','Tipo','Línea Calificada','Tomada','Disponible','% Uso','Vto. Línea','Estado'],
+    ...sortEntidades(entidades).map(e=>{
+      const lt=e.lineaTotal||0,ut=e.lineaUtilizada||0,d=Math.max(0,lt-ut);
+      const p=lt>0?ut/lt:0;
+      const venc=e.vtoLinea&&e.vtoLinea<today();
+      return[e.nombre, e.tipoLinea==='Rotativa'?'↺ Rotativa':`◆ ${e.subtipo||'Puntual'}`,
+        money(lt),money(ut),money(d),pct(p),fmtDate(e.vtoLinea),
+        venc?'VENCIDA':p>0.8?'ALTO USO':p>0.5?'MEDIO':'OK'];
+    }),
   ];
-  const ws1=XLSX.utils.aoa_to_sheet(resumen);
-  ws1['!cols']=[{wch:32},{wch:20},{wch:20},{wch:20}];
-  XLSX.utils.book_append_sheet(wb,ws1,'Resumen');
+  const ws1=XLSX.utils.aoa_to_sheet(s1data);
+  ws1['!cols']=[{wch:30},{wch:16},{wch:18},{wch:18},{wch:18},{wch:10},{wch:14},{wch:12}];
+  ws1['!merges']=[
+    {s:{r:1,c:0},e:{r:1,c:7}}, // título
+    {s:{r:3,c:1},e:{r:3,c:4}}, // empresa valor
+    {s:{r:4,c:1},e:{r:4,c:4}}, // cuit valor
+    {s:{r:5,c:1},e:{r:5,c:4}}, // fecha
+    {s:{r:6,c:1},e:{r:6,c:4}}, // generado
+    {s:{r:11,c:0},e:{r:11,c:7}}, // header entidades
+  ];
+  XLSX.utils.book_append_sheet(wb,ws1,'Resumen Ejecutivo');
 
-  // ── HOJA 2: ENTIDADES ──
-  const entHeader=[['Entidad','Tipo','Subtipo','Línea Calificada ($)','Línea Tomada ($)','Disponible ($)','% Uso','Vto. Línea']];
-  const entRows=datos.entidades.map(e=>[e.nombre,e.tipoLinea,e.subtipo,e.lineaTotal,e.lineaUtilizada,e.disponible,e.lineaTotal>0?Math.round(e.lineaUtilizada/e.lineaTotal*100)+'%':'0%',e.vtoLinea]);
-  const ws2=XLSX.utils.aoa_to_sheet([...entHeader,...entRows]);
-  ws2['!cols']=[{wch:28},{wch:12},{wch:20},{wch:20},{wch:18},{wch:18},{wch:8},{wch:14}];
-  XLSX.utils.book_append_sheet(wb,ws2,'Entidades');
+  // ────────────────────────────────────────────────────────────────────────────
+  // HOJA 2 — OPERACIONES
+  // ────────────────────────────────────────────────────────────────────────────
+  const opHdr=['Entidad','Tipo Operación','Nro. Referencia','Monto Origen ($)','Saldo Pend. ($)','TNA Efectiva %','Tipo Tasa','Plazo (m)','Desembolso','Cuotas Tot.','Cuotas Pend.','Próx. Vto.','Próx. Cuota ($)','Capital ($)','Interés ($)','Estado TNA','Diferencia (pp)'];
+  const opRows=[];
+  // Separador rotativos
+  opRows.push(['↺ OPERACIONES ROTATIVAS','','','','','','','','','','','','','','','','']);
+  ops.filter(o=>o.esRotativa&&!['Descubierto','Tarjeta de Crédito','Préstamo de Inversión','Leasing'].includes(o.tipo)).forEach(o=>{
+    opRows.push([o.entidad,o.tipo,o.nroPrestamo||'—',o.montoOrigen||0,o.saldoPendiente||0,(o.tna||0).toFixed(2)+'%',o.tipoTasa||'Fija',o.plazo||0,o.desembolso||'—',o.cuotasTotal||0,o.cuotasPendientes||0,o.proxVto||'—',o.proxCuotaTotal||0,o.proxCapital||0,o.proxInteres||0,o.semaforo||'—',((o.diferencia||0)>=0?'+':('' )+((o.diferencia||0).toFixed(1))+'pp']);
+  });
+  opRows.push(['◆ OPERACIONES PUNTUALES','','','','','','','','','','','','','','','','']);
+  ops.filter(o=>!o.esRotativa||['Descubierto','Tarjeta de Crédito','Préstamo de Inversión','Leasing'].includes(o.tipo)).forEach(o=>{
+    opRows.push([o.entidad,o.tipo,o.nroPrestamo||'—',o.montoOrigen||0,o.saldoPendiente||0,(o.tna||0).toFixed(2)+'%',o.tipoTasa||'Fija',o.plazo||0,o.desembolso||'—',o.cuotasTotal||0,o.cuotasPendientes||0,o.proxVto||'—',o.proxCuotaTotal||0,o.proxCapital||0,o.proxInteres||0,o.semaforo||'—',((o.diferencia||0)>=0?'+':('' )+((o.diferencia||0).toFixed(1))+'pp']);
+  });
+  // Fila totales
+  opRows.push(['TOTALES','','',
+    money(ops.reduce((s,o)=>s+(o.montoOrigen||0),0)),
+    money(ops.reduce((s,o)=>s+(o.saldoPendiente||0),0)),
+    '','','','','','','',
+    money(ops.reduce((s,o)=>s+(o.proxCuotaTotal||0),0)),
+    money(ops.reduce((s,o)=>s+(o.proxCapital||0),0)),
+    money(ops.reduce((s,o)=>s+(o.proxInteres||0),0)),
+    '','']);
 
-  // ── HOJA 3: OPERACIONES ──
-  const opHeader=[['Entidad','Tipo de Operación','Nro. Referencia','Monto Origen ($)','Saldo Pendiente ($)','TNA Efectiva (%)','Tipo Tasa','Plazo (m)','Desembolso','Cuotas Totales','Cuotas Pend.','Próx. Vto.','Próx. Cuota ($)','Capital ($)','Interés ($)','Estado TNA']];
-  const opRows=datos.operaciones.map(o=>[o.entidad,o.tipo,o.nroPrestamo,o.montoOrigen,o.saldoPendiente,o.tna,o.tipoTasa,o.plazo,o.desembolso,o.cuotasTotal,o.cuotasPendientes,o.proxVto,o.proxCuotaTotal,o.proxCapital,o.proxInteres,o.semaforo+(o.diferencia?` (${o.diferencia>=0?'+':''}${Math.round(o.diferencia*10)/10}pp)`:'')]);
-  const ws3=XLSX.utils.aoa_to_sheet([...opHeader,...opRows]);
-  ws3['!cols']=[{wch:24},{wch:22},{wch:16},{wch:18},{wch:18},{wch:14},{wch:16},{wch:10},{wch:14},{wch:12},{wch:12},{wch:14},{wch:16},{wch:14},{wch:14},{wch:20}];
-  XLSX.utils.book_append_sheet(wb,ws3,'Operaciones');
+  const ws2=XLSX.utils.aoa_to_sheet([opHdr,...opRows]);
+  ws2['!cols']=[{wch:26},{wch:22},{wch:14},{wch:16},{wch:16},{wch:13},{wch:14},{wch:9},{wch:13},{wch:10},{wch:11},{wch:13},{wch:15},{wch:14},{wch:14},{wch:13},{wch:13}];
+  XLSX.utils.book_append_sheet(wb,ws2,'Operaciones');
 
-  // ── HOJA 4: CONCENTRACIÓN ──
-  const concHeader=[['Semana','Monto Total ($)','Cantidad Cuotas']];
-  const concRows=datos.concentracion.map(c=>[c.semana,c.total,c.cantidad]);
-  // Por entidad
+  // ────────────────────────────────────────────────────────────────────────────
+  // HOJA 3 — CONCENTRACIÓN + datos para gráfico
+  // ────────────────────────────────────────────────────────────────────────────
   const porEnt={};
   cuotas.filter(c=>c.estado!=='pagada').forEach(c=>{
     const op=operaciones.find(o=>o.id===c.opId);if(!op)return;
     porEnt[op.entidadNombre]=(porEnt[op.entidadNombre]||0)+c.total;
   });
-  const concEntRows=Object.entries(porEnt).sort((a,b)=>b[1]-a[1]).map(([n,t])=>[n,t]);
-  const concData=[...concHeader,...concRows,['','',''],['Por Entidad','Monto Total ($)',''],...concEntRows];
-  const ws4=XLSX.utils.aoa_to_sheet(concData);
-  ws4['!cols']=[{wch:30},{wch:20},{wch:16}];
-  XLSX.utils.book_append_sheet(wb,ws4,'Concentración');
+  const entVenc=Object.entries(porEnt).sort((a,b)=>b[1]-a[1]);
+  const totalConc=conc.reduce((s,c)=>s+(c.total||0),0);
 
-  // Descargar
+  const s3data=[
+    ['CONCENTRACIÓN DE VENCIMIENTOS'],
+    [''],
+    ['POR SEMANA (próximos 90 días)'],
+    ['Semana','Monto ($)','Cuotas','% del Total','Distribución visual'],
+    ...conc.map((c,i)=>{
+      const p=totalConc>0?(c.total||0)/totalConc:0;
+      const bars='█'.repeat(Math.round(p*30));
+      return[c.semana||`Semana ${i+1}`,c.total||0,c.cantidad||0,pct(p),bars];
+    }),
+    [money(totalConc),'TOTAL',conc.reduce((s,c)=>s+(c.cantidad||0),0),'',''],
+    [''],
+    ['POR ENTIDAD'],
+    ['Entidad','Monto vencimientos ($)','% del Total'],
+    ...entVenc.map(([n,t])=>[n,t,totalConc>0?pct(t/totalConc):'—']),
+  ];
+  const ws3=XLSX.utils.aoa_to_sheet(s3data);
+  ws3['!cols']=[{wch:30},{wch:18},{wch:12},{wch:14},{wch:35}];
+  XLSX.utils.book_append_sheet(wb,ws3,'Concentración Vencimientos');
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // HOJA 4 — ENTIDADES
+  // ────────────────────────────────────────────────────────────────────────────
+  const entHdr=['Entidad','Tipo Línea','Subtipo','Calificada ($)','Tomada ($)','Disponible ($)','% Uso','Vto. Línea'];
+  const sortedEntsXL=sortEntidades(entidades);
+  const entRows=[];
+  let lastTipo=null;
+  sortedEntsXL.forEach(e=>{
+    const tipo=e.tipoLinea==='Rotativa'?'↺ LÍNEAS ROTATIVAS':'◆ LÍNEAS PUNTUALES';
+    if(tipo!==lastTipo){entRows.push([tipo,'','','','','','','']);lastTipo=tipo;}
+    const lt=e.lineaTotal||0,ut=e.lineaUtilizada||0,d=Math.max(0,lt-ut);
+    const p=lt>0?ut/lt:0;
+    entRows.push([e.nombre,e.tipoLinea,e.subtipo||'',money(lt),money(ut),money(d),pct(p),fmtDate(e.vtoLinea)]);
+  });
+  entRows.push(['TOTALES','','',
+    money(ents.reduce((s,e)=>s+(e.lineaTotal||0),0)),
+    money(ents.reduce((s,e)=>s+(e.lineaUtilizada||0),0)),
+    money(ents.reduce((s,e)=>s+(e.disponible||0),0)),
+    '','']);
+
+  const ws4=XLSX.utils.aoa_to_sheet([entHdr,...entRows]);
+  ws4['!cols']=[{wch:30},{wch:14},{wch:18},{wch:18},{wch:16},{wch:16},{wch:10},{wch:14}];
+  XLSX.utils.book_append_sheet(wb,ws4,'Entidades');
+
   const nombreArchivo=`Reporte_${empresa.replace(/[^a-zA-Z0-9]/g,'_')}_${today()}.xlsx`;
   XLSX.writeFile(wb,nombreArchivo);
   toast('✓ Reporte descargado','green');
