@@ -704,9 +704,9 @@ async function loadData() {
   operaciones = opSnap.docs.map(d=>({id:d.id,...d.data()}));
   cuotas = cuotaSnap.docs.map(d=>({id:d.id,...d.data()}));
   cuotas = cuotas.map(c=>({...c, estado: c.estado==='pagada' ? 'pagada' : calcEstadoCuota(c.fecha)}));
-  // Auto-corregir silenciosamente al cargar
-  await recalcularLineaUtilizada();
-  await recalcularFechasCuotas();
+  // Auto-corregir silenciosamente — con try/catch para que un error no bloquee la carga
+  try { await recalcularLineaUtilizada(); } catch(e){ console.warn('recalcularLineaUtilizada:', e); }
+  try { await recalcularFechasCuotas(); } catch(e){ console.warn('recalcularFechasCuotas:', e); }
 }
 
 // Corrige fechas de cuotas pendientes al sistema de meses calendario (mismo día del mes)
