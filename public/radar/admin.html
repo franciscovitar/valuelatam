@@ -154,7 +154,6 @@
     <div class="page-title" id="page-title">Overview General</div>
     <div class="topbar-actions">
       <button class="btn btn-ghost btn-sm" onclick="loadClientes()">↺ Actualizar</button>
-      <button class="btn btn-ghost btn-sm" style="color:var(--yellow);border-color:var(--yellow);" onclick="recalcularTodasLasCuotas()" title="Regenera las fechas de cuotas pendientes de todos los clientes usando meses calendario">⚙ Recalcular cuotas</button>
       <button class="btn btn-ghost btn-sm" style="color:var(--cyan);border-color:var(--cyan);" onclick="enviarAlertasVencimiento(true)" title="Ver y enviar alertas de vencimiento a clientes">📅 Alertas vencimiento</button>
     </div>
   </div>
@@ -944,8 +943,9 @@ async function loadClientes(){
     emp.operaciones=opS.docs.map(d=>({id:d.id,...d.data()}));
     emp.cuotas=cuS.docs.map(d=>({id:d.id,...d.data()}));
     emp.entidades=entS.docs.map(d=>({id:d.id,...d.data()}));
-    // Auto-corregir lineaUtilizada al cargar
+    // Auto-corregir lineaUtilizada y fechas de cuotas al cargar
     await recalcularLineaUtilizadaAdmin(emp);
+    await recalcularCuotasCliente(emp);
     allClientes.push(emp);
   }
   renderOverview();renderClientes();renderRelevamientoList();
@@ -954,42 +954,34 @@ async function loadClientes(){
 
 // Recalcula y corrige fechas de cuotas pendientes de TODOS los clientes
 // usando meses calendario (mismo día del mes) en vez de +30 días
-async function recalcularTodasLasCuotas(){
-  if(!confirm('¿Recalcular fechas de cuotas pendientes de todos los clientes?\n\nEsto corrige cuotas calculadas con +30 días al sistema de meses calendario (mismo día del mes). Las cuotas ya pagadas no se tocan.'))return;
-  toast('Recalculando cuotas de todos los clientes...','yellow');
-  let totalOps=0,totalCuotas=0;
-  for(const emp of allClientes){
-    for(const op of emp.operaciones){
-      if(op.esOpSimple)continue;
-      const amort=op.amortizacion||'frances';
-      if(amort==='bullet'||amort==='bullet_intereses')continue; // bullet usa días exactos, no tocar
-      const cuotasPagadas=emp.cuotas.filter(c=>c.opId===op.id&&c.estado==='pagada');
-      const cuotasPendientes=emp.cuotas.filter(c=>c.opId===op.id&&c.estado!=='pagada');
-      if(!cuotasPendientes.length)continue;
-      const primerCuotaOp=cuotasPendientes.sort((a,b)=>a.numero-b.numero)[0];
-      if(!primerCuotaOp)continue;
-      const frec=parseInt(op.frecuencia||1);
-      // Recalcular fechas desde la primera cuota pendiente usando addMeses
-      const fechaBase=primerCuotaOp.fecha;
-      const batch=db.batch();
-      let cambios=0;
-      cuotasPendientes.sort((a,b)=>a.numero-b.numero).forEach((c,idx)=>{
-        const nuevaFecha=idx===0?fechaBase:addMeses(fechaBase,idx*frec);
-        if(nuevaFecha!==c.fecha){
-          c.fecha=nuevaFecha;
-          c.estado=calcEstado(nuevaFecha);
-          batch.update(colCli(emp.id,'cuotas').doc(c.id),{fecha:nuevaFecha,estado:c.estado});
-          cambios++;
-        }
-      });
-      if(cambios>0){
-        await batch.commit();
-        totalOps++;totalCuotas+=cambios;
+// Recalcula fechas de cuotas pendientes de un cliente usando meses calendario
+// Se llama automáticamente al cargar — sin confirmación, sin botón
+async function recalcularCuotasCliente(emp){
+  let totalCuotas=0;
+  for(const op of emp.operaciones){
+    if(op.esOpSimple)continue;
+    const amort=op.amortizacion||'frances';
+    if(amort==='bullet'||amort==='bullet_intereses')continue;
+    const cuotasPendientes=emp.cuotas
+      .filter(c=>c.opId===op.id&&c.estado!=='pagada')
+      .sort((a,b)=>a.numero-b.numero);
+    if(!cuotasPendientes.length)continue;
+    const frec=parseInt(op.frecuencia||1);
+    const fechaBase=cuotasPendientes[0].fecha;
+    const batch=db.batch();
+    let cambios=0;
+    cuotasPendientes.forEach((c,idx)=>{
+      const nuevaFecha=idx===0?fechaBase:addMeses(fechaBase,idx*frec);
+      if(nuevaFecha!==c.fecha){
+        c.fecha=nuevaFecha;
+        c.estado=calcEstado(nuevaFecha);
+        batch.update(colCli(emp.id,'cuotas').doc(c.id),{fecha:nuevaFecha,estado:c.estado});
+        cambios++;
       }
-    }
+    });
+    if(cambios>0){await batch.commit();totalCuotas+=cambios;}
   }
-  await loadClientes();
-  toast(`✓ Recalculadas ${totalCuotas} cuotas en ${totalOps} operaciones`,'green');
+  return totalCuotas;
 }
 async function recalcularLineaUtilizadaAdmin(emp){
   const batch=db.batch();
@@ -2357,31 +2349,31 @@ async function enviarAlertasVencimiento(soloResumen=false) {
   for (const emp of allClientes) {
     if (!emp.email) { omitidos++; continue; }
 
-    // Buscar cuotas que vencen dentro del período de alerta y no están pagadas
-    const cuotasAlerta = (emp.cuotas || []).filter(c =>
-      c.estado !== 'pagada' &&
-      c.fecha >= hoy &&
-      c.fecha <= limiteStr
-    );
+    // Agrupar por operación — solo la cuota MÁS PRÓXIMA de cada op
+    const opsProcesadas = new Set();
+    const cuotasAlerta = (emp.cuotas || [])
+      .filter(c => c.estado !== 'pagada' && c.fecha >= hoy && c.fecha <= limiteStr)
+      .sort((a, b) => a.fecha.localeCompare(b.fecha)); // más próxima primero
 
     for (const cuota of cuotasAlerta) {
+      // Una sola alerta por operación
+      if (opsProcesadas.has(cuota.opId)) continue;
+      opsProcesadas.add(cuota.opId);
+
       const op = (emp.operaciones || []).find(o => o.id === cuota.opId);
       if (!op) continue;
 
-      // No mandar si ya enviamos hoy
+      // No mandar si ya enviamos hoy para esta cuota
       const yaEnviado = await alertaYaEnviada(emp.id, cuota.id);
       if (yaEnviado) { omitidos++; continue; }
 
       const diasRestantes = daysBetween(hoy, cuota.fecha);
       const nroRef = op.nroPrestamo ? ` (Ref: ${op.nroPrestamo})` : '';
       const descripcionOp = `${op.entidadNombre} — ${op.tipo}${nroRef}`;
+      const totalCuotasOp = emp.cuotas.filter(c => c.opId === op.id).length;
 
       if (!soloResumen) {
         try {
-          // CONFIGURAR: reemplazá TEMPLATE_VENCIMIENTO con tu Template ID de EmailJS
-          // El template debe tener estas variables:
-          //   {{to_email}}, {{empresa}}, {{descripcion_op}}, {{numero_cuota}},
-          //   {{fecha_vencimiento}}, {{monto_total}}, {{dias_restantes}}
           await emailjs.send(
             'service_00fu2pi',
             'template_hnmpfio',
@@ -2389,7 +2381,7 @@ async function enviarAlertasVencimiento(soloResumen=false) {
               to_email:          emp.email,
               empresa:           emp.nombre || 'Empresa',
               descripcion_op:    `${op.entidadNombre} — ${op.tipo}`,
-              numero_cuota:      `Cuota N° ${cuota.numero} de ${emp.cuotas.filter(c=>c.opId===op.id).length}`,
+              numero_cuota:      `Cuota N° ${cuota.numero} de ${totalCuotasOp}`,
               referencia:        op.nroPrestamo || '—',
               fecha_vencimiento: fmtDate(cuota.fecha),
               monto_total:       fmt(cuota.total),
@@ -2401,20 +2393,18 @@ async function enviarAlertasVencimiento(soloResumen=false) {
           await marcarAlertaEnviada(emp.id, cuota.id);
           enviados++;
           resumen.push({ ok: true, empresa: emp.nombre, op: descripcionOp, fecha: cuota.fecha });
-          log.info && log.info(`Alerta enviada: ${emp.nombre} — ${descripcionOp}`);
+          console.log(`Alerta enviada: ${emp.nombre} — ${descripcionOp}`);
         } catch(e) {
           errores++;
           resumen.push({ ok: false, empresa: emp.nombre, op: descripcionOp, error: e.message });
           console.error(`Error enviando alerta a ${emp.email}:`, e);
         }
       } else {
-        // Modo resumen: solo mostrar qué se enviaría
         resumen.push({ ok: true, empresa: emp.nombre, op: descripcionOp, fecha: cuota.fecha });
       }
     }
   }
 
-  // Mostrar resultado en pantalla
   mostrarResumenAlertas(resumen, enviados, errores, omitidos, soloResumen);
 }
 
