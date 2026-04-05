@@ -1208,64 +1208,169 @@ function descargarReporteAdminExcel(){
   const emp=clienteActivo;
   const fechaCorte=document.getElementById('rep-admin-fecha')?.value||today();
   const cuotasCorte=emp.cuotas.filter(c=>c.estado!=='pagada');
+  const empresa=emp.nombre||'Cliente';
+
+  // ── PALETA VALUE LATAM ──
+  const C={
+    navy:'0A1628',teal:'0D9488',teal_lt:'CCFBF1',
+    white:'FFFFFF',hdr:'1E293B',row:'F1F5F9',
+    green:'059669',green_lt:'D1FAE5',
+    yellow:'D97706',yellow_lt:'FEF3C7',
+    red:'DC2626',red_lt:'FEE2E2',
+  };
+  function money(n){return typeof n==='number'?'$'+Math.round(n).toLocaleString('es-AR'):'—';}
+  function pct(n){return typeof n==='number'?(n*100).toFixed(1)+'%':'—';}
+  function semColor(label){
+    const l=(label||'').toLowerCase();
+    if(l.includes('cara'))   return{fg:C.red,   bg:C.red_lt};
+    if(l.includes('revisar'))return{fg:C.yellow, bg:C.yellow_lt};
+    return{fg:C.green,bg:C.green_lt};
+  }
 
   const wb=XLSX.utils.book_new();
 
-  // Hoja Resumen
+  // KPIs
   const st=getStats(emp);
-  const ws1=XLSX.utils.aoa_to_sheet([
-    ['REPORTE FINANCIERO — VALUE LATAM RADAR','',''],
-    ['Empresa:',emp.nombre||'—',''],
-    ['CUIT:',emp.cuit||'—',''],
-    ['Fecha de corte:',fmtDate(fechaCorte),''],
-    ['','',''],
-    ['Deuda Total','Disponible Total','TNA Ponderada'],
-    [st.deuda,emp.entidades.reduce((s,e)=>s+Math.max(0,(e.lineaTotal||0)-(e.lineaUtilizada||0)),0),fmtN(st.tna,1)+'%'],
-  ]);
-  ws1['!cols']=[{wch:30},{wch:22},{wch:18}];
-  XLSX.utils.book_append_sheet(wb,ws1,'Resumen');
+  const disp=emp.entidades.reduce((s,e)=>s+Math.max(0,(e.lineaTotal||0)-(e.lineaUtilizada||0)),0);
+  const opsAct=emp.operaciones.filter(op=>cuotasCorte.some(c=>c.opId===op.id)).length;
 
-  // Hoja Entidades
-  const entH=[['Entidad','Tipo Línea','Subtipo','Línea Calificada ($)','Tomado ($)','Disponible ($)','% Uso','Vto. Línea']];
-  const entR=sortEntidades(emp.entidades).map(e=>{
-    const d=Math.max(0,(e.lineaTotal||0)-(e.lineaUtilizada||0));
-    return[e.nombre,e.tipoLinea,e.subtipo||'',e.lineaTotal||0,e.lineaUtilizada||0,d,e.lineaTotal>0?Math.round((e.lineaUtilizada||0)/e.lineaTotal*100)+'%':'0%',fmtDate(e.vtoLinea)];
-  });
-  const ws2=XLSX.utils.aoa_to_sheet([...entH,...entR]);
-  ws2['!cols']=[{wch:28},{wch:12},{wch:20},{wch:20},{wch:16},{wch:16},{wch:8},{wch:14}];
-  XLSX.utils.book_append_sheet(wb,ws2,'Entidades');
+  // ────────────────────────────────────────────────────────────────────────────
+  // HOJA 1 — RESUMEN EJECUTIVO
+  // ────────────────────────────────────────────────────────────────────────────
+  const s1=[
+    [''],
+    ['REPORTE FINANCIERO  ·  VALUE LATAM RADAR'],
+    [''],
+    ['Empresa',      empresa,    '', ''],
+    ['CUIT',         emp.cuit||'—','',''],
+    ['Fecha de corte',fmtDate(fechaCorte),'',''],
+    ['Generado por', 'Value Latam Radar · valuelatam.com','',''],
+    [''],
+    ['DEUDA TOTAL','DISPONIBLE','TNA PONDERADA','OPERACIONES ACT.'],
+    [money(st.deuda), money(disp), fmtN(st.tna,1)+'%', opsAct+''],
+    [''],
+    ['POSICIÓN POR ENTIDAD','','','','','','',''],
+    ['Entidad','Tipo','Línea Calificada','Tomada','Disponible','% Uso','Vto. Línea','Estado'],
+    ...sortEntidades(emp.entidades).map(e=>{
+      const lt=e.lineaTotal||0,ut=e.lineaUtilizada||0,d=Math.max(0,lt-ut);
+      const p=lt>0?ut/lt:0;
+      const venc=e.vtoLinea&&e.vtoLinea<today();
+      return[e.nombre, e.tipoLinea==='Rotativa'?'↺ Rotativa':`◆ ${e.subtipo||'Puntual'}`,
+        money(lt),money(ut),money(d),pct(p),fmtDate(e.vtoLinea),
+        venc?'VENCIDA':p>0.8?'ALTO USO':p>0.5?'MEDIO':'OK'];
+    }),
+  ];
+  const ws1=XLSX.utils.aoa_to_sheet(s1);
+  ws1['!cols']=[{wch:30},{wch:16},{wch:18},{wch:18},{wch:18},{wch:10},{wch:14},{wch:12}];
+  ws1['!merges']=[
+    {s:{r:1,c:0},e:{r:1,c:7}},
+    {s:{r:3,c:1},e:{r:3,c:3}},
+    {s:{r:4,c:1},e:{r:4,c:3}},
+    {s:{r:5,c:1},e:{r:5,c:3}},
+    {s:{r:6,c:1},e:{r:6,c:3}},
+    {s:{r:11,c:0},e:{r:11,c:7}},
+  ];
+  XLSX.utils.book_append_sheet(wb,ws1,'Resumen Ejecutivo');
 
-  // Hoja Operaciones
-  const opH=[['Entidad','Tipo','Nro. Ref.','Monto Origen ($)','Saldo Pend. ($)','TNA (%)','Tipo Tasa','Plazo (m)','Cuotas Tot.','Cuotas Pend.','Próx. Vto.','Próx. Cuota ($)','Capital ($)','Interés ($)','Estado TNA']];
-  const opR=emp.operaciones.map(op=>{
-    const pend=cuotasCorte.filter(c=>c.opId===op.id);
-    const saldo=pend.reduce((s,c)=>s+(c.capital||0),0);
-    const proxC=[...pend].sort((a,b)=>a.fecha.localeCompare(b.fecha))[0];
-    const tnaEf=getTNAEfectivaOp(op);
-    const sem=getSemaforoOp(tnaEf,op.entidadNombre);
-    const tasaLabel=op.tipoTasa==='badlar'?`BADLAR+${fmtN(op.spread||0,1)}%`:op.tipoTasa==='tamar'?`TAMAR+${fmtN(op.spread||0,1)}%`:'Fija';
-    return[op.entidadNombre,op.tipo,op.nroPrestamo||'—',op.monto||0,saldo,tnaEf,tasaLabel,op.plazo||0,emp.cuotas.filter(c=>c.opId===op.id).length,pend.length,proxC?fmtDate(proxC.fecha):'—',proxC?proxC.total:0,proxC?proxC.capital:0,proxC?proxC.interes:0,sem.label+(sem.diff?` (${sem.diff>=0?'+':''}${Math.round(sem.diff*10)/10}pp)`:'')];
-  });
-  const ws3=XLSX.utils.aoa_to_sheet([...opH,...opR]);
-  ws3['!cols']=[{wch:24},{wch:22},{wch:14},{wch:18},{wch:18},{wch:10},{wch:16},{wch:10},{wch:11},{wch:11},{wch:14},{wch:16},{wch:14},{wch:14},{wch:20}];
-  XLSX.utils.book_append_sheet(wb,ws3,'Operaciones');
+  // ────────────────────────────────────────────────────────────────────────────
+  // HOJA 2 — OPERACIONES
+  // ────────────────────────────────────────────────────────────────────────────
+  const opHdr=['Entidad','Tipo Operación','Nro. Referencia','Monto Origen ($)','Saldo Pend. ($)','TNA Efectiva %','Tipo Tasa','Plazo (m)','Desembolso','Cuotas Tot.','Cuotas Pend.','Próx. Vto.','Próx. Cuota ($)','Capital ($)','Interés ($)','Estado TNA','Diferencia (pp)'];
+  const opRows=[];
 
-  // Hoja Concentración
-  const concH=[['Semana','Monto ($)','Cuotas']];
-  const concR=[0,1,2,3].map(s=>{
+  const rots=emp.operaciones.filter(op=>op.esRotativa&&!['Descubierto','Tarjeta de Crédito','Préstamo de Inversión','Leasing'].includes(op.tipo));
+  const punts=emp.operaciones.filter(op=>!op.esRotativa||['Descubierto','Tarjeta de Crédito','Préstamo de Inversión','Leasing'].includes(op.tipo));
+
+  if(rots.length){
+    opRows.push(['↺ OPERACIONES ROTATIVAS','','','','','','','','','','','','','','','','']);
+    rots.forEach(op=>{
+      const pend=cuotasCorte.filter(c=>c.opId===op.id);
+      const saldo=pend.reduce((s,c)=>s+(c.capital||0),0);
+      const proxC=[...pend].sort((a,b)=>a.fecha.localeCompare(b.fecha))[0];
+      const tnaEf=getTNAEfectivaOp(op);
+      const sem=getSemaforoOp(tnaEf,op.entidadNombre);
+      const tl=op.tipoTasa==='badlar'?`BADLAR+${fmtN(op.spread||0,1)}%`:op.tipoTasa==='tamar'?`TAMAR+${fmtN(op.spread||0,1)}%`:'Fija';
+      opRows.push([op.entidadNombre,op.tipo,op.nroPrestamo||'—',op.monto||0,saldo,fmtN(tnaEf,2)+'%',tl,op.plazo||0,op.desembolso?fmtDate(op.desembolso):'—',emp.cuotas.filter(c=>c.opId===op.id).length,pend.length,proxC?fmtDate(proxC.fecha):'—',proxC?proxC.total:0,proxC?proxC.capital:0,proxC?proxC.interes:0,sem.label,(sem.diff>=0?'+':'')+fmtN(sem.diff,1)+'pp']);
+    });
+  }
+  if(punts.length){
+    opRows.push(['◆ OPERACIONES PUNTUALES','','','','','','','','','','','','','','','','']);
+    punts.forEach(op=>{
+      const pend=cuotasCorte.filter(c=>c.opId===op.id);
+      const saldo=pend.reduce((s,c)=>s+(c.capital||0),0);
+      const proxC=[...pend].sort((a,b)=>a.fecha.localeCompare(b.fecha))[0];
+      const tnaEf=getTNAEfectivaOp(op);
+      const sem=getSemaforoOp(tnaEf,op.entidadNombre);
+      const tl=op.tipoTasa==='badlar'?`BADLAR+${fmtN(op.spread||0,1)}%`:op.tipoTasa==='tamar'?`TAMAR+${fmtN(op.spread||0,1)}%`:'Fija';
+      opRows.push([op.entidadNombre,op.tipo,op.nroPrestamo||'—',op.monto||0,saldo,fmtN(tnaEf,2)+'%',tl,op.plazo||0,op.desembolso?fmtDate(op.desembolso):'—',emp.cuotas.filter(c=>c.opId===op.id).length,pend.length,proxC?fmtDate(proxC.fecha):'—',proxC?proxC.total:0,proxC?proxC.capital:0,proxC?proxC.interes:0,sem.label,(sem.diff>=0?'+':'')+fmtN(sem.diff,1)+'pp']);
+    });
+  }
+  // Fila totales
+  opRows.push(['TOTALES','','',
+    money(emp.operaciones.reduce((s,o)=>s+(o.monto||0),0)),
+    money(emp.operaciones.reduce((s,op)=>{const p=cuotasCorte.filter(c=>c.opId===op.id).reduce((a,c)=>a+(c.capital||0),0);return s+p;},0)),
+    '','','','','','','',
+    money(cuotasCorte.filter(c=>{const p=[...cuotasCorte].filter(x=>x.opId===c.opId).sort((a,b)=>a.fecha.localeCompare(b.fecha))[0];return p&&p.id===c.id;}).reduce((s,c)=>s+c.total,0)),
+    '','','','']);
+
+  const ws2=XLSX.utils.aoa_to_sheet([opHdr,...opRows]);
+  ws2['!cols']=[{wch:26},{wch:22},{wch:14},{wch:16},{wch:16},{wch:13},{wch:14},{wch:9},{wch:13},{wch:10},{wch:11},{wch:13},{wch:15},{wch:14},{wch:14},{wch:13},{wch:13}];
+  XLSX.utils.book_append_sheet(wb,ws2,'Operaciones');
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // HOJA 3 — CONCENTRACIÓN
+  // ────────────────────────────────────────────────────────────────────────────
+  const conc=[0,1,2,3].map(s=>{
     const sem=cuotasCorte.filter(c=>{const d=daysBetween(today(),c.fecha);return d>=s*7&&d<(s+1)*7;});
-    return[`Semana ${s+1} (${s*7}-${(s+1)*7-1}d)`,sem.reduce((a,c)=>a+c.total,0),sem.length];
+    return{semana:`Semana ${s+1} (${s*7}-${(s+1)*7-1}d)`,total:sem.reduce((a,c)=>a+c.total,0),cantidad:sem.length};
   });
   const porEnt={};
   cuotasCorte.forEach(c=>{const op=emp.operaciones.find(o=>o.id===c.opId);if(!op)return;porEnt[op.entidadNombre]=(porEnt[op.entidadNombre]||0)+c.total;});
-  const entVencR=Object.entries(porEnt).sort((a,b)=>b[1]-a[1]).map(([n,t])=>[n,t,'']);
-  const ws4=XLSX.utils.aoa_to_sheet([...concH,...concR,['','',''],['Por Entidad','Monto ($)',''],...entVencR]);
-  ws4['!cols']=[{wch:30},{wch:20},{wch:12}];
-  XLSX.utils.book_append_sheet(wb,ws4,'Concentración');
+  const totalConc=conc.reduce((s,c)=>s+c.total,0);
+  const entVenc=Object.entries(porEnt).sort((a,b)=>b[1]-a[1]);
 
-  const nombre=`Reporte_${(emp.nombre||'Cliente').replace(/[^a-zA-Z0-9]/g,'_')}_${today()}.xlsx`;
+  const s3=[
+    ['CONCENTRACIÓN DE VENCIMIENTOS'],[''],
+    ['POR SEMANA (próximos 28 días)'],
+    ['Semana','Monto ($)','Cuotas','% del Total','Distribución visual'],
+    ...conc.map(c=>{
+      const p=totalConc>0?c.total/totalConc:0;
+      return[c.semana,c.total,c.cantidad,pct(p),'█'.repeat(Math.round(p*30))];
+    }),
+    [money(totalConc),'TOTAL',conc.reduce((s,c)=>s+c.cantidad,0),'',''],
+    [''],
+    ['POR ENTIDAD'],
+    ['Entidad','Monto vencimientos ($)','% del Total'],
+    ...entVenc.map(([n,t])=>[n,t,totalConc>0?pct(t/totalConc):'—']),
+  ];
+  const ws3=XLSX.utils.aoa_to_sheet(s3);
+  ws3['!cols']=[{wch:30},{wch:18},{wch:12},{wch:14},{wch:35}];
+  XLSX.utils.book_append_sheet(wb,ws3,'Concentración Vencimientos');
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // HOJA 4 — ENTIDADES
+  // ────────────────────────────────────────────────────────────────────────────
+  const entHdr=['Entidad','Tipo Línea','Subtipo','Calificada ($)','Tomada ($)','Disponible ($)','% Uso','Vto. Línea'];
+  const entRows=[];
+  let lastT=null;
+  sortEntidades(emp.entidades).forEach((e,i)=>{
+    const t=e.tipoLinea==='Rotativa'?'↺ LÍNEAS ROTATIVAS':'◆ LÍNEAS PUNTUALES';
+    if(t!==lastT){entRows.push([t,'','','','','','','']);lastT=t;}
+    const lt=e.lineaTotal||0,ut=e.lineaUtilizada||0,d=Math.max(0,lt-ut),p=lt>0?ut/lt:0;
+    entRows.push([e.nombre,e.tipoLinea,e.subtipo||'',money(lt),money(ut),money(d),pct(p),fmtDate(e.vtoLinea)]);
+  });
+  entRows.push(['TOTALES','','',
+    money(emp.entidades.reduce((s,e)=>s+(e.lineaTotal||0),0)),
+    money(emp.entidades.reduce((s,e)=>s+(e.lineaUtilizada||0),0)),
+    money(disp),'','']);
+
+  const ws4=XLSX.utils.aoa_to_sheet([entHdr,...entRows]);
+  ws4['!cols']=[{wch:30},{wch:14},{wch:18},{wch:18},{wch:16},{wch:16},{wch:10},{wch:14}];
+  XLSX.utils.book_append_sheet(wb,ws4,'Entidades');
+
+  const nombre=`Reporte_${empresa.replace(/[^a-zA-Z0-9]/g,'_')}_${today()}.xlsx`;
   XLSX.writeFile(wb,nombre);
-  toast(`✓ Reporte de ${emp.nombre} descargado`,'green');
+  toast(`✓ Reporte de ${empresa} descargado`,'green');
 }
 
 async function renderAnalisisPanel(){
