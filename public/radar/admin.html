@@ -249,6 +249,19 @@
 
       </div>
 
+      <!-- TC USD -->
+      <div class="tna-card" style="margin-bottom:24px;">
+        <div class="tna-card-title">💵 Tipo de Cambio USD/ARS (BNA Vendedor)</div>
+        <div class="tna-card-sub">Se usa para convertir cuotas en dólares a pesos. Actualizalo manualmente cada vez que cambie el TC BNA vendedor.</div>
+        <div class="tna-big" style="color:var(--green);" id="tc-display">— </div>
+        <div class="tna-input-row" style="flex-wrap:wrap;gap:8px;">
+          <input type="number" id="tc-input" style="width:120px;" step="1" placeholder="Ej: 1200" oninput="document.getElementById('tc-display').textContent='$'+parseFloat(this.value||0).toLocaleString('es-AR',{minimumFractionDigits:2})">
+          <span style="color:var(--text3);font-size:.8rem;">ARS por USD</span>
+          <button class="btn btn-success btn-sm" onclick="guardarTC()">✓ Publicar</button>
+        </div>
+        <div class="last-update" id="tc-update">Última actualización: —</div>
+      </div>
+
       <!-- UMBRALES SEMÁFORO -->
       <div class="tna-card" style="margin-bottom:0;">
         <div class="tna-card-title">Umbrales del Semáforo</div>
@@ -349,7 +362,16 @@
           <option value="Leasing">Leasing</option>
         </select>
       </div>
-      <div class="form-group" id="ent-monto-wrap"><label>Monto / Línea Total ($)</label><input type="number" id="ent-linea" placeholder="10000000" oninput="previewEntCuotas()"></div>
+      <div class="form-group" id="ent-monto-wrap"><label>Monto / Línea Total</label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <select id="ent-moneda" onchange="onEntMonedaChange()" style="width:90px;">
+            <option value="ARS">ARS $</option>
+            <option value="USD">USD $</option>
+          </select>
+          <input type="number" id="ent-linea" placeholder="10000000" oninput="previewEntCuotas()" style="flex:1;">
+        </div>
+        <div style="font-size:.68rem;color:var(--text3);margin-top:3px;font-family:var(--mono);" id="ent-linea-ars-preview"></div>
+      </div>
       <div class="form-group" id="ent-vto-wrap"><label id="ent-vto-label">Vencimiento Línea</label><input type="date" id="ent-vto"></div>
       <div class="form-group" id="ent-tomado-wrap" style="display:none;">
         <label>Monto Tomado ($)</label>
@@ -536,7 +558,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-let allClientes=[], clienteActivo=null, tnaActual=60, badlarActual=0, tamarActual=0, umbralAmarillo=3, umbralRojo=8, tasasBancos={};
+let allClientes=[], clienteActivo=null, tnaActual=60, badlarActual=0, tamarActual=0, tcUSD=1200, umbralAmarillo=3, umbralRojo=8, tasasBancos={};
 
 auth.onAuthStateChanged(async user=>{
   if(!user){window.location.href='index.html';return;}
@@ -583,6 +605,7 @@ async function loadTNA(){
     if(doc.exists){
       const d=doc.data();
       tnaActual=d.tnaRef||60; badlarActual=d.badlar||0; tamarActual=d.tamar||0;
+      if(d.tcUSD) tcUSD=d.tcUSD;
       umbralAmarillo=d.umbralAmarillo??3; umbralRojo=d.umbralRojo??8;
       if(document.getElementById('umbral-amarillo'))document.getElementById('umbral-amarillo').value=umbralAmarillo;
       if(document.getElementById('umbral-rojo'))document.getElementById('umbral-rojo').value=umbralRojo;
@@ -613,6 +636,9 @@ function renderTNAPanel(data){
   if(data.updatedAt && document.getElementById('last-update')) document.getElementById('last-update').textContent='Última actualización: '+fmtTs(data.updatedAt);
   if(data.badlarUpdatedAt && document.getElementById('badlar-update')) document.getElementById('badlar-update').textContent='Última actualización: '+fmtTs(data.badlarUpdatedAt);
   if(data.tamarUpdatedAt && document.getElementById('tamar-update')) document.getElementById('tamar-update').textContent='Última actualización: '+fmtTs(data.tamarUpdatedAt);
+  if(data.tcUSD && document.getElementById('tc-display')) document.getElementById('tc-display').textContent='$'+data.tcUSD.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  if(data.tcUSD && document.getElementById('tc-input')) document.getElementById('tc-input').value=data.tcUSD;
+  if(data.tcUSDFecha && document.getElementById('tc-update')) document.getElementById('tc-update').textContent='Última actualización: '+data.tcUSDFecha;
   renderTasasResumen(data);
 }
 function renderTasasResumen(data){
@@ -622,6 +648,7 @@ function renderTasasResumen(data){
     {nombre:'TNA Mercado',valor:(data.tnaRef||0).toFixed(1)+'%',fecha:fmtTs(data.updatedAt),afecta:'Comparador de tasas',color:'var(--yellow)'},
     {nombre:'BADLAR',valor:(data.badlar||0).toFixed(1)+'%',fecha:fmtTs(data.badlarUpdatedAt),afecta:'Operaciones BADLAR + spread',color:'var(--cyan)'},
     {nombre:'TAMAR',valor:(data.tamar||0).toFixed(1)+'%',fecha:fmtTs(data.tamarUpdatedAt),afecta:'Operaciones TAMAR + spread',color:'var(--purple)'},
+    {nombre:'TC USD/ARS',valor:'$'+(data.tcUSD||0).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2}),fecha:data.tcUSDFecha||'—',afecta:'Cuotas en dólares',color:'var(--green)'},
   ];
   tbody.innerHTML=rows.map(r=>`<tr><td class="td-bold">${r.nombre}</td><td class="td-mono" style="color:${r.color};font-size:1rem;">${r.valor}</td><td class="td-mono" style="font-size:.7rem;color:var(--text3)">${r.fecha}</td><td style="font-size:.75rem;color:var(--text2)">${r.afecta}</td></tr>`).join('');
 }
@@ -656,6 +683,18 @@ async function guardarTamar(){
   await db.collection('config').doc('global').set({tamar:v,tamarUpdatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
   tamarActual=v;toast(`TAMAR actualizada a ${v.toFixed(1)}%`);
   await recalcularCuotasVariables('tamar',v);
+  await loadTNA();
+}
+
+async function guardarTC(){
+  const v=parseFloat(document.getElementById('tc-input').value);
+  if(isNaN(v)||v<=0){toast('TC inválido','red');return;}
+  const fecha=today();
+  await db.collection('config').doc('global').set({tcUSD:v,tcUSDFecha:fecha},{merge:true});
+  tcUSD=v;
+  document.getElementById('tc-display').textContent='$'+v.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  document.getElementById('tc-update').textContent='Última actualización: '+fmtDate(fecha);
+  toast(`TC USD/ARS actualizado a $${v.toLocaleString('es-AR',{minimumFractionDigits:2})}`,'green');
   await loadTNA();
 }
 
@@ -1166,6 +1205,7 @@ async function descargarReporteAdminExcel(){
 
   const payload={
     empresa: emp.nombre||'Cliente',
+    tcUSD: tcUSD,
     operaciones: emp.operaciones.map(op=>({
       id: op.id,
       entidad: op.entidadNombre||'',
@@ -1182,6 +1222,7 @@ async function descargarReporteAdminExcel(){
       id: e.id,
       nombre: e.nombre||'',
       tipoLinea: e.tipoLinea||'',
+      moneda: e.moneda||'ARS',
       lineaTotal: e.lineaTotal||0,
       lineaUtilizada: e.lineaUtilizada||0,
       disponible: Math.max(0,(e.lineaTotal||0)-(e.lineaUtilizada||0)),
@@ -1371,12 +1412,16 @@ function renderCuotasPanel(){
   html+=`<table><thead><tr><th>#</th><th>Operación</th><th>Vencimiento</th><th>Capital</th><th>Interés</th><th>Total</th><th>Saldo Rest.</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>`;
   lista.forEach(c=>{
     const op=ops.find(o=>o.id===c.opId)||{};const opRef=op.nroPrestamo?` · Ref:${op.nroPrestamo}`:'';
+    const esUSD=op.moneda==='USD';
+    const montoCapital=esUSD?fmtUSD(c.capital/tcUSD)+` (${fmt(c.capital)})`:fmt(c.capital);
+    const montoTotal=esUSD?fmtUSD(c.total/tcUSD)+` (${fmt(c.total)})`:fmt(c.total);
     const rowStyle=c.estado==='pagada'?'opacity:.45;':'';
     const pagarBtn=c.estado==='pagada'
       ?`<button class="btn btn-ghost btn-sm" onclick="toggleCuotaPagada('${c.id}')">↩</button>`
       :`<button class="btn btn-success btn-sm" onclick="toggleCuotaPagada('${c.id}')">✓</button>`;
     const editBtn=`<button class="btn btn-ghost btn-sm" onclick="abrirEditCuota('${c.id}')" title="Editar vencimiento">✏️</button>`;
-    html+=`<tr style="${rowStyle}"><td class="td-mono">${c.numero}</td><td style="font-size:.72rem">${op.entidadNombre||'—'} · ${op.tipo||'—'}${opRef}</td><td class="td-mono">${fmtDate(c.fecha)}</td><td class="td-mono">${fmt(c.capital)}</td><td class="td-mono" style="color:var(--text3)">${fmt(c.interes)}</td><td class="td-mono td-bold">${fmt(c.total)}</td><td class="td-mono" style="color:var(--text3)">${fmt(c.saldo)}</td><td>${badges[c.estado]||'—'}</td><td style="display:flex;gap:4px;">${editBtn}${pagarBtn}</td></tr>`;
+    const usdBadge=esUSD?'<span class="badge" style="background:rgba(16,185,129,.15);color:var(--green);margin-left:4px;">💵 USD</span>':'';
+    html+=`<tr style="${rowStyle}"><td class="td-mono">${c.numero}</td><td style="font-size:.72rem">${op.entidadNombre||'—'} · ${op.tipo||'—'}${opRef}${usdBadge}</td><td class="td-mono">${fmtDate(c.fecha)}</td><td class="td-mono">${montoCapital}</td><td class="td-mono" style="color:var(--text3)">${fmt(c.interes)}</td><td class="td-mono td-bold">${montoTotal}</td><td class="td-mono" style="color:var(--text3)">${fmt(c.saldo)}</td><td>${badges[c.estado]||'—'}</td><td style="display:flex;gap:4px;">${editBtn}${pagarBtn}</td></tr>`;
   });
   html+='</tbody></table>';
   div.innerHTML=html;
@@ -1466,7 +1511,7 @@ function htmlEntidades(){
       ?(e.lineaUtilizada>0?'<span class="badge badge-red" style="margin-left:4px;">● Utilizado</span>':'<span class="badge badge-green" style="margin-left:4px;">○ Disponible</span>'):'';
     const toggleUtilBtn=e.tipoLinea==='Puntual'&&['Descubierto','Tarjeta de Crédito'].includes(e.subtipo||'')
       ?`<button class="btn btn-ghost btn-sm" onclick="toggleUtilizadoEnt('${e.id}')" title="${e.lineaUtilizada>0?'Marcar disponible':'Marcar utilizado'}">${e.lineaUtilizada>0?'↩':'✓'}</button>`:'';
-    const tipoLabel=e.tipoLinea==='Rotativa'?'<span class="badge badge-green">↺ Rotativa</span>':`<span class="badge badge-yellow">◆ Puntual${e.subtipo?' · '+e.subtipo:''}</span>`;
+    const tipoLabel=e.tipoLinea==='Rotativa'?`<span class="badge badge-green">↺ Rotativa</span>${e.moneda==='USD'?'<span class="badge" style="background:rgba(16,185,129,.15);color:var(--green);margin-left:4px;">💵 USD</span>':''}`:`<span class="badge badge-yellow">◆ Puntual${e.subtipo?' · '+e.subtipo:''}</span>${e.moneda==='USD'?'<span class="badge" style="background:rgba(16,185,129,.15);color:var(--green);margin-left:4px;">💵 USD</span>':''}`;
     html+=`<tr><td class="td-bold">${e.nombre}</td><td>${tipoLabel}${utilizadoInfo}</td><td class="td-mono">${fmt(e.lineaTotal)}</td><td class="td-mono" style="color:var(--red)">${fmt(e.lineaUtilizada||0)}</td><td class="td-mono" style="color:var(--green)">${fmt(disp)}</td><td class="td-mono" style="font-size:.7rem">${fmtDate(e.vtoLinea)}</td><td><div class="progress-wrap"><div class="progress-bg"><div class="progress-fill" style="width:${pct}%;background:${color}"></div></div><div class="pct-label">${pct}%</div></div></td><td style="display:flex;gap:4px;">${toggleUtilBtn}<button class="btn btn-ghost btn-sm" onclick="abrirEditEntidad('${e.id}')">✏️</button><button class="btn btn-danger btn-sm" onclick="eliminarEntidadCliente('${e.id}')">✕</button></td></tr>`;
   });
   return html+'</tbody></table>';
@@ -1602,6 +1647,18 @@ function populateBancoDropdown(selectId, selectedValue=''){
 const PUNTUAL_SOLO_VTO=['Descubierto','Tarjeta de Crédito'];
 const PUNTUAL_SIN_TASA=['Tarjeta de Crédito'];
 const PUNTUAL_CON_CUOTAS=['Leasing','Préstamo de Inversión'];
+
+function onEntMonedaChange(){
+  const moneda=document.getElementById('ent-moneda')?.value||'ARS';
+  const lbl=document.getElementById('ent-linea-ars-preview');
+  const monto=parseFloat(document.getElementById('ent-linea')?.value)||0;
+  if(moneda==='USD'&&monto>0&&lbl){
+    lbl.textContent=`≈ ${fmt(monto*tcUSD)} ARS al TC $${tcUSD.toLocaleString('es-AR',{minimumFractionDigits:2})}`;
+  } else if(lbl){lbl.textContent='';}
+}
+
+function fmtUSD(n){if(!n||isNaN(n))return'USD 0';return'USD '+n.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function montoARS(monto, moneda){return moneda==='USD'?(monto||0)*tcUSD:(monto||0);}
 
 function onOpEntidadChange(){
   const entId=document.getElementById('op-entidad')?.value;
@@ -1870,12 +1927,15 @@ async function guardarEntidad(){
   const tipoLinea=document.getElementById('ent-tipo-linea').value;
   const subtipo=tipoLinea==='Puntual'?document.getElementById('ent-subtipo')?.value||'':'';
   const linea=parseFloat(document.getElementById('ent-linea').value)||0;
+  const moneda=document.getElementById('ent-moneda')?.value||'ARS';
+  const lineaARS=montoARS(linea,moneda);
   const tomado=parseFloat(document.getElementById('ent-tomado')?.value)||0;
-  const lineaUtilizada=['Descubierto','Tarjeta de Crédito'].includes(subtipo)?tomado:0;
+  const tomadoARS=montoARS(tomado,moneda);
+  const lineaUtilizada=['Descubierto','Tarjeta de Crédito'].includes(subtipo)?tomadoARS:0;
   const desembolso=document.getElementById('ent-desembolso')?.value||today();
   const primeraCuota=document.getElementById('ent-primer-vto')?.value||'';
   const vtoLinea=subtipo==='Préstamo de Inversión'?'':document.getElementById('ent-vto')?.value||'';
-  const ent={nombre,tipo:'Banco',tipoLinea,subtipo,lineaTotal:linea,lineaUtilizada,
+  const ent={nombre,tipo:'Banco',tipoLinea,subtipo,lineaTotal:lineaARS,lineaUtilizada,moneda,lineaOriginalUSD:moneda==='USD'?linea:null,
     vtoLinea,desembolso,primeraCuota,
     plazo:parseInt(document.getElementById('ent-plazo')?.value)||0,
     frecuencia:parseInt(document.getElementById('ent-frecuencia')?.value)||1,
