@@ -300,6 +300,37 @@
         <tbody id="tabla-tasas-resumen"></tbody></table>
       </div>
 
+      <!-- CURVA BREAKEVEN -->
+      <div class="tna-card" style="margin-bottom:24px;">
+        <div class="tna-card-title">📈 Curva de Inflación Breakeven (LECAP vs CER)</div>
+        <div class="tna-card-sub">Ingresá la TNA de LECAP y la TIR de CER para cada plazo. El sistema calcula la inflación implícita que el mercado descuenta y la usa como referencia en el Análisis de tasas de cada cliente.</div>
+
+        <div style="background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.15);border-radius:7px;padding:8px 12px;font-size:.72rem;color:var(--text2);margin:12px 0;">
+          💡 <strong>Breakeven = TNA LECAP − TIR CER.</strong> Si la TNA de la operación del cliente está <em>por debajo</em> del breakeven de su plazo, se financia en términos reales negativos — ventaja competitiva clara.
+        </div>
+
+        <div style="overflow-x:auto;margin-top:12px;">
+          <table style="font-size:.75rem;width:100%;">
+            <thead>
+              <tr>
+                <th style="width:90px;">Plazo</th>
+                <th>Vto. Ref.</th>
+                <th style="width:110px;">TNA LECAP (%)</th>
+                <th style="width:110px;">TIR CER (%)</th>
+                <th style="width:120px;">Breakeven TNA</th>
+              </tr>
+            </thead>
+            <tbody id="breakeven-rows"></tbody>
+          </table>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:14px;justify-content:space-between;align-items:center;">
+          <button class="btn btn-ghost btn-sm" onclick="agregarFilaBreakeven()">+ Agregar plazo</button>
+          <button class="btn btn-success btn-sm" onclick="guardarBreakeven()">✓ Publicar curva</button>
+        </div>
+        <div style="font-family:var(--mono);font-size:.65rem;color:var(--text3);margin-top:8px;" id="breakeven-fecha">Última actualización: —</div>
+      </div>
+
       <div class="table-card">
         <div class="table-header">
           <div><div class="table-title">Condiciones de Bancos de Referencia</div><div class="table-sub">Múltiples condiciones por banco — se usa la de menor TNA en Análisis</div></div>
@@ -564,7 +595,7 @@ auth.onAuthStateChanged(async user=>{
   if(!user){window.location.href='index.html';return;}
   if(user.email!==ADMIN_EMAIL){window.location.href='app.html';return;}
   document.getElementById('admin-email').textContent=user.email;
-  await loadTNA(); await loadClientes();
+  await loadTNA(); await loadClientes(); await loadBreakeven();
   document.getElementById('loading-screen').style.display='none';
   document.getElementById('app').style.display='flex';
 });
@@ -578,7 +609,7 @@ function showTab(name,el){
   document.getElementById('panel-'+name).classList.add('active');
   if(el)el.classList.add('active');
   document.getElementById('page-title').textContent=titles[name]||name;
-  if(name==='tna')loadHistorialTNA();
+  if(name==='tna'){loadHistorialTNA();loadBreakeven();}
 }
 
 function openModal(t){document.getElementById('modal-'+t).classList.add('open');}
@@ -938,6 +969,113 @@ async function recalcularCuotasVariables(tipoTasa, nuevaTasa){
 }
 
 async function loadHistorialTNA(){}
+
+// =================== BREAKEVEN INFLACIÓN ===================
+let breakevenData = []; // [{plazo, vto, lecap, cer}]
+
+const BREAKEVEN_DEFAULTS = [
+  {plazo:'~1 mes',   vto:'2026-04-30', lecap:21.19, cer:-13.55},
+  {plazo:'~2 mes',   vto:'2026-05-29', lecap:22.71, cer:-12.86},
+  {plazo:'~3 mes',   vto:'2026-06-30', lecap:24.81, cer:-9.52},
+  {plazo:'~4 mes',   vto:'2026-07-31', lecap:24.19, cer:-7.84},
+  {plazo:'~6 mes',   vto:'2026-09-30', lecap:26.55, cer:-5.01},
+  {plazo:'~8 mes',   vto:'2026-11-30', lecap:27.96, cer:-1.13},
+  {plazo:'~10 mes',  vto:'2027-01-15', lecap:29.30, cer:-0.27},
+  {plazo:'~12 mes',  vto:'2027-04-30', lecap:30.63, cer:-0.44},
+];
+
+async function loadBreakeven(){
+  try{
+    const doc=await db.collection('config').doc('breakeven').get();
+    if(doc.exists&&doc.data().curva&&doc.data().curva.length){
+      breakevenData=doc.data().curva;
+      const fecha=doc.data().fecha;
+      if(fecha&&document.getElementById('breakeven-fecha'))
+        document.getElementById('breakeven-fecha').textContent='Última actualización: '+fecha;
+    } else {
+      breakevenData=[...BREAKEVEN_DEFAULTS];
+    }
+  }catch(e){ breakevenData=[...BREAKEVEN_DEFAULTS]; }
+  renderBreakevenRows();
+}
+
+function calcBreakeven(lecap, cer){ return Math.round((lecap - cer)*100)/100; }
+
+function renderBreakevenRows(){
+  const tbody=document.getElementById('breakeven-rows');
+  if(!tbody)return;
+  tbody.innerHTML=breakevenData.map((row,i)=>{
+    const be=calcBreakeven(row.lecap||0, row.cer||0);
+    const color=be>35?'var(--red)':be>28?'var(--yellow)':'var(--green)';
+    return`<tr>
+      <td><input type="text" value="${row.plazo||''}" data-idx="${i}" data-field="plazo" onchange="onBreakevenChange(this)" style="font-size:.72rem;padding:4px 6px;width:80px;"></td>
+      <td><input type="text" value="${row.vto||''}" data-idx="${i}" data-field="vto" onchange="onBreakevenChange(this)" style="font-size:.72rem;padding:4px 6px;width:100px;" placeholder="2026-06-30"></td>
+      <td><input type="number" value="${row.lecap||''}" step="0.01" data-idx="${i}" data-field="lecap" onchange="onBreakevenChange(this)" style="font-size:.72rem;padding:4px 6px;width:90px;"></td>
+      <td><input type="number" value="${row.cer||''}" step="0.01" data-idx="${i}" data-field="cer" onchange="onBreakevenChange(this)" style="font-size:.72rem;padding:4px 6px;width:90px;" placeholder="negativo p.ej. -5"></td>
+      <td style="display:flex;align-items:center;gap:6px;">
+        <span style="font-family:var(--mono);font-size:.85rem;font-weight:600;color:${color};">${be.toFixed(2)}%</span>
+        <button onclick="eliminarFilaBreakeven(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.8rem;padding:0;">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function onBreakevenChange(el){
+  const i=parseInt(el.dataset.idx), field=el.dataset.field;
+  if(!breakevenData[i])return;
+  breakevenData[i][field]=field==='lecap'||field==='cer'?parseFloat(el.value)||0:el.value;
+  renderBreakevenRows();
+}
+
+function agregarFilaBreakeven(){
+  breakevenData.push({plazo:'',vto:'',lecap:0,cer:0});
+  renderBreakevenRows();
+}
+
+function eliminarFilaBreakeven(i){
+  breakevenData.splice(i,1);
+  renderBreakevenRows();
+}
+
+async function guardarBreakeven(){
+  const fecha=today();
+  await db.collection('config').doc('breakeven').set({curva:breakevenData,fecha},{merge:false});
+  if(document.getElementById('breakeven-fecha'))
+    document.getElementById('breakeven-fecha').textContent='Última actualización: '+fmtDate(fecha);
+  toast('Curva breakeven publicada para todos los clientes','green');
+}
+
+function getBreakevenParaPlazo(dtm){
+  // Retorna el breakeven interpolado para un plazo en meses dado
+  if(!breakevenData||!breakevenData.length) return null;
+  // Convertir plazo a meses para matching
+  const meses=dtm;
+  // Encontrar el punto de la curva más cercano
+  let mejor=null, menorDiff=999;
+  breakevenData.forEach(row=>{
+    const plazoMeses=parsePlazoMeses(row.plazo);
+    const diff=Math.abs(plazoMeses-meses);
+    if(diff<menorDiff){menorDiff=diff;mejor=row;}
+  });
+  if(!mejor)return null;
+  return calcBreakeven(mejor.lecap||0, mejor.cer||0);
+}
+
+function parsePlazoMeses(plazo){
+  // Extrae número de meses de string como "~6 mes"
+  const m=plazo.match(/(\d+)/);
+  return m?parseInt(m[1]):12;
+}
+
+function getBreakevenCurva(){
+  return breakevenData.map(row=>({
+    plazo:row.plazo,
+    vto:row.vto,
+    lecap:row.lecap||0,
+    cer:row.cer||0,
+    breakeven:calcBreakeven(row.lecap||0,row.cer||0)
+  }));
+}
 
 async function loadClientes(){
   const snap=await db.collection('empresas').get();
@@ -1350,6 +1488,52 @@ async function renderAnalisisPanel(){
 
   html+=`</div>`;
 
+  // ── GRÁFICO 5: Curva breakeven ────────────────────────────────────────────
+  const curva=getBreakevenCurva();
+  if(curva.length){
+    html+=`<div class="table-card" style="margin-bottom:20px;">
+      <div class="table-header"><div>
+        <div class="table-title">📈 Inflación Breakeven (LECAP − CER) vs Tasa de Operaciones</div>
+        <div class="table-sub">Si la TNA de la operación está por debajo del breakeven, la empresa se financia en términos reales negativos</div>
+      </div></div>
+      <div style="padding:14px 18px;"><canvas id="adm-chart-breakeven" height="160"></canvas></div>
+    </div>`;
+
+    // Tabla comparación por operación
+    const opsActivas=operaciones.filter(op=>cuotasAll.some(c=>c.opId===op.id&&c.estado!=='pagada')&&!['Tarjeta de Crédito'].includes(op.tipo));
+    if(opsActivas.length){
+      html+=`<div class="table-card" style="margin-bottom:20px;">
+        <div class="table-header"><div>
+          <div class="table-title">🎯 Posición Real de Cada Operación vs Breakeven</div>
+          <div class="table-sub">Compara la TNA de cada operación contra la inflación implícita del mercado para su plazo</div>
+        </div></div>
+        <table><thead><tr><th>Entidad</th><th>Tipo</th><th>Plazo</th><th>TNA Op.</th><th>Breakeven ref.</th><th>Diferencia</th><th>Posición real</th></tr></thead><tbody>`;
+      opsActivas.forEach(op=>{
+        const plazoMeses=op.plazo||12;
+        const tnaOp=getTNAEfectivaOp(op);
+        const be=getBreakevenParaPlazo(plazoMeses);
+        if(be===null){
+          html+=`<tr><td class="td-bold">${op.entidadNombre}</td><td style="font-size:.75rem">${op.tipo}</td><td class="td-mono">${plazoMeses}m</td><td class="td-mono" style="color:var(--yellow)">${fmtN(tnaOp,2)}%</td><td colspan="3" style="color:var(--text3);font-size:.73rem;">Sin breakeven configurado</td></tr>`;
+          return;
+        }
+        const diff=tnaOp-be;
+        const esNegativo=diff<0;
+        const color=esNegativo?'var(--green)':diff>5?'var(--red)':'var(--yellow)';
+        const label=esNegativo?'✅ Tasa real negativa (ventaja)':diff>5?'⚠ Caro en términos reales':'🟡 En línea con inflación';
+        html+=`<tr>
+          <td class="td-bold">${op.entidadNombre}</td>
+          <td style="font-size:.75rem">${op.tipo}</td>
+          <td class="td-mono">${plazoMeses}m</td>
+          <td class="td-mono" style="color:var(--yellow);font-weight:600">${fmtN(tnaOp,2)}%</td>
+          <td class="td-mono" style="color:var(--text2)">${fmtN(be,2)}%</td>
+          <td class="td-mono" style="color:${color};font-weight:600">${diff>=0?'+':''}${fmtN(diff,2)}pp</td>
+          <td style="font-size:.72rem;color:${color}">${label}</td>
+        </tr>`;
+      });
+      html+=`</tbody></table></div>`;
+    }
+  }
+
   // ── TABLAS ────────────────────────────────────────────────────────────────
   if(rotativos.length){
     html+=`<div style="font-family:var(--mono);font-size:.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">↺ Márgenes Rotativos</div>`;
@@ -1496,6 +1680,53 @@ async function renderAnalisisPanel(){
         </div>`;
       }).join('');
     }
+  }
+
+  // ── GRÁFICO 5: Curva Breakeven ────────────────────────────────────────────
+  const curvaData=getBreakevenCurva();
+  const ctxBE=document.getElementById('adm-chart-breakeven')?.getContext('2d');
+  if(ctxBE&&curvaData.length){
+    _destroyChartAdmin('adm-chart-breakeven');
+    const labels=curvaData.map(r=>r.plazo);
+    const beValues=curvaData.map(r=>r.breakeven);
+    const lecapValues=curvaData.map(r=>r.lecap);
+    const cerValues=curvaData.map(r=>r.cer);
+    // Líneas de TNA de las operaciones activas del cliente
+    const opsActivas=operaciones.filter(op=>cuotasAll.some(c=>c.opId===op.id&&c.estado!=='pagada')&&!['Tarjeta de Crédito'].includes(op.tipo));
+    const datasets=[
+      {label:'Breakeven inflación',data:beValues,borderColor:'rgba(245,158,11,0.9)',backgroundColor:'rgba(245,158,11,0.1)',borderWidth:2.5,fill:true,tension:0.3,pointRadius:4,pointBackgroundColor:'rgba(245,158,11,0.9)'},
+      {label:'LECAP TNA',data:lecapValues,borderColor:'rgba(59,130,246,0.7)',backgroundColor:'transparent',borderWidth:1.5,borderDash:[4,3],tension:0.3,pointRadius:3},
+      {label:'CER TIR',data:cerValues,borderColor:'rgba(139,92,246,0.7)',backgroundColor:'transparent',borderWidth:1.5,borderDash:[4,3],tension:0.3,pointRadius:3},
+    ];
+    // Agregar líneas horizontales por cada operación activa
+    const coloresOp=['rgba(16,185,129,0.8)','rgba(6,182,212,0.8)','rgba(239,68,68,0.8)','rgba(248,113,113,0.8)'];
+    opsActivas.slice(0,4).forEach((op,i)=>{
+      const tnaOp=getTNAEfectivaOp(op);
+      datasets.push({
+        label:`${op.entidadNombre} (${fmtN(tnaOp,1)}%)`,
+        data:Array(labels.length).fill(tnaOp),
+        borderColor:coloresOp[i%coloresOp.length],
+        backgroundColor:'transparent',
+        borderWidth:1.5,
+        borderDash:[2,4],
+        tension:0,
+        pointRadius:0,
+      });
+    });
+    _chartsAdmin['adm-chart-breakeven']=new Chart(ctxBE,{
+      type:'line',
+      data:{labels,datasets},
+      options:{
+        plugins:{
+          legend:{display:true,position:'bottom',labels:{color:TEXT,font:{size:9},boxWidth:10,padding:8}},
+          tooltip:{mode:'index',intersect:false,callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.raw}%`}}
+        },
+        scales:{
+          x:{ticks:{color:TEXT,font:{size:9}},grid:{color:GRID}},
+          y:{ticks:{color:TEXT,font:{size:9},callback:v=>v+'%'},grid:{color:GRID}}
+        }
+      }
+    });
   }
 }
 
