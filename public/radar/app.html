@@ -607,6 +607,15 @@ table tbody tr:last-child td { border-bottom: 0; }
 /* GOOGLE FONTS */
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap');
 
+/* KPI red variant */
+.kpi-card.red .kpi-value { color: var(--danger-fg); }
+
+/* Nav count badge */
+.nav-count { margin-left: auto; font-family: var(--font-mono); font-size: 10px; color: var(--text-tertiary); background: var(--bg-surface-2); padding: 1px 6px; border-radius: var(--radius-pill); border: 1px solid var(--border-subtle); }
+
+/* Sidebar brand (ya definida arriba pero por si acaso) */
+.sidebar-brand { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-4) var(--sp-5); height: var(--topbar-h); border-bottom: 1px solid var(--border-subtle); }
+
 </style>
 </head>
 <body>
@@ -624,39 +633,84 @@ table tbody tr:last-child td { border-bottom: 0; }
 <div class="app" id="app" style="display:none;">
 
 <aside class="sidebar">
-  <div class="logo">
-    <div class="logo-text">Value Latam <span>Radar</span></div>
-    <div class="logo-sub">Dashboard Financiero</div>
+  <!-- Brand -->
+  <div class="sidebar-brand">
+    <div class="brand-mark">VR</div>
+    <div class="brand-text">
+      <span class="name">Value Radar</span>
+      <span class="meta">Latam · PyME</span>
+    </div>
   </div>
+  <!-- Nav -->
   <nav class="nav">
-    <div class="nav-section">Vistas</div>
-    <div class="nav-item active" onclick="showTab('dashboard',this)"><span>◈</span> Dashboard</div>
-    <div class="nav-item" onclick="showTab('entidades',this)"><span>⬡</span> Entidades</div>
-    <div class="nav-item" onclick="showTab('operaciones',this)"><span>◎</span> Operaciones</div>
-    <div class="nav-item" onclick="showTab('cuotas',this)"><span>◷</span> Cuotas</div>
-    <div class="nav-section">Análisis</div>
-    <div class="nav-item" onclick="showTab('tasas',this)"><span>↕</span> Comparador TNA</div>
-    <div class="nav-item" onclick="showTab('analisis',this)"><span>⬡</span> Análisis</div>
-    <div class="nav-item" onclick="showTab('calendario',this)"><span>▦</span> Calendario</div>
-    <div class="nav-item" onclick="showTab('reporte',this)"><span>⬇</span> Reporte Financiero</div>
+    <div class="nav-section-title">General</div>
+    <div class="nav-item active" onclick="showTab('dashboard',this)">
+      <svg class="nav-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+      Dashboard
+    </div>
+    <div class="nav-item" onclick="showTab('analisis',this)">
+      <svg class="nav-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11l4-4 3 3 5-6"/></svg>
+      Análisis
+    </div>
+    <div class="nav-item" onclick="showTab('calendario',this)">
+      <svg class="nav-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="11" rx="1"/><path d="M5 2v2M11 2v2M2 7h12"/></svg>
+      Flujo de fondos
+    </div>
+
+    <div class="nav-section-title" style="margin-top:var(--sp-5);">Cartera</div>
+    <div class="nav-item" onclick="showTab('entidades',this)">
+      <svg class="nav-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13V7l6-4 6 4v6"/><rect x="5" y="9" width="3" height="4"/><rect x="8" y="9" width="3" height="4"/></svg>
+      Entidades
+      <span class="nav-count" id="nav-cnt-ent">0</span>
+    </div>
+    <div class="nav-item" onclick="showTab('operaciones',this)">
+      <svg class="nav-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M2 8h10M2 12h8"/></svg>
+      Operaciones
+      <span class="nav-count" id="nav-cnt-op">0</span>
+    </div>
+    <div class="nav-item" onclick="showTab('cuotas',this)">
+      <svg class="nav-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg>
+      Cuotas
+    </div>
+    <div class="nav-item" onclick="showTab('tasas',this)">
+      <svg class="nav-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 11l6-6M4 7h3V4M9 12h3V9"/></svg>
+      Vencimientos
+    </div>
+
+    <div class="nav-section-title" style="margin-top:var(--sp-5);">Sistema</div>
+    <div class="nav-item" onclick="showTab('reporte',this)">
+      <svg class="nav-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 2h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M6 6h4M6 9h4M6 12h2"/></svg>
+      Reporte Financiero
+    </div>
   </nav>
-  <div class="sidebar-bottom">
-    <div class="company-pill">
-      <div class="company-avatar" id="sb-avatar">?</div>
-      <div>
-        <div class="company-name" id="sb-nombre">Cargando...</div>
-        <div class="company-type" id="sb-cuit"></div>
+  <!-- Footer -->
+  <div class="sidebar-footer">
+    <div class="user-chip">
+      <div class="avatar" id="sb-avatar">?</div>
+      <div class="user-info">
+        <span class="user-name" id="sb-nombre">Cargando...</span>
+        <span class="user-role" id="sb-cuit"></span>
       </div>
     </div>
-    <button class="btn btn-ghost btn-sm" onclick="doLogout()" style="width:100%;margin-top:8px;justify-content:center;">Cerrar sesión</button>
+    <button class="btn btn-ghost btn-sm" onclick="doLogout()" style="width:100%;margin-top:4px;justify-content:center;">Cerrar sesión</button>
   </div>
 </aside>
 
 <main class="main">
   <div class="topbar">
-    <div class="page-title" id="page-title">Dashboard Consolidado</div>
+    <div class="crumbs">
+      <span>Radar</span>
+      <span class="sep">/</span>
+      <span>Cartera</span>
+      <span class="sep">/</span>
+      <span class="current" id="page-title">Dashboard</span>
+    </div>
+    <div class="topbar-spacer"></div>
     <div class="topbar-actions">
-      <button class="btn btn-ghost btn-sm" onclick="exportData()">↓ Exportar</button>
+      <button class="btn btn-secondary btn-sm" onclick="exportData()">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v8M5 7l3 3 3-3M3 13h10"/></svg>
+        Exportar
+      </button>
       <button class="btn btn-primary btn-sm" onclick="openModal('op')">+ Nueva Operación</button>
     </div>
   </div>
@@ -666,10 +720,50 @@ table tbody tr:last-child td { border-bottom: 0; }
     <!-- DASHBOARD -->
     <div class="panel active" id="panel-dashboard">
       <div class="kpi-grid">
-        <div class="kpi-card blue"><div class="kpi-label">Deuda Total</div><div class="kpi-value big" id="kpi-deuda">$0</div><div class="kpi-sub">Capital pendiente total</div><div class="kpi-badge badge-blue" id="kpi-ops">0 operaciones activas</div></div>
-        <div class="kpi-card green"><div class="kpi-label">Disponible Total</div><div class="kpi-value big" id="kpi-disp">$0</div><div class="kpi-sub">Cupo libre en líneas</div><div class="kpi-badge badge-green" id="kpi-lineas">0 entidades</div></div>
-        <div class="kpi-card yellow"><div class="kpi-label">TNA Promedio Pond.</div><div class="kpi-value big" id="kpi-tna">0.0%</div><div class="kpi-sub">Ponderada por saldo</div><div class="kpi-badge badge-yellow" id="kpi-tna-badge">vs mercado —</div></div>
-        <div class="kpi-card red"><div class="kpi-label">Próximo Vencimiento</div><div class="kpi-value" id="kpi-prox-fecha" style="font-size:1.1rem;">—</div><div class="kpi-sub" id="kpi-prox-desc">Sin vencimientos</div><div class="kpi-badge badge-red" id="kpi-prox-monto"></div></div>
+        <div class="kpi-card blue">
+          <div class="kpi-head">
+            <div class="kpi-label">Deuda Total</div>
+            <div class="kpi-ico">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M6 8h4M8 6v4"/></svg>
+            </div>
+          </div>
+          <div class="kpi-value big" id="kpi-deuda">$0</div>
+          <div class="kpi-meta"><span class="kpi-sub">Capital pendiente total</span></div>
+          <div class="kpi-sub" id="kpi-ops" style="margin-top:4px;color:var(--accent-500);font-size:var(--fs-xs);">0 operaciones activas</div>
+        </div>
+        <div class="kpi-card green">
+          <div class="kpi-head">
+            <div class="kpi-label">Utilización</div>
+            <div class="kpi-ico kpi--accent">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5.5"/><path d="M8 4v4l3 1.5"/></svg>
+            </div>
+          </div>
+          <div class="kpi-value big" id="kpi-disp">$0</div>
+          <div class="kpi-sub">Cupo libre en líneas</div>
+          <div class="kpi-sub" id="kpi-lineas" style="margin-top:4px;color:var(--success-fg);font-size:var(--fs-xs);">0 entidades</div>
+        </div>
+        <div class="kpi-card yellow">
+          <div class="kpi-head">
+            <div class="kpi-label">Costo Financiero Prom.</div>
+            <div class="kpi-ico">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11l4-4 3 3 5-6"/></svg>
+            </div>
+          </div>
+          <div class="kpi-value big" id="kpi-tna">0.0%</div>
+          <div class="kpi-sub">TNA ponderada por saldo</div>
+          <div class="kpi-sub" id="kpi-tna-badge" style="margin-top:4px;color:var(--warning-fg);font-size:var(--fs-xs);">vs mercado —</div>
+        </div>
+        <div class="kpi-card red">
+          <div class="kpi-head">
+            <div class="kpi-label">Próx. 30 Días</div>
+            <div class="kpi-ico">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="11" rx="1"/><path d="M5 2v2M11 2v2M2 7h12"/></svg>
+            </div>
+          </div>
+          <div class="kpi-value" id="kpi-prox-fecha" style="font-size:1.1rem;">—</div>
+          <div class="kpi-sub" id="kpi-prox-desc">Sin vencimientos</div>
+          <div class="kpi-sub" id="kpi-prox-monto" style="margin-top:4px;color:var(--danger-fg);font-size:var(--fs-xs);"></div>
+        </div>
       </div>
       <div class="grid-3">
         <div class="table-card"><div class="table-header"><div><div class="table-title">Utilización por Entidad</div><div class="table-sub">Línea usada / total</div></div></div><div class="util-card" id="util-chart"><div class="empty"><div class="empty-icon">⬡</div><div class="empty-text">Cargá entidades primero</div></div></div></div>
