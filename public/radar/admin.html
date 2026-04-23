@@ -655,6 +655,10 @@ table tbody tr:last-child td { border-bottom: 0; }
       <svg class="nav-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11l4-4 3 3 5-6"/></svg>
       Tasas Globales
     </div>
+    <div class="nav-item" onclick="showTab('flujo',this)">
+      <svg class="nav-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8h12M8 4l4 4-4 4"/><path d="M2 4v8"/></svg>
+      Flujo de Fondos
+    </div>
   </nav>
   <!-- Footer -->
   <div class="sidebar-footer">
@@ -912,11 +916,133 @@ table tbody tr:last-child td { border-bottom: 0; }
       </div>
     </div>
 
+    <!-- FLUJO DE FONDOS ADMIN -->
+    <div class="panel" id="panel-flujo">
+
+      <!-- Selector de cliente -->
+      <div class="table-card" style="margin-bottom:var(--sp-5);">
+        <div class="table-header">
+          <div><div class="table-title">Cliente</div><div class="table-sub">Seleccioná el cliente para ver o cargar su flujo</div></div>
+        </div>
+        <div style="padding:var(--sp-4) var(--sp-5);">
+          <select id="ff-adm-cliente" onchange="onFFAdmClienteChange()" style="max-width:320px;">
+            <option value="">— Seleccioná un cliente —</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="ff-adm-content" style="display:none;">
+        <!-- KPIs -->
+        <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:var(--sp-5);">
+          <div class="kpi-card green">
+            <div class="kpi-head"><div class="kpi-label">Entradas 12m</div><div class="kpi-ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v8M5 7l3 3 3-3M3 13h10"/></svg></div></div>
+            <div class="kpi-value" id="ffa-entradas">$0</div><div class="kpi-sub">Cobranzas proyectadas</div>
+          </div>
+          <div class="kpi-card red">
+            <div class="kpi-head"><div class="kpi-label">Salidas 12m</div><div class="kpi-ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 14V6M5 9l3-3 3 3M3 3h10"/></svg></div></div>
+            <div class="kpi-value" id="ffa-salidas">$0</div><div class="kpi-sub">Pagos proyectados</div>
+          </div>
+          <div class="kpi-card blue">
+            <div class="kpi-head"><div class="kpi-label">Posición Neta</div><div class="kpi-ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8h12M8 3l5 5-5 5"/></svg></div></div>
+            <div class="kpi-value" id="ffa-neto">$0</div><div class="kpi-sub">Entradas − Salidas</div>
+          </div>
+          <div class="kpi-card yellow">
+            <div class="kpi-head"><div class="kpi-label">Meses en rojo</div><div class="kpi-ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 5v4M8 11v1"/><circle cx="8" cy="8" r="6"/></svg></div></div>
+            <div class="kpi-value" id="ffa-meses-rojos">0</div><div class="kpi-sub">Posición negativa</div>
+          </div>
+        </div>
+
+        <!-- Gráfico -->
+        <div class="table-card" style="margin-bottom:var(--sp-5);">
+          <div class="table-header">
+            <div><div class="table-title">Flujo de Fondos Proyectado — 12 meses</div><div class="table-sub">Entradas vs Salidas · Posición neta</div></div>
+          </div>
+          <div style="padding:var(--sp-4) var(--sp-5) var(--sp-5);"><canvas id="ffa-chart" height="90"></canvas></div>
+        </div>
+
+        <!-- Tabla movimientos -->
+        <div class="table-card">
+          <div class="table-header">
+            <div><div class="table-title">Movimientos</div><div class="table-sub">Cobranzas y pagos futuros del cliente</div></div>
+            <button class="btn btn-primary btn-sm" onclick="openModalFFAdm()">+ Nuevo movimiento</button>
+          </div>
+          <div style="padding:var(--sp-3) var(--sp-5) 0;border-bottom:1px solid var(--border-subtle);">
+            <div class="inner-tabs" style="margin-bottom:0;">
+              <button class="inner-tab active" onclick="switchFFAdmTab('todos',this)">Todos</button>
+              <button class="inner-tab" onclick="switchFFAdmTab('cheque_recibido',this)">📥 Cheques recibidos</button>
+              <button class="inner-tab" onclick="switchFFAdmTab('factura_cobrar',this)">📄 Facturas a cobrar</button>
+              <button class="inner-tab" onclick="switchFFAdmTab('cheque_emitido',this)">📤 Cheques emitidos</button>
+              <button class="inner-tab" onclick="switchFFAdmTab('pago_proveedor',this)">🏭 Pagos proveedores</button>
+            </div>
+          </div>
+          <table>
+            <thead><tr>
+              <th>Tipo</th><th>Descripción</th><th>Contraparte</th>
+              <th class="num">Importe</th><th>Fecha</th><th>Estado</th><th></th>
+            </tr></thead>
+            <tbody id="ffa-tabla-body">
+              <tr><td colspan="7"><div class="empty"><div class="empty-icon">💸</div><div class="empty-text">Sin movimientos</div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </div>
 </main>
 </div>
 
-<!-- MODALES -->
+<!-- MODAL FLUJO FONDOS ADMIN -->
+<div class="modal-overlay" id="modal-ffa" onclick="if(event.target===this)closeModalFFAdm()">
+  <div class="modal modal-wide">
+    <div class="modal-title">Nuevo Movimiento
+      <button class="modal-close" onclick="closeModalFFAdm()">✕</button>
+    </div>
+    <div class="form-grid" style="margin-bottom:var(--sp-4);">
+      <div class="form-group">
+        <label>Tipo de movimiento</label>
+        <select id="ffa-tipo" onchange="updateFFAdmTipoUI()">
+          <option value="cheque_recibido">📥 Cheque recibido (cobro futuro)</option>
+          <option value="factura_cobrar">📄 Factura a cobrar</option>
+          <option value="cheque_emitido">📤 Cheque emitido (pago a proveedor)</option>
+          <option value="pago_proveedor">🏭 Pago a proveedor (sin cheque)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Contraparte <span id="ffa-label-contraparte">(librador)</span></label>
+        <input type="text" id="ffa-contraparte" placeholder="Nombre empresa o persona">
+      </div>
+      <div class="form-group">
+        <label>Importe (ARS)</label>
+        <input type="number" id="ffa-importe" placeholder="0.00" min="0" step="0.01">
+      </div>
+      <div class="form-group">
+        <label id="ffa-label-fecha">Fecha de acreditación</label>
+        <input type="date" id="ffa-fecha">
+      </div>
+      <div class="form-group" style="grid-column:1/-1;">
+        <label>Descripción / Referencia</label>
+        <input type="text" id="ffa-descripcion" placeholder="Ej: Cheque N° 12345, Factura A-001, etc.">
+      </div>
+      <div class="form-group">
+        <label>Banco / Entidad</label>
+        <input type="text" id="ffa-banco" placeholder="Ej: Banco Galicia">
+      </div>
+      <div class="form-group">
+        <label>Estado inicial</label>
+        <select id="ffa-estado">
+          <option value="pendiente">⏳ Pendiente</option>
+          <option value="cobrado">✅ Cobrado / Pagado</option>
+          <option value="rechazado">❌ Rechazado / Cancelado</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-ghost btn-sm" onclick="closeModalFFAdm()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="guardarMovimientoFFAdm()">Guardar movimiento</button>
+    </div>
+  </div>
+</div>
 <div class="modal-overlay" id="modal-nuevo-cliente">
   <div class="modal">
     <button class="modal-close" onclick="closeModal('nuevo-cliente')">✕</button>
@@ -1169,7 +1295,7 @@ auth.onAuthStateChanged(async user=>{
 
 function doLogout(){auth.signOut().then(()=>window.location.href='index.html');}
 
-const titles={overview:'Overview General',clientes:'Gestión de Clientes',relevamiento:'Relevamiento por Cliente',tna:'Tasas de Referencia Global'};
+const titles={overview:'Overview General',clientes:'Gestión de Clientes',relevamiento:'Relevamiento por Cliente',tna:'Tasas de Referencia Global',flujo:'Flujo de Fondos'};
 function showTab(name,el){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -1177,6 +1303,7 @@ function showTab(name,el){
   if(el)el.classList.add('active');
   document.getElementById('page-title').textContent=titles[name]||name;
   if(name==='tna'){loadHistorialTNA();loadBreakeven();}
+  if(name==='flujo'){initFFAdmSelector();}
 }
 
 function openModal(t){document.getElementById('modal-'+t).classList.add('open');}
@@ -3344,6 +3471,260 @@ async function crearCliente(){
     const msgs={'auth/email-already-in-use':'Ese email ya tiene cuenta','auth/weak-password':'Contraseña muy débil','auth/invalid-email':'Email inválido'};
     errEl.textContent=msgs[e.code]||'Error: '+e.message;errEl.style.display='block';
   }
+}
+
+// ═══════════════════════════════════════════════════════
+//  FLUJO DE FONDOS — ADMIN
+// ═══════════════════════════════════════════════════════
+let ffAdmMovimientos = [];
+let _ffAdmChart = null;
+let _ffAdmTabActual = 'todos';
+let _ffAdmUid = null; // uid del cliente seleccionado
+let _ffAdmCuotas = []; // cuotas del cliente seleccionado
+
+const FF_TIPOS_ADM = {
+  cheque_recibido: { label: '📥 Cheque recibido', dir: 'entrada' },
+  factura_cobrar:  { label: '📄 Factura a cobrar', dir: 'entrada' },
+  cheque_emitido:  { label: '📤 Cheque emitido',   dir: 'salida'  },
+  pago_proveedor:  { label: '🏭 Pago proveedor',   dir: 'salida'  },
+};
+
+// Poblar selector de clientes cuando se abre el panel
+function initFFAdmSelector() {
+  const sel = document.getElementById('ff-adm-cliente');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">— Seleccioná un cliente —</option>';
+  clientes.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.uid; opt.textContent = c.nombre + ' · ' + c.cuit;
+    sel.appendChild(opt);
+  });
+}
+
+async function onFFAdmClienteChange() {
+  const uid = document.getElementById('ff-adm-cliente').value;
+  if (!uid) { document.getElementById('ff-adm-content').style.display = 'none'; return; }
+  _ffAdmUid = uid;
+  document.getElementById('ff-adm-content').style.display = 'block';
+  // Cargar movimientos y cuotas del cliente
+  await loadFFAdm(uid);
+}
+
+async function loadFFAdm(uid) {
+  try {
+    const [snapFF, snapOps, snapCuotas] = await Promise.all([
+      db.collection('empresas').doc(uid).collection('flujo_fondos').orderBy('fecha').get(),
+      db.collection('empresas').doc(uid).collection('operaciones').get(),
+      db.collection('empresas').doc(uid).collection('cuotas').get(),
+    ]);
+    ffAdmMovimientos = snapFF.docs.map(d => ({ id: d.id, ...d.data() }));
+    _ffAdmCuotas = snapCuotas.docs.map(d => ({ id: d.id, ...d.data() })).filter(c => c.estado !== 'pagada');
+  } catch(e) {
+    ffAdmMovimientos = []; _ffAdmCuotas = [];
+  }
+  renderFFAdm();
+}
+
+function switchFFAdmTab(tipo, btn) {
+  _ffAdmTabActual = tipo;
+  document.querySelectorAll('#panel-flujo .inner-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTablaFFAdm();
+}
+
+function renderFFAdm() {
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const fin = new Date(hoy); fin.setMonth(fin.getMonth() + 12);
+
+  const meses = [];
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(hoy.getFullYear(), hoy.getMonth() + i, 1);
+    meses.push({ label: d.toLocaleString('es-AR', { month: 'short', year: '2-digit' }), entradas: 0, salidas: 0 });
+  }
+
+  let totalEntradas = 0, totalSalidas = 0, mesesRojos = 0;
+
+  ffAdmMovimientos.filter(m => m.estado === 'pendiente').forEach(m => {
+    const f = new Date(m.fecha); if (isNaN(f) || f < hoy || f > fin) return;
+    const idx = (f.getFullYear() - hoy.getFullYear()) * 12 + f.getMonth() - hoy.getMonth();
+    if (idx < 0 || idx > 11) return;
+    const tipo = FF_TIPOS_ADM[m.tipo]; if (!tipo) return;
+    if (tipo.dir === 'entrada') { meses[idx].entradas += m.importe||0; totalEntradas += m.importe||0; }
+    else                        { meses[idx].salidas  += m.importe||0; totalSalidas  += m.importe||0; }
+  });
+
+  _ffAdmCuotas.forEach(c => {
+    const f = new Date(c.fecha); if (isNaN(f) || f < hoy || f > fin) return;
+    const idx = (f.getFullYear() - hoy.getFullYear()) * 12 + f.getMonth() - hoy.getMonth();
+    if (idx < 0 || idx > 11) return;
+    const imp = (c.capital||0) + (c.interes||0);
+    meses[idx].salidas += imp; totalSalidas += imp;
+  });
+
+  meses.forEach(m => { if ((m.entradas - m.salidas) < 0) mesesRojos++; });
+
+  document.getElementById('ffa-entradas').textContent = fmt(totalEntradas);
+  document.getElementById('ffa-salidas').textContent  = fmt(totalSalidas);
+  const neto = totalEntradas - totalSalidas;
+  const elNeto = document.getElementById('ffa-neto');
+  elNeto.textContent = fmt(neto);
+  elNeto.style.color = neto >= 0 ? 'var(--success-fg)' : 'var(--danger-fg)';
+  document.getElementById('ffa-meses-rojos').textContent = mesesRojos;
+  document.getElementById('ffa-meses-rojos').style.color = mesesRojos > 0 ? 'var(--danger-fg)' : 'var(--success-fg)';
+
+  const ctx = document.getElementById('ffa-chart');
+  if (!ctx) return;
+  if (_ffAdmChart) { _ffAdmChart.destroy(); _ffAdmChart = null; }
+  const netos = meses.map(m => m.entradas - m.salidas);
+  _ffAdmChart = new Chart(ctx, {
+    data: {
+      labels: meses.map(m => m.label),
+      datasets: [
+        { type:'bar', label:'Entradas', data: meses.map(m=>m.entradas), backgroundColor:'rgba(74,222,128,0.55)', borderColor:'rgba(74,222,128,0.8)', borderWidth:1, borderRadius:4 },
+        { type:'bar', label:'Salidas',  data: meses.map(m=>m.salidas),  backgroundColor:'rgba(248,113,113,0.55)', borderColor:'rgba(248,113,113,0.8)', borderWidth:1, borderRadius:4 },
+        { type:'line', label:'Posición neta', data: netos, borderColor:'#71B8E3', backgroundColor:'rgba(113,184,227,0.10)', borderWidth:2, pointRadius:3, tension:0.3, fill:true }
+      ]
+    },
+    options: {
+      responsive:true,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{labels:{color:'#8B93B0',font:{size:11}}},
+        tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${fmt(ctx.parsed.y)}`}}
+      },
+      scales:{
+        x:{ticks:{color:'#8B93B0',font:{size:11}},grid:{color:'rgba(148,163,214,0.06)'}},
+        y:{ticks:{color:'#8B93B0',font:{size:11},callback:v=>fmtKAdm(v)},grid:{color:'rgba(148,163,214,0.06)'}}
+      }
+    }
+  });
+  renderTablaFFAdm();
+}
+
+function fmtKAdm(v) {
+  if(Math.abs(v)>=1e9) return '$'+(v/1e9).toFixed(1)+'B';
+  if(Math.abs(v)>=1e6) return '$'+(v/1e6).toFixed(1)+'M';
+  if(Math.abs(v)>=1e3) return '$'+(v/1e3).toFixed(0)+'K';
+  return '$'+v;
+}
+
+function renderTablaFFAdm() {
+  const tbody = document.getElementById('ffa-tabla-body');
+  if (!tbody) return;
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const fin = new Date(hoy); fin.setMonth(fin.getMonth() + 12);
+
+  let rows = [...ffAdmMovimientos];
+
+  _ffAdmCuotas.forEach(c => {
+    const f = new Date(c.fecha); if (isNaN(f) || f < hoy || f > fin) return;
+    rows.push({ id:'__cuota__'+c.id, tipo:'cuota_deuda', descripcion:'Cuota deuda financiera', contraparte: c.opId||'—', importe:(c.capital||0)+(c.interes||0), fecha:c.fecha, estado:c.estado||'pendiente', _readonly:true });
+  });
+
+  if (_ffAdmTabActual !== 'todos') rows = rows.filter(m => m.tipo === _ffAdmTabActual);
+  rows.sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
+
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><div class="empty-icon">💸</div><div class="empty-text">Sin movimientos</div></div></td></tr>`;
+    return;
+  }
+
+  const ESTADO_BADGE = {
+    pendiente:`<span class="badge badge--warning">⏳ Pendiente</span>`,
+    cobrado:`<span class="badge badge--success">✅ Cobrado</span>`,
+    rechazado:`<span class="badge badge--danger">❌ Rechazado</span>`,
+    pagada:`<span class="badge badge--success">✅ Pagada</span>`,
+  };
+
+  tbody.innerHTML = rows.map(m => {
+    const tipo = FF_TIPOS_ADM[m.tipo] || { label:'🏦 Cuota deuda', dir:'salida' };
+    const signo = tipo.dir === 'entrada' ? '+' : '−';
+    const color = tipo.dir === 'entrada' ? 'var(--success-fg)' : 'var(--danger-fg)';
+    const acciones = m._readonly ? '<td></td>' : `<td style="text-align:right;">
+      <button class="btn btn-ghost btn-sm" onclick="toggleFFAdm('${m.id}')" title="Marcar cobrado/pagado">✓</button>
+      <button class="btn btn-ghost btn-sm" style="color:var(--danger-fg);" onclick="eliminarFFAdm('${m.id}')" title="Eliminar">✕</button>
+    </td>`;
+    return `<tr>
+      <td><span style="font-size:var(--fs-sm);">${tipo.label}</span></td>
+      <td class="td-bold">${m.descripcion||'—'}</td>
+      <td style="color:var(--text-tertiary);font-size:var(--fs-sm);">${m.contraparte||'—'}</td>
+      <td class="num td-mono" style="color:${color};font-weight:600;">${signo} ${fmt(m.importe||0)}</td>
+      <td style="font-family:var(--font-mono);font-size:var(--fs-sm);">${fmtFechaAdm(m.fecha)}</td>
+      <td>${ESTADO_BADGE[m.estado]||''}</td>
+      ${acciones}
+    </tr>`;
+  }).join('');
+}
+
+function fmtFechaAdm(f) {
+  if (!f) return '—';
+  const d = new Date(f+'T00:00:00');
+  return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'});
+}
+
+function openModalFFAdm() {
+  if (!_ffAdmUid) { toast('Seleccioná un cliente primero','red'); return; }
+  document.getElementById('ffa-fecha').value = new Date().toISOString().split('T')[0];
+  document.getElementById('ffa-tipo').value = 'cheque_recibido';
+  document.getElementById('ffa-contraparte').value = '';
+  document.getElementById('ffa-importe').value = '';
+  document.getElementById('ffa-descripcion').value = '';
+  document.getElementById('ffa-banco').value = '';
+  document.getElementById('ffa-estado').value = 'pendiente';
+  updateFFAdmTipoUI();
+  document.getElementById('modal-ffa').classList.add('active');
+}
+
+function closeModalFFAdm() { document.getElementById('modal-ffa').classList.remove('active'); }
+
+function updateFFAdmTipoUI() {
+  const tipo = document.getElementById('ffa-tipo').value;
+  const mapa = {
+    cheque_recibido:{contraparte:'(librador / quien lo emite)',fecha:'Fecha de acreditación'},
+    factura_cobrar: {contraparte:'(cliente deudor)',            fecha:'Fecha de vencimiento'},
+    cheque_emitido: {contraparte:'(beneficiario / proveedor)',  fecha:'Fecha de pago'},
+    pago_proveedor: {contraparte:'(proveedor / acreedor)',      fecha:'Fecha de pago estimada'},
+  };
+  const m = mapa[tipo]||{};
+  const lc = document.getElementById('ffa-label-contraparte'); if(lc) lc.textContent = m.contraparte||'';
+  const lf = document.getElementById('ffa-label-fecha');       if(lf) lf.textContent = m.fecha||'Fecha';
+}
+
+async function guardarMovimientoFFAdm() {
+  const tipo        = document.getElementById('ffa-tipo').value;
+  const contraparte = document.getElementById('ffa-contraparte').value.trim();
+  const importe     = parseFloat(document.getElementById('ffa-importe').value);
+  const fecha       = document.getElementById('ffa-fecha').value;
+  const descripcion = document.getElementById('ffa-descripcion').value.trim();
+  const banco       = document.getElementById('ffa-banco').value.trim();
+  const estado      = document.getElementById('ffa-estado').value;
+  if (!fecha || !importe || importe <= 0) { toast('Completá fecha e importe','red'); return; }
+  try {
+    const ref = db.collection('empresas').doc(_ffAdmUid).collection('flujo_fondos');
+    const doc = await ref.add({ tipo, contraparte, importe, fecha, descripcion, banco, estado, creado: new Date().toISOString() });
+    ffAdmMovimientos.push({ id:doc.id, tipo, contraparte, importe, fecha, descripcion, banco, estado });
+    closeModalFFAdm();
+    renderFFAdm();
+    toast('✓ Movimiento guardado','green');
+  } catch(e) { toast('Error: '+e.message,'red'); }
+}
+
+async function toggleFFAdm(id) {
+  const m = ffAdmMovimientos.find(x => x.id === id); if (!m) return;
+  const nuevoEstado = m.estado === 'pendiente' ? 'cobrado' : 'pendiente';
+  try {
+    await db.collection('empresas').doc(_ffAdmUid).collection('flujo_fondos').doc(id).update({ estado: nuevoEstado });
+    m.estado = nuevoEstado; renderFFAdm(); toast(`✓ Marcado como ${nuevoEstado}`,'green');
+  } catch(e) { toast('Error: '+e.message,'red'); }
+}
+
+async function eliminarFFAdm(id) {
+  if (!confirm('¿Eliminar este movimiento?')) return;
+  try {
+    await db.collection('empresas').doc(_ffAdmUid).collection('flujo_fondos').doc(id).delete();
+    ffAdmMovimientos = ffAdmMovimientos.filter(m => m.id !== id);
+    renderFFAdm(); toast('Movimiento eliminado','green');
+  } catch(e) { toast('Error: '+e.message,'red'); }
 }
 </script>
 
