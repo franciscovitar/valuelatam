@@ -823,22 +823,116 @@ table tbody tr:last-child td { border-bottom: 0; }
     </div>
 
     <!-- CALENDARIO -->
+    <!-- FLUJO DE FONDOS -->
     <div class="panel" id="panel-calendario">
-      <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);">
-        <div class="kpi-card red"><div class="kpi-label">Próximos 7 días</div><div class="kpi-value" id="cal-7d">$0</div><div class="kpi-sub" id="cal-7d-n">0 cuotas</div></div>
-        <div class="kpi-card yellow"><div class="kpi-label">Próximos 30 días</div><div class="kpi-value" id="cal-30d">$0</div><div class="kpi-sub" id="cal-30d-n">0 cuotas</div></div>
-        <div class="kpi-card blue"><div class="kpi-label">Próximos 90 días</div><div class="kpi-value" id="cal-90d">$0</div><div class="kpi-sub" id="cal-90d-n">0 cuotas</div></div>
+
+      <!-- KPIs resumen -->
+      <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:var(--sp-5);">
+        <div class="kpi-card green">
+          <div class="kpi-head"><div class="kpi-label">Entradas 12m</div><div class="kpi-ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v8M5 7l3 3 3-3M3 13h10"/></svg></div></div>
+          <div class="kpi-value" id="ff-entradas">$0</div><div class="kpi-sub">Cobranzas proyectadas</div>
+        </div>
+        <div class="kpi-card red">
+          <div class="kpi-head"><div class="kpi-label">Salidas 12m</div><div class="kpi-ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 14V6M5 9l3-3 3 3M3 3h10"/></svg></div></div>
+          <div class="kpi-value" id="ff-salidas">$0</div><div class="kpi-sub">Pagos proyectados</div>
+        </div>
+        <div class="kpi-card blue">
+          <div class="kpi-head"><div class="kpi-label">Posición Neta</div><div class="kpi-ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8h12M8 3l5 5-5 5"/></svg></div></div>
+          <div class="kpi-value" id="ff-neto">$0</div><div class="kpi-sub">Entradas − Salidas</div>
+        </div>
+        <div class="kpi-card yellow">
+          <div class="kpi-head"><div class="kpi-label">Meses en rojo</div><div class="kpi-ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 5v4M8 11v1"/><circle cx="8" cy="8" r="6"/></svg></div></div>
+          <div class="kpi-value" id="ff-meses-rojos">0</div><div class="kpi-sub">Posición negativa</div>
+        </div>
       </div>
+
+      <!-- Gráfico proyección 12m -->
+      <div class="table-card" style="margin-bottom:var(--sp-5);">
+        <div class="table-header">
+          <div><div class="table-title">Flujo de Fondos Proyectado — 12 meses</div><div class="table-sub">Entradas vs Salidas · Posición neta acumulada</div></div>
+        </div>
+        <div style="padding:var(--sp-4) var(--sp-5) var(--sp-5);"><canvas id="ff-chart" height="90"></canvas></div>
+      </div>
+
+      <!-- Tabs carga de movimientos -->
       <div class="table-card">
         <div class="table-header">
-          <div><div class="table-title">Calendario de Vencimientos</div><div class="table-sub">Ordenado por fecha</div></div>
-          <select id="cal-filtro" onchange="renderCalendario()" style="font-size:.75rem;padding:5px 8px;">
-            <option value="90">Próximos 90 días</option><option value="180">Próximos 180 días</option>
-            <option value="365">Próximo año</option><option value="0">Todas</option>
-          </select>
+          <div><div class="table-title">Movimientos</div><div class="table-sub">Cobranzas y pagos futuros</div></div>
+          <button class="btn btn-primary btn-sm" onclick="openModalFF()">+ Nuevo movimiento</button>
         </div>
-        <table><thead><tr><th>Vencimiento</th><th>Días</th><th>Operación</th><th>Entidad</th><th>Capital</th><th>Interés</th><th>Total</th><th>Estado</th></tr></thead>
-        <tbody id="tabla-calendario"><tr><td colspan="8"><div class="empty"><div class="empty-icon">▦</div><div class="empty-text">Sin cuotas</div></div></td></tr></tbody></table>
+        <!-- Sub-tabs -->
+        <div style="padding:var(--sp-3) var(--sp-5) 0;border-bottom:1px solid var(--border-subtle);">
+          <div class="inner-tabs" style="margin-bottom:0;">
+            <button class="inner-tab active" onclick="switchFFTab('todos',this)">Todos</button>
+            <button class="inner-tab" onclick="switchFFTab('cheque_recibido',this)">📥 Cheques recibidos</button>
+            <button class="inner-tab" onclick="switchFFTab('factura_cobrar',this)">📄 Facturas a cobrar</button>
+            <button class="inner-tab" onclick="switchFFTab('cheque_emitido',this)">📤 Cheques emitidos</button>
+            <button class="inner-tab" onclick="switchFFTab('pago_proveedor',this)">🏭 Pagos proveedores</button>
+          </div>
+        </div>
+        <div id="ff-tabla-wrap">
+          <table>
+            <thead><tr>
+              <th>Tipo</th><th>Descripción</th><th>Contraparte</th>
+              <th class="num">Importe</th><th>Fecha</th><th>Estado</th><th></th>
+            </tr></thead>
+            <tbody id="ff-tabla-body">
+              <tr><td colspan="7"><div class="empty"><div class="empty-icon">💸</div><div class="empty-text">Sin movimientos cargados</div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL FLUJO DE FONDOS -->
+    <div class="modal-overlay" id="modal-ff" onclick="if(event.target===this)closeModalFF()">
+      <div class="modal modal-wide">
+        <div class="modal-title">Nuevo Movimiento
+          <button class="modal-close" onclick="closeModalFF()">✕</button>
+        </div>
+        <div class="form-grid" style="margin-bottom:var(--sp-4);">
+          <div class="form-group">
+            <label>Tipo de movimiento</label>
+            <select id="ff-tipo" onchange="updateFFTipoUI()">
+              <option value="cheque_recibido">📥 Cheque recibido (cobro futuro)</option>
+              <option value="factura_cobrar">📄 Factura a cobrar</option>
+              <option value="cheque_emitido">📤 Cheque emitido (pago a proveedor)</option>
+              <option value="pago_proveedor">🏭 Pago a proveedor (sin cheque)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Contraparte <span id="ff-label-contraparte">(librador)</span></label>
+            <input type="text" id="ff-contraparte" placeholder="Nombre empresa o persona">
+          </div>
+          <div class="form-group">
+            <label>Importe (ARS)</label>
+            <input type="number" id="ff-importe" placeholder="0.00" min="0" step="0.01">
+          </div>
+          <div class="form-group">
+            <label id="ff-label-fecha">Fecha de acreditación</label>
+            <input type="date" id="ff-fecha">
+          </div>
+          <div class="form-group" style="grid-column:1/-1;">
+            <label>Descripción / Referencia</label>
+            <input type="text" id="ff-descripcion" placeholder="Ej: Cheque N° 12345, Factura A-001, etc.">
+          </div>
+          <div class="form-group">
+            <label>Banco / Entidad</label>
+            <input type="text" id="ff-banco" placeholder="Ej: Banco Galicia">
+          </div>
+          <div class="form-group">
+            <label>Estado inicial</label>
+            <select id="ff-estado">
+              <option value="pendiente">⏳ Pendiente</option>
+              <option value="cobrado">✅ Cobrado / Pagado</option>
+              <option value="rechazado">❌ Rechazado / Cancelado</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-ghost btn-sm" onclick="closeModalFF()">Cancelar</button>
+          <button class="btn btn-primary btn-sm" onclick="guardarMovimientoFF()">Guardar movimiento</button>
+        </div>
       </div>
     </div>
 
@@ -1062,6 +1156,7 @@ auth.onAuthStateChanged(async user => {
   await loadBreakevenApp();
   await loadData();
   await cargarTasasPersonales();
+  await loadMovimientosFF();
   document.getElementById('loading-screen').style.display='none';
   document.getElementById('app').style.display='flex';
   renderAll();
@@ -1187,7 +1282,7 @@ function showTab(name,el){
   if(name==='cuotas')renderCuotas();
   if(name==='tasas'){loadGlobalTNA().then(()=>renderTasas());}
   if(name==='analisis'){loadGlobalTNA().then(()=>renderAnalisisApp());}
-  if(name==='calendario')renderCalendario();
+  if(name==='calendario')renderFlujoDeFondos();
   if(name==='reporte')renderReporte();
 }
 
@@ -2578,7 +2673,308 @@ async function descargarReporteExcel(){
   btn.disabled=false;btn.textContent='⬇ Descargar Excel';
 }
 
-function renderAll(){renderDashboard();renderEntidades();renderOperaciones();renderCuotas();renderTasas();renderCalendario();}
+function renderAll(){renderDashboard();renderEntidades();renderOperaciones();renderCuotas();renderTasas();renderCalendario();renderFlujoDeFondos();}
+
+// ═══════════════════════════════════════════════════════
+//  FLUJO DE FONDOS
+// ═══════════════════════════════════════════════════════
+let movimientosFF = [];
+let _ffChart = null;
+let _ffTabActual = 'todos';
+
+async function loadMovimientosFF() {
+  if (!uid) return;
+  try {
+    const snap = await db.collection('empresas').doc(uid).collection('flujo_fondos').orderBy('fecha').get();
+    movimientosFF = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch(e) {
+    movimientosFF = [];
+  }
+}
+
+function switchFFTab(tipo, btn) {
+  _ffTabActual = tipo;
+  document.querySelectorAll('#panel-calendario .inner-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTablaFF();
+}
+
+const FF_TIPOS = {
+  cheque_recibido: { label: '📥 Cheque recibido', dir: 'entrada', color: 'var(--success-fg)' },
+  factura_cobrar:  { label: '📄 Factura a cobrar', dir: 'entrada', color: 'var(--success-fg)' },
+  cheque_emitido:  { label: '📤 Cheque emitido',   dir: 'salida',  color: 'var(--danger-fg)' },
+  pago_proveedor:  { label: '🏭 Pago proveedor',   dir: 'salida',  color: 'var(--danger-fg)' },
+};
+
+function renderFlujoDeFondos() {
+  // KPIs
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const fin = new Date(hoy); fin.setMonth(fin.getMonth() + 12);
+
+  // Movimientos manuales filtrados por pendientes
+  const movPendientes = movimientosFF.filter(m => m.estado === 'pendiente');
+
+  // Cuotas de deuda como salidas (ya en memoria)
+  const cuotasSalidas = cuotas.filter(c => {
+    if (c.estado === 'pagada') return false;
+    const f = new Date(c.fecha); return f >= hoy && f <= fin;
+  }).map(c => ({ tipo: 'cuota_deuda', fecha: c.fecha, importe: (c.capital||0)+(c.interes||0), descripcion: c.opId||'Cuota', dir: 'salida' }));
+
+  let totalEntradas = 0, totalSalidas = 0, mesesRojos = 0;
+
+  // Armar 12 meses
+  const meses = [];
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(hoy.getFullYear(), hoy.getMonth() + i, 1);
+    meses.push({ label: d.toLocaleString('es-AR', { month: 'short', year: '2-digit' }), entradas: 0, salidas: 0 });
+  }
+
+  // Cargar movimientos manuales
+  movPendientes.forEach(m => {
+    const f = new Date(m.fecha); if (isNaN(f) || f < hoy || f > fin) return;
+    const idx = (f.getFullYear() - hoy.getFullYear()) * 12 + f.getMonth() - hoy.getMonth();
+    if (idx < 0 || idx > 11) return;
+    const tipo = FF_TIPOS[m.tipo];
+    if (!tipo) return;
+    if (tipo.dir === 'entrada') { meses[idx].entradas += m.importe||0; totalEntradas += m.importe||0; }
+    else                        { meses[idx].salidas  += m.importe||0; totalSalidas  += m.importe||0; }
+  });
+
+  // Cargar cuotas deuda
+  cuotasSalidas.forEach(c => {
+    const f = new Date(c.fecha);
+    const idx = (f.getFullYear() - hoy.getFullYear()) * 12 + f.getMonth() - hoy.getMonth();
+    if (idx < 0 || idx > 11) return;
+    meses[idx].salidas += c.importe; totalSalidas += c.importe;
+  });
+
+  meses.forEach(m => { if ((m.entradas - m.salidas) < 0) mesesRojos++; });
+
+  // KPIs
+  document.getElementById('ff-entradas').textContent = fmt(totalEntradas);
+  document.getElementById('ff-salidas').textContent  = fmt(totalSalidas);
+  const neto = totalEntradas - totalSalidas;
+  const elNeto = document.getElementById('ff-neto');
+  elNeto.textContent = fmt(neto);
+  elNeto.style.color = neto >= 0 ? 'var(--success-fg)' : 'var(--danger-fg)';
+  document.getElementById('ff-meses-rojos').textContent = mesesRojos;
+  document.getElementById('ff-meses-rojos').style.color = mesesRojos > 0 ? 'var(--danger-fg)' : 'var(--success-fg)';
+
+  // Gráfico
+  const ctx = document.getElementById('ff-chart');
+  if (!ctx) return;
+  if (_ffChart) { _ffChart.destroy(); _ffChart = null; }
+
+  const netos = meses.map(m => m.entradas - m.salidas);
+
+  _ffChart = new Chart(ctx, {
+    data: {
+      labels: meses.map(m => m.label),
+      datasets: [
+        {
+          type: 'bar', label: 'Entradas',
+          data: meses.map(m => m.entradas),
+          backgroundColor: 'rgba(74,222,128,0.55)',
+          borderColor: 'rgba(74,222,128,0.8)',
+          borderWidth: 1, borderRadius: 4,
+        },
+        {
+          type: 'bar', label: 'Salidas',
+          data: meses.map(m => m.salidas),
+          backgroundColor: 'rgba(248,113,113,0.55)',
+          borderColor: 'rgba(248,113,113,0.8)',
+          borderWidth: 1, borderRadius: 4,
+        },
+        {
+          type: 'line', label: 'Posición neta',
+          data: netos,
+          borderColor: '#71B8E3',
+          backgroundColor: 'rgba(113,184,227,0.10)',
+          borderWidth: 2, pointRadius: 3,
+          tension: 0.3, fill: true, yAxisID: 'y',
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { color: '#8B93B0', font: { size: 11 } } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${fmt(ctx.parsed.y)}`
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { color: '#8B93B0', font: { size: 11 } }, grid: { color: 'rgba(148,163,214,0.06)' } },
+        y: { ticks: { color: '#8B93B0', font: { size: 11 }, callback: v => fmtK(v) }, grid: { color: 'rgba(148,163,214,0.06)' } }
+      }
+    }
+  });
+
+  renderTablaFF();
+}
+
+function renderTablaFF() {
+  const tbody = document.getElementById('ff-tabla-body');
+  if (!tbody) return;
+
+  // Combinar movimientos manuales + cuotas deuda como salidas
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const fin = new Date(hoy); fin.setMonth(fin.getMonth() + 12);
+
+  let rows = [...movimientosFF];
+
+  // Agregar cuotas de deuda como filas de solo lectura
+  cuotas.filter(c => c.estado !== 'pagada').forEach(c => {
+    const f = new Date(c.fecha); if (isNaN(f) || f < hoy || f > fin) return;
+    rows.push({
+      id: '__cuota__' + c.id,
+      tipo: 'cuota_deuda',
+      descripcion: 'Cuota deuda financiera',
+      contraparte: c.opId || '—',
+      importe: (c.capital||0)+(c.interes||0),
+      fecha: c.fecha,
+      estado: c.estado || 'pendiente',
+      _readonly: true
+    });
+  });
+
+  // Filtrar por tab
+  if (_ffTabActual !== 'todos') rows = rows.filter(m => m.tipo === _ffTabActual);
+
+  // Ordenar por fecha
+  rows.sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
+
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><div class="empty-icon">💸</div><div class="empty-text">Sin movimientos</div></div></td></tr>`;
+    return;
+  }
+
+  const ESTADO_BADGE = {
+    pendiente: '<span class="badge badge--warning">⏳ Pendiente</span>',
+    cobrado:   '<span class="badge badge--success">✅ Cobrado</span>',
+    rechazado: '<span class="badge badge--danger">❌ Rechazado</span>',
+    pagada:    '<span class="badge badge--success">✅ Pagada</span>',
+  };
+
+  tbody.innerHTML = rows.map(m => {
+    const tipo = FF_TIPOS[m.tipo] || { label: '🏦 Cuota deuda', dir: 'salida', color: 'var(--danger-fg)' };
+    const signo = tipo.dir === 'entrada' ? '+' : '−';
+    const color = tipo.dir === 'entrada' ? 'var(--success-fg)' : 'var(--danger-fg)';
+    const acciones = m._readonly ? '<td></td>' : `
+      <td style="text-align:right;">
+        <button class="btn btn-ghost btn-sm" onclick="toggleEstadoFF('${m.id}')" title="Marcar cobrado/pagado">✓</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--danger-fg);" onclick="eliminarFF('${m.id}')" title="Eliminar">✕</button>
+      </td>`;
+    return `<tr>
+      <td><span style="font-size:var(--fs-sm);">${tipo.label}</span></td>
+      <td class="td-bold">${m.descripcion||'—'}</td>
+      <td style="color:var(--text-tertiary);font-size:var(--fs-sm);">${m.contraparte||'—'}</td>
+      <td class="num td-mono" style="color:${color};font-weight:600;">${signo} ${fmt(m.importe||0)}</td>
+      <td style="font-family:var(--font-mono);font-size:var(--fs-sm);">${fmtFecha(m.fecha)}</td>
+      <td>${ESTADO_BADGE[m.estado] || ''}</td>
+      ${acciones}
+    </tr>`;
+  }).join('');
+}
+
+function fmtK(v) {
+  if (Math.abs(v) >= 1e9) return '$' + (v/1e9).toFixed(1) + 'B';
+  if (Math.abs(v) >= 1e6) return '$' + (v/1e6).toFixed(1) + 'M';
+  if (Math.abs(v) >= 1e3) return '$' + (v/1e3).toFixed(0) + 'K';
+  return '$' + v;
+}
+
+function fmtFecha(f) {
+  if (!f) return '—';
+  const d = new Date(f + 'T00:00:00');
+  return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+}
+
+function openModalFF() {
+  // Default fecha = hoy
+  document.getElementById('ff-fecha').value = new Date().toISOString().split('T')[0];
+  document.getElementById('ff-tipo').value = 'cheque_recibido';
+  document.getElementById('ff-contraparte').value = '';
+  document.getElementById('ff-importe').value = '';
+  document.getElementById('ff-descripcion').value = '';
+  document.getElementById('ff-banco').value = '';
+  document.getElementById('ff-estado').value = 'pendiente';
+  updateFFTipoUI();
+  document.getElementById('modal-ff').classList.add('active');
+}
+
+function closeModalFF() {
+  document.getElementById('modal-ff').classList.remove('active');
+}
+
+function updateFFTipoUI() {
+  const tipo = document.getElementById('ff-tipo').value;
+  const labelContraparte = document.getElementById('ff-label-contraparte');
+  const labelFecha = document.getElementById('ff-label-fecha');
+  const mapa = {
+    cheque_recibido: { contraparte: '(librador / quien lo emite)', fecha: 'Fecha de acreditación' },
+    factura_cobrar:  { contraparte: '(cliente deudor)',            fecha: 'Fecha de vencimiento' },
+    cheque_emitido:  { contraparte: '(beneficiario / proveedor)',  fecha: 'Fecha de pago' },
+    pago_proveedor:  { contraparte: '(proveedor / acreedor)',      fecha: 'Fecha de pago estimada' },
+  };
+  const m = mapa[tipo] || {};
+  if (labelContraparte) labelContraparte.textContent = m.contraparte || '';
+  if (labelFecha) labelFecha.textContent = m.fecha || 'Fecha';
+}
+
+async function guardarMovimientoFF() {
+  const tipo        = document.getElementById('ff-tipo').value;
+  const contraparte = document.getElementById('ff-contraparte').value.trim();
+  const importe     = parseFloat(document.getElementById('ff-importe').value);
+  const fecha       = document.getElementById('ff-fecha').value;
+  const descripcion = document.getElementById('ff-descripcion').value.trim();
+  const banco       = document.getElementById('ff-banco').value.trim();
+  const estado      = document.getElementById('ff-estado').value;
+
+  if (!fecha || !importe || importe <= 0) {
+    toast('Completá fecha e importe', 'red'); return;
+  }
+
+  try {
+    const ref = db.collection('empresas').doc(uid).collection('flujo_fondos');
+    const doc = await ref.add({ tipo, contraparte, importe, fecha, descripcion, banco, estado, creado: new Date().toISOString() });
+    movimientosFF.push({ id: doc.id, tipo, contraparte, importe, fecha, descripcion, banco, estado });
+    closeModalFF();
+    renderFlujoDeFondos();
+    toast('✓ Movimiento guardado', 'green');
+  } catch(e) {
+    toast('Error al guardar: ' + e.message, 'red');
+  }
+}
+
+async function toggleEstadoFF(id) {
+  const m = movimientosFF.find(x => x.id === id);
+  if (!m) return;
+  const nuevoEstado = m.estado === 'pendiente' ? 'cobrado' : 'pendiente';
+  try {
+    await db.collection('empresas').doc(uid).collection('flujo_fondos').doc(id).update({ estado: nuevoEstado });
+    m.estado = nuevoEstado;
+    renderFlujoDeFondos();
+    toast(`✓ Marcado como ${nuevoEstado}`, 'green');
+  } catch(e) {
+    toast('Error: ' + e.message, 'red');
+  }
+}
+
+async function eliminarFF(id) {
+  if (!confirm('¿Eliminar este movimiento?')) return;
+  try {
+    await db.collection('empresas').doc(uid).collection('flujo_fondos').doc(id).delete();
+    movimientosFF = movimientosFF.filter(m => m.id !== id);
+    renderFlujoDeFondos();
+    toast('Movimiento eliminado', 'green');
+  } catch(e) {
+    toast('Error: ' + e.message, 'red');
+  }
+}
 
 function exportData(){
   const data={empresa:empresaData,entidades,operaciones,cuotas,exportado:new Date().toISOString()};
