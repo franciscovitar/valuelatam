@@ -647,17 +647,9 @@ table tbody tr:last-child td { border-bottom: 0; }
       <svg class="nav-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5" r="2.5"/><path d="M2.5 13.5c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/></svg>
       Clientes
     </div>
-    <div class="nav-item" id="nav-relevamiento" onclick="showTab('relevamiento',this)">
-      <svg class="nav-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M2 8h8M2 12h5"/></svg>
-      Relevamiento
-    </div>
     <div class="nav-item" onclick="showTab('tna',this)">
       <svg class="nav-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11l4-4 3 3 5-6"/></svg>
       Tasas Globales
-    </div>
-    <div class="nav-item" onclick="showTab('flujo',this)">
-      <svg class="nav-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8h12M8 4l4 4-4 4"/><path d="M2 4v8"/></svg>
-      Flujo de Fondos
     </div>
   </nav>
   <!-- Footer -->
@@ -1927,7 +1919,6 @@ function renderRelevamientoList(){
 
 function irARelevamiento(id){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  document.getElementById('nav-relevamiento').classList.add('active');
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-relevamiento').classList.add('active');
   document.getElementById('page-title').textContent='Relevamiento por Cliente';
