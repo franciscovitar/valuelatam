@@ -666,6 +666,22 @@
     .sim-cell{font-size:10.5px}
     .sim-head .sim-cell{font-size:8.5px}
   }
+
+  /* ===== CONCLUSIÓN DE EXPERTO ===== */
+  .conclusion-experta{
+    margin-top:14px;padding:16px 18px;
+    background:linear-gradient(135deg, rgba(184,151,90,.1), rgba(34,28,73,.05));
+    border:1px solid rgba(184,151,90,.25);border-radius:10px;
+    border-left:3px solid var(--gold);
+  }
+  .experta-kicker{
+    font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--gold);font-weight:700;margin-bottom:8px;
+  }
+  .experta-body{
+    font-size:13px;line-height:1.6;color:var(--ink);
+  }
+  .experta-body strong{color:var(--navy-ink);font-weight:600}
 </style>
 
 <!-- PWA -->
@@ -839,47 +855,37 @@
       </div>
     </div>
 
-    <!-- GRÁFICO 1: Curva breakeven REAL -->
+    <!-- GRÁFICO 1: Curva inflación VL vs REM unificada -->
     <div class="chart-card">
       <div class="chart-header">
         <div>
-          <h3 class="chart-title">Curva de inflación breakeven · TEM</h3>
-          <p class="chart-sub">La inflación mensual que el mercado está descontando para los próximos 12 meses. Calculada cruzando bonos Fija vs CER al mismo vencimiento, proyectada a cada fin de mes.</p>
+          <h3 class="chart-title">Inflación esperada · Value Latam vs REM</h3>
+          <p class="chart-sub">La inflación mensual que cada fuente proyecta para los próximos 12 meses. Línea sólida dorada: lo que descuenta el mercado con plata real. Línea punteada roja: lo que estiman las consultoras del REM BCRA.</p>
         </div>
       </div>
       <div class="chart-wrap"><canvas id="chartBreakeven"></canvas></div>
       <div id="curvaSnapshotInfo" class="chart-footnote">
-        <strong>Cómo leerlo:</strong> cada punto marca la inflación mensual esperada para ese mes. Si la curva <strong>baja</strong> a la derecha, el mercado espera que la inflación desacelere. Si <strong>sube</strong>, espera aceleración. Las líneas punteadas indican que es una curva implícita (no observada directamente).
+        <strong>Cómo leerlo:</strong> si las dos líneas se separan mucho, es que el mercado y las consultoras esperan cosas distintas — y ahí hay oportunidad. Si VL va por encima del REM, el mercado cree que la inflación va a ser más alta que lo que dicen las consultoras (tendencia: comprar CER). Si va por debajo, el mercado cree que va a ser más baja (tendencia: comprar tasa fija).
       </div>
+      <div id="conclusionInflacionExperta" class="conclusion-experta"></div>
     </div>
 
-    <!-- GRÁFICO 2: Tasas mensuales comparadas -->
+    <!-- GRÁFICO 2: LECAPs por mes vs inflación VL -->
     <div class="chart-card">
       <div class="chart-header">
         <div>
-          <h3 class="chart-title">Tasas mensuales vs inflación esperada</h3>
-          <p class="chart-sub">TEM de cada LECAP comparada con la inflación esperada (línea roja). Si la barra está por encima de la línea, le ganás a la inflación.</p>
+          <h3 class="chart-title">LECAPs por mes · vs inflación del mercado</h3>
+          <p class="chart-sub">Cada LECAP está ubicada en el mes en que vence. La línea dorada es la inflación que el mercado espera (nuestra curva). Si la barra supera a la línea, esa LECAP le gana a la inflación.</p>
         </div>
       </div>
       <div class="chart-wrap"><canvas id="chartTasas"></canvas></div>
       <div class="chart-footnote">
-        <strong>Cómo leerlo:</strong> la línea punteada roja es la inflación mensual esperada. Todo lo que esté <strong>arriba</strong> de esa línea, le gana a la inflación. Todo lo que esté <strong>abajo</strong>, pierde poder de compra aunque la tasa sea alta.
+        <strong>Cómo leerlo:</strong> barras <strong>por encima</strong> de la línea = tasa real positiva (ganás poder de compra). Barras <strong>por debajo</strong> = tasa real negativa (perdés poder de compra aunque la tasa nominal sea alta). Los huecos son meses sin LECAP que venza ahí.
       </div>
+      <div id="conclusionLecapsExperta" class="conclusion-experta"></div>
     </div>
 
-    <!-- GRÁFICO 3: Comparativo completo -->
-    <div class="chart-card">
-      <div class="chart-header">
-        <div>
-          <h3 class="chart-title">Todos los instrumentos, uno al lado del otro</h3>
-          <p class="chart-sub">TEM (tasa mensual) de cada opción de inversión disponible. Rojo = inflación esperada.</p>
-        </div>
-      </div>
-      <div class="chart-wrap"><canvas id="chartComparativo"></canvas></div>
-      <div class="chart-footnote">
-        <strong>Cómo leerlo:</strong> los que están por encima de la línea de inflación ganan en términos reales. Los que están por debajo, pierden poder de compra.
-      </div>
-    </div>
+    
 
     <!-- GLOSARIO: qué es cada instrumento -->
     <div style="padding:0 24px 16px">
@@ -1244,38 +1250,73 @@ function calcularBreakevens(snap) {
   return pares;
 }
 
-/* Generar curva TEM de inflación VL para plazos fijos 30/60/90/120 días
-   interpolando entre los breakevens disponibles */
-function curvaTEMInflacionVL(breakevens, plazos = [30, 60, 90, 120]) {
+/* Generar curva TEM de inflación VL para plazos arbitrarios (default: 12 meses).
+   Filtra breakevens ruidosos y EXTRAPOLA hacia atrás cuando falta dato inicial. */
+function curvaTEMInflacionVL(breakevens, plazos) {
   if (!breakevens || breakevens.length === 0) return null;
+  if (!plazos) plazos = [30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360];
+
+  // Filtrar breakevens "razonables"
+  const valid = breakevens.filter(b => {
+    if (!isFinite(b.tirRealCer) || !isFinite(b.teaFija)) return false;
+    if (b.tirRealCer > 0.10 || b.tirRealCer < -0.15) return false;
+    if (b.breakeven < 0.10 || b.breakeven > 2.0) return false;
+    return true;
+  });
+
+  if (valid.length === 0) return plazos.map(d => ({ dias: d, tem: null }));
+  // Ordenamos por días ascendente
+  valid.sort((a,b) => a.dias - b.dias);
+
+  const primerBono = valid[0];
+  const segundoBono = valid[1] || null;
+
   const resultado = [];
   plazos.forEach(diasTarget => {
-    // Buscar los 2 breakevens más cercanos a diasTarget
-    const ordenados = [...breakevens].sort((a,b) => Math.abs(a.dias - diasTarget) - Math.abs(b.dias - diasTarget));
-    if (ordenados.length === 0) { resultado.push({ dias: diasTarget, tem: null }); return; }
-    // Si el más cercano está muy cerca, lo usamos directo
-    if (Math.abs(ordenados[0].dias - diasTarget) <= 15) {
-      resultado.push({ dias: diasTarget, tem: ordenados[0].breakevenTEM });
-      return;
-    }
-    // Interpolación lineal entre los dos más cercanos si uno está antes y otro después
-    const antes = ordenados.find(b => b.dias <= diasTarget);
-    const despues = ordenados.find(b => b.dias > diasTarget);
+    // CASO 1: target dentro de [primer_bono, último_bono] → interpolar normal
+    const antes = [...valid].reverse().find(b => b.dias <= diasTarget);
+    const despues = valid.find(b => b.dias > diasTarget);
+
     if (antes && despues) {
       const peso = (diasTarget - antes.dias) / (despues.dias - antes.dias);
       const tem = antes.breakevenTEM + peso * (despues.breakevenTEM - antes.breakevenTEM);
-      resultado.push({ dias: diasTarget, tem });
-    } else {
-      // Sin datos para interpolar, usar el más cercano
-      resultado.push({ dias: diasTarget, tem: ordenados[0].breakevenTEM });
+      resultado.push({ dias: diasTarget, tem, ref: `interp. ${antes.fija}↔${despues.fija}` });
+      return;
     }
+
+    if (antes && !despues) {
+      // Target posterior al último bono → usamos el último (flat extrapolation)
+      resultado.push({ dias: diasTarget, tem: antes.breakevenTEM, ref: `~${antes.fija}` });
+      return;
+    }
+
+    // CASO 2: target ANTES del primer bono → EXTRAPOLACIÓN hacia atrás
+    // Usamos los dos primeros bonos para estimar la tendencia
+    if (!antes && despues) {
+      if (segundoBono) {
+        // Pendiente entre los dos primeros bonos
+        const slope = (segundoBono.breakevenTEM - primerBono.breakevenTEM) / (segundoBono.dias - primerBono.dias);
+        // Extrapolar: tem_target = tem_primerBono + slope * (diasTarget - primerBono.dias)
+        let tem = primerBono.breakevenTEM + slope * (diasTarget - primerBono.dias);
+        // Sanity: limitar entre 0.5% y 10% TEM (0.5%-10% mensual es el rango razonable)
+        tem = Math.max(0.005, Math.min(0.10, tem));
+        resultado.push({ dias: diasTarget, tem, ref: `extrapolado (tendencia)` });
+      } else {
+        // Sin segundo bono para tendencia, usamos el primer valor
+        resultado.push({ dias: diasTarget, tem: primerBono.breakevenTEM, ref: `~${primerBono.fija}` });
+      }
+      return;
+    }
+
+    resultado.push({ dias: diasTarget, tem: null });
   });
   return resultado;
 }
 
-/* Extraer curva TEM del REM para los mismos plazos */
-function curvaTEMInflacionREM(remCurva, plazos = [30, 60, 90, 120]) {
+/* Extraer curva TEM del REM para 12 meses */
+function curvaTEMInflacionREM(remCurva, plazos) {
   if (!remCurva || remCurva.length === 0) return null;
+  if (!plazos) plazos = [30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360];
   // remCurva tiene { periodo: "YYYY-MM", mensual: decimal }
   // Asumimos el primer dato es "próximo mes" (30 días), segundo 60 días, etc.
   const resultado = plazos.map((diasTarget, idx) => {
@@ -2099,7 +2140,7 @@ function renderMarketView() {
   renderCharts();
 }
 
-/* Render del card de comparación VL vs REM */
+/* Render del card de comparación VL vs REM (12 meses con nombres de mes) */
 function renderComparacionVLvsREM() {
   const cont = document.getElementById('comparacionVLREM');
   if (!cont) return;
@@ -2110,7 +2151,19 @@ function renderComparacionVLvsREM() {
     return;
   }
 
-  // Calcular diferencia promedio VL - REM si tenemos ambas
+  // Generar nombre de mes para cada plazo (mes siguiente al actual + i)
+  const hoy = new Date();
+  const MESES_LARGO = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const MESES_CORTO = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const etiquetas = curvaVL.map((_, i) => {
+    const m = new Date(hoy.getFullYear(), hoy.getMonth() + (i+1), 1);
+    return {
+      corto: MESES_CORTO[m.getMonth()] + " '" + String(m.getFullYear()).slice(-2),
+      largo: MESES_LARGO[m.getMonth()] + ' ' + m.getFullYear(),
+    };
+  });
+
+  // Calcular diferencia promedio VL - REM
   let diffPromedio = null;
   let diffStr = '';
   if (curvaREM) {
@@ -2139,10 +2192,10 @@ function renderComparacionVLvsREM() {
     }
   }
 
-  // Tabla comparativa
+  // Tabla comparativa (12 meses)
   let tablaHTML = `<div class="comp-vl-rem-table">
     <div class="comp-vl-rem-head">
-      <div>Plazo</div>
+      <div>Mes</div>
       <div>VL (mercado)</div>
       <div>REM BCRA</div>
       <div>Diferencia</div>
@@ -2159,7 +2212,7 @@ function renderComparacionVLvsREM() {
       diffInline = `<span style="color:${color};font-weight:600">${signo}${d.toFixed(2).replace('.',',')}</span>`;
     }
     tablaHTML += `<div class="comp-vl-rem-row">
-      <div><strong>${v.dias}d</strong></div>
+      <div><strong>${etiquetas[i].corto}</strong></div>
       <div>${vStr}</div>
       <div>${rStr}</div>
       <div>${diffInline}</div>
@@ -2178,17 +2231,147 @@ function renderComparacionVLvsREM() {
     <div class="vl-rem-card">
       <div class="vl-rem-header">
         <div class="vl-rem-badge">Value Latam × REM</div>
-        <h3 class="vl-rem-title">Nuestra inflación <em>vs</em> la del REM</h3>
+        <h3 class="vl-rem-title">Nuestra inflación <em>vs</em> la del REM · 12 meses</h3>
         <p class="vl-rem-sub">
           ${curvaREM ? headerTxt : 'Esta es nuestra curva de inflación mensual calculada con bonos. No pudimos traer el REM en este momento — cuando esté disponible vas a ver acá la comparación.'}
         </p>
       </div>
       ${tablaHTML}
-      <div class="chart-wrap" style="margin-top:16px;height:240px"><canvas id="chartComparacionREM"></canvas></div>
+      
       <div class="vl-rem-footnote">
         <strong>¿Por qué no usamos REM para calcular?</strong> El REM es una encuesta de consultoras (opinión). El breakeven sale de bonos (plata apostada, hecho). Te mostramos el REM solo para que veas la diferencia${remFecha}.
       </div>
     </div>
+  `;
+
+  // Guardamos etiquetas en marketData para que el chart las use
+  marketData.curvaEtiquetas = etiquetas;
+
+  // Generar conclusiones de experto
+  generarConclusionInflacion();
+  generarConclusionLecaps();
+}
+
+/* ====================================================================
+   CONCLUSIONES DE EXPERTO — bajadas al llano
+   ==================================================================== */
+function generarConclusionInflacion() {
+  const el = document.getElementById('conclusionInflacionExperta');
+  if (!el) return;
+  const { curvaVL, curvaREM } = marketData;
+  if (!curvaVL || curvaVL.length < 4) { el.innerHTML = ''; return; }
+
+  // Obtener valores sin nulos
+  const validVL = curvaVL.filter(p => p.tem !== null);
+  if (validVL.length < 4) { el.innerHTML = ''; return; }
+
+  const primerTEM = validVL[0].tem * 100;
+  const ultimoTEM = validVL[validVL.length - 1].tem * 100;
+  const diff = ultimoTEM - primerTEM;
+
+  let tendencia = '';
+  let recomendacion = '';
+  if (diff < -0.3) {
+    tendencia = `El mercado piensa que la inflación <strong>va a bajar</strong>. Ahora espera ${primerTEM.toFixed(2).replace('.',',')}% mensual y en 12 meses ${ultimoTEM.toFixed(2).replace('.',',')}%.`;
+    recomendacion = `Si coincidís con esta visión, <strong>andá a tasa fija larga</strong> (LECAPs a 6-12 meses): te fijás una tasa alta antes de que caiga. Si creés que la inflación <strong>no va a bajar tanto</strong>, el CER te puede sorprender para bien.`;
+  } else if (diff > 0.3) {
+    tendencia = `El mercado descuenta <strong>aceleración de la inflación</strong>. Arranca en ${primerTEM.toFixed(2).replace('.',',')}% y termina en ${ultimoTEM.toFixed(2).replace('.',',')}%.`;
+    recomendacion = `Si compartís esa visión, <strong>andá a CER</strong> para cubrirte. Si te parece exagerado, la tasa fija larga te paga una prima por asumir el riesgo.`;
+  } else {
+    tendencia = `El mercado ve la inflación <strong>estable</strong> alrededor de ${primerTEM.toFixed(2).replace('.',',')}% mensual durante el próximo año.`;
+    recomendacion = `Con esta visión, la diferencia entre tasa fija y CER es chica. Elegí por <strong>liquidez</strong> y <strong>plazo</strong> que necesites, más que por cobertura.`;
+  }
+
+  // Comparación con REM
+  let vsREM = '';
+  if (curvaREM && curvaREM.some(p => p.tem !== null)) {
+    const diffs = [];
+    curvaVL.forEach((v, i) => {
+      const r = curvaREM[i];
+      if (v.tem !== null && r && r.tem !== null) diffs.push((v.tem - r.tem) * 100);
+    });
+    if (diffs.length > 2) {
+      const promDiff = diffs.reduce((a,b) => a+b, 0) / diffs.length;
+      if (Math.abs(promDiff) > 0.2) {
+        const quien = promDiff > 0 ? 'el mercado' : 'las consultoras del REM';
+        const otro = promDiff > 0 ? 'las consultoras' : 'el mercado';
+        const cuantos = Math.abs(promDiff).toFixed(2).replace('.',',');
+        vsREM = `<br><br><strong>VL vs REM:</strong> ${quien} espera ${cuantos} puntos mensuales más de inflación que ${otro}. Cuando el mercado y las consultoras difieren así, la plata de los inversores suele pegarle más cerca — el REM es una encuesta, acá hay billetes reales jugados.`;
+      } else {
+        vsREM = `<br><br><strong>VL vs REM:</strong> están casi en línea (diferencia menor a 0,2 pts). Cuando ambos coinciden, la probabilidad de que la inflación ande por ahí es alta.`;
+      }
+    }
+  }
+
+  el.innerHTML = `
+    <div class="experta-kicker">🎯 Conclusión del experto</div>
+    <div class="experta-body">
+      ${tendencia}
+      <br><br>
+      ${recomendacion}
+      ${vsREM}
+    </div>
+  `;
+}
+
+function generarConclusionLecaps() {
+  const el = document.getElementById('conclusionLecapsExperta');
+  if (!el) return;
+  const snap = getSnapshot();
+  const lecaps = snap.fija || [];
+  const { curvaVL } = marketData;
+  if (!lecaps.length || !curvaVL || !curvaVL.length) { el.innerHTML = ''; return; }
+
+  // Para cada LECAP encontrar la inflación esperada VL del mes de su vencimiento
+  const hoy = new Date();
+  const comparacion = lecaps.map(l => {
+    const vto = new Date(l.vto);
+    const mesesDiff = (vto.getFullYear() - hoy.getFullYear()) * 12 + (vto.getMonth() - hoy.getMonth());
+    const idx = Math.max(0, Math.min(curvaVL.length - 1, mesesDiff - 1));
+    const inflTEM = curvaVL[idx] ? curvaVL[idx].tem : null;
+    if (inflTEM === null) return null;
+    return {
+      ticker: l.ticker,
+      vto: l.vto,
+      tem: l.tem,
+      infl: inflTEM,
+      margen: (l.tem - inflTEM) * 100, // puntos mensuales
+      dtm: l.dtm,
+    };
+  }).filter(Boolean);
+
+  if (comparacion.length === 0) { el.innerHTML = ''; return; }
+
+  // Clasificar: ganadoras (margen > 0.1), neutras, perdedoras
+  const ganadoras = comparacion.filter(c => c.margen > 0.1).sort((a,b) => b.margen - a.margen);
+  const perdedoras = comparacion.filter(c => c.margen < -0.1).sort((a,b) => a.margen - b.margen);
+  const neutras = comparacion.filter(c => Math.abs(c.margen) <= 0.1);
+
+  let mensaje = '';
+
+  if (ganadoras.length > 0) {
+    const mejor = ganadoras[0];
+    const vtoFmt = new Date(mejor.vto).toLocaleDateString('es-AR', {day:'2-digit', month:'short'});
+    mensaje += `<strong>La que más pagaría real:</strong> <strong style="color:var(--gold)">${mejor.ticker}</strong> (vence ${vtoFmt}). Paga ${(mejor.tem*100).toFixed(2).replace('.',',')}% mensual contra una inflación esperada de ${(mejor.infl*100).toFixed(2).replace('.',',')}%. <strong>Margen real: +${mejor.margen.toFixed(2).replace('.',',')} pts por mes.</strong>`;
+  }
+
+  if (perdedoras.length > 0) {
+    const peor = perdedoras[0];
+    const vtoFmt = new Date(peor.vto).toLocaleDateString('es-AR', {day:'2-digit', month:'short'});
+    mensaje += `<br><br><strong>Ojo con:</strong> <strong style="color:var(--red)">${peor.ticker}</strong> (vence ${vtoFmt}). Paga ${(peor.tem*100).toFixed(2).replace('.',',')}% mensual pero la inflación esperada para ese mes es ${(peor.infl*100).toFixed(2).replace('.',',')}%. <strong>Margen real: ${peor.margen.toFixed(2).replace('.',',')} pts.</strong> Con esa LECAP perdés poder de compra si el mercado acierta.`;
+  }
+
+  if (ganadoras.length === 0 && perdedoras.length === 0) {
+    mensaje = 'Todas las LECAPs del snapshot están más o menos empatadas con la inflación esperada. No hay opción que se destaque claramente — la decisión depende de plazo y liquidez, no de tasa real.';
+  } else if (ganadoras.length === 0) {
+    mensaje = `<strong>Ninguna LECAP le gana claramente a la inflación</strong> según la curva del mercado. Esto suele pasar cuando hay expectativa de que la inflación se acelere. Considerá <strong>CER</strong> para cobertura real, o si pensás que la inflación NO se va a acelerar tanto, la LECAP puede ser una apuesta contra el mercado.<br><br>${mensaje}`;
+  } else if (perdedoras.length === 0) {
+    mensaje = `<strong>Todas las LECAPs le ganan a la inflación esperada.</strong> Escenario poco común — el mercado está pagando tasas reales positivas en toda la curva. Momento propicio para <strong>fijar tasa</strong> si podés inmovilizar la plata.<br><br>${mensaje}`;
+  }
+
+  el.innerHTML = `
+    <div class="experta-kicker">🎯 Conclusión del experto</div>
+    <div class="experta-body">${mensaje}</div>
   `;
 }
 
@@ -2303,8 +2486,6 @@ function generarConclusion(data) {
    ========================================================= */
 let chartBreakevenInstance = null;
 let chartTasasInstance = null;
-let chartComparativoInstance = null;
-let chartComparacionREMInstance = null;
 
 function renderCharts() {
   if (!marketData) { console.warn('[Charts] sin marketData'); return; }
@@ -2320,83 +2501,72 @@ function renderCharts() {
 
   console.log('[Charts] Rendering en TEM:', { lecaps: lecaps.length, pfAnual, rem, temRem });
 
-  // ========== 1) CURVA BREAKEVEN por MESES (30/60/.../360) ==========
+  // ========== 1) GRÁFICO UNIFICADO: VL vs REM a 12 meses ==========
   try {
     if (chartBreakevenInstance) { chartBreakevenInstance.destroy(); chartBreakevenInstance = null; }
     const cvs1 = document.getElementById('chartBreakeven');
-    const beData = marketData.breakevens || [];
-    if (cvs1 && beData.length > 0) {
-      // Plazos cada 30 días hasta 360 → 12 puntos
-      const plazosDias = [30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360];
-      // Interpolamos breakevens reales para obtener el valor en cada plazo
-      const puntosCurva = plazosDias.map(d => {
-        // Buscar el breakeven más cercano, o interpolar entre dos
-        const ord = [...beData].sort((a,b) => Math.abs(a.dias - d) - Math.abs(b.dias - d));
-        if (!ord.length) return { dias: d, tem: null };
-        if (Math.abs(ord[0].dias - d) <= 20) {
-          return { dias: d, tem: ord[0].breakevenTEM, ref: `${ord[0].fija} × ${ord[0].cer}` };
-        }
-        const antes = ord.find(b => b.dias <= d);
-        const despues = ord.find(b => b.dias > d);
-        if (antes && despues) {
-          const peso = (d - antes.dias) / (despues.dias - antes.dias);
-          const tem = antes.breakevenTEM + peso * (despues.breakevenTEM - antes.breakevenTEM);
-          return { dias: d, tem, ref: `interp. ${antes.fija}↔${despues.fija}` };
-        }
-        return { dias: d, tem: ord[0].breakevenTEM, ref: `~${ord[0].fija}` };
-      });
-
-      // Etiquetas: nombres de mes desde hoy +1 hasta +12
+    const curvaVL = marketData.curvaVL;
+    const curvaREM = marketData.curvaREM;
+    if (cvs1 && curvaVL && curvaVL.length > 0) {
       const hoy = new Date();
       const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-      const labels = plazosDias.map((d, i) => {
+      const labels = curvaVL.map((_, i) => {
         const m = new Date(hoy.getFullYear(), hoy.getMonth() + (i+1), 1);
-        return MESES[m.getMonth()] + ' ' + String(m.getFullYear()).slice(-2);
+        return MESES[m.getMonth()] + " '" + String(m.getFullYear()).slice(-2);
       });
+      const dataVL = curvaVL.map(p => p.tem !== null ? (p.tem * 100) : null);
+      const dataREM = curvaREM ? curvaREM.map(p => p.tem !== null ? (p.tem * 100) : null) : null;
 
-      const dataTEM = puntosCurva.map(p => p.tem !== null ? (p.tem * 100) : null);
+      const datasets = [{
+        label: 'Value Latam (mercado)',
+        data: dataVL,
+        borderColor: '#B8975A',
+        backgroundColor: 'rgba(184,151,90,.15)',
+        borderWidth: 2.5,
+        tension: 0.3,
+        pointRadius: 5,
+        pointBackgroundColor: '#B8975A',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointHoverRadius: 8,
+        fill: true,
+        spanGaps: true,
+        order: 2,
+      }];
+      if (dataREM) {
+        datasets.unshift({
+          label: 'REM BCRA (consultoras)',
+          data: dataREM,
+          borderColor: '#B23A2E',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          borderDash: [6, 5],
+          tension: 0.25,
+          pointRadius: 4,
+          pointBackgroundColor: '#B23A2E',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 1.5,
+          fill: false,
+          spanGaps: true,
+          order: 1,
+        });
+      }
 
       chartBreakevenInstance = new Chart(cvs1.getContext('2d'), {
         type: 'line',
-        data: {
-          labels,
-          datasets: [{
-            label: 'Inflación breakeven TEM (%)',
-            data: dataTEM,
-            borderColor: '#B8975A',
-            backgroundColor: 'rgba(184,151,90,.12)',
-            borderWidth: 2,
-            borderDash: [6, 5],
-            tension: 0.25,
-            pointRadius: 5,
-            pointBackgroundColor: '#B8975A',
-            pointBorderColor: '#fff',
-            pointBorderWidth: 2,
-            pointHoverRadius: 7,
-            fill: true,
-            spanGaps: true,
-          }]
-        },
+        data: { labels, datasets },
         options: {
           responsive: true, maintainAspectRatio: false,
           plugins: {
-            legend: { display: false },
+            legend: { position: 'top', labels: { font: { size: 11 }, color: '#5B6675', boxWidth: 18, padding: 10 } },
             tooltip: {
               callbacks: {
-                title: (items) => {
-                  const idx = items[0].dataIndex;
-                  return `${labels[idx]} · +${plazosDias[idx]} días`;
-                },
+                title: (items) => labels[items[0].dataIndex],
                 label: (item) => {
-                  const p = puntosCurva[item.dataIndex];
-                  if (!p || p.tem === null) return 'Sin dato';
-                  const tem = (p.tem * 100).toFixed(2).replace('.',',') + '% mensual';
-                  const anual = (Math.pow(1 + p.tem, 12) - 1) * 100;
-                  return [
-                    `Inflación: ${tem}`,
-                    `Equivale a ${anual.toFixed(1).replace('.',',')}% anual`,
-                    p.ref ? `Fuente: ${p.ref}` : '',
-                  ].filter(Boolean);
+                  const v = item.parsed.y;
+                  if (v === null) return `${item.dataset.label}: sin dato`;
+                  const anual = (Math.pow(1 + v/100, 12) - 1) * 100;
+                  return `${item.dataset.label}: ${v.toFixed(2).replace('.',',')}% mensual (${anual.toFixed(1).replace('.',',')}% anual)`;
                 }
               }
             }
@@ -2410,125 +2580,103 @@ function renderCharts() {
     }
   } catch (e) { console.error('[Chart1 error]', e); }
 
-  // ========== 2) TEM LECAP vs inflación mensual ==========
+  // ========== 2) LECAPs posicionadas por mes + curva inflación ==========
   try {
     if (chartTasasInstance) { chartTasasInstance.destroy(); chartTasasInstance = null; }
     const cvs2 = document.getElementById('chartTasas');
-    if (cvs2 && lecaps.length > 0) {
-      const labels = lecaps.slice(0, 8).map(l => l.ticker);
-      const temData = lecaps.slice(0, 8).map(l => (Math.pow(1 + l.tir, 1/12) - 1) * 100);
-      const datasets = [
-        { label: 'TEM LECAP', data: temData, backgroundColor: 'rgba(34,28,73,.85)', borderRadius: 6, order: 2 },
-      ];
-      if (temRem !== null) {
-        datasets.push({
-          label: 'Inflación mensual esperada',
-          data: labels.map(() => temRem),
-          type: 'line', borderColor: '#B23A2E', borderWidth: 2.5,
-          borderDash: [6,4], pointRadius: 0, fill: false, order: 1,
+    const snap = getSnapshot();
+    const lecapsSnap = snap.fija || [];
+    const curvaVL = marketData.curvaVL || [];
+    if (cvs2 && lecapsSnap.length > 0 && curvaVL.length > 0) {
+      // Cada LECAP se ubica en el mes correspondiente a su vencimiento
+      // Recorremos los 12 meses y para cada uno buscamos la LECAP que vence ahí (o null)
+      const hoy = new Date();
+      const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+      const mesesLabels = curvaVL.map((_, i) => {
+        const m = new Date(hoy.getFullYear(), hoy.getMonth() + (i+1), 1);
+        return MESES[m.getMonth()] + " '" + String(m.getFullYear()).slice(-2);
+      });
+      // Para cada mes (posición en el array), ubicar LECAP cuyo vto esté en ese mes calendario
+      const lecapPorMes = curvaVL.map((_, i) => {
+        const mesObjetivo = new Date(hoy.getFullYear(), hoy.getMonth() + (i+1), 1);
+        const añoMes = mesObjetivo.getFullYear() * 12 + mesObjetivo.getMonth();
+        // Buscar LECAP cuyo vencimiento caiga en ese mes
+        const match = lecapsSnap.find(l => {
+          const v = new Date(l.vto);
+          return (v.getFullYear() * 12 + v.getMonth()) === añoMes;
         });
-      }
+        return match || null;
+      });
+
+      // Data: barras con TEM LECAP en la posición del mes que vence
+      const lecapBarData = lecapPorMes.map(l => l ? l.tem * 100 : null);
+      const lecapTickers = lecapPorMes.map(l => l ? l.ticker : '');
+      // Línea: inflación VL mensual
+      const inflaData = curvaVL.map(p => p.tem !== null ? p.tem * 100 : null);
+
+      const datasets = [
+        {
+          type: 'bar',
+          label: 'LECAP (TEM)',
+          data: lecapBarData,
+          backgroundColor: 'rgba(34,28,73,.85)',
+          borderRadius: 6,
+          order: 2,
+          tickers: lecapTickers,
+        },
+        {
+          type: 'line',
+          label: 'Inflación esperada VL (TEM)',
+          data: inflaData,
+          borderColor: '#B8975A',
+          backgroundColor: 'rgba(184,151,90,.08)',
+          borderWidth: 2.5,
+          tension: 0.25,
+          pointRadius: 4,
+          pointBackgroundColor: '#B8975A',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 1.5,
+          fill: false,
+          order: 1,
+          spanGaps: true,
+        }
+      ];
+
       chartTasasInstance = new Chart(cvs2.getContext('2d'), {
         type: 'bar',
-        data: { labels, datasets },
+        data: { labels: mesesLabels, datasets },
         options: {
           responsive: true, maintainAspectRatio: false,
           plugins: {
-            legend: { position: 'top', labels: { font: { size: 11 }, color: '#5B6675' } },
-            tooltip: { callbacks: { label: (item) => `${item.dataset.label}: ${item.parsed.y.toFixed(2).replace('.',',')}% mensual` } }
+            legend: { position: 'top', labels: { font: { size: 11 }, color: '#5B6675', boxWidth: 18, padding: 10 } },
+            tooltip: {
+              callbacks: {
+                title: (items) => mesesLabels[items[0].dataIndex],
+                label: (item) => {
+                  if (item.datasetIndex === 0) {
+                    const ticker = lecapTickers[item.dataIndex];
+                    const v = item.parsed.y;
+                    if (v === null || !ticker) return 'Sin LECAP vence ese mes';
+                    return `${ticker}: ${v.toFixed(2).replace('.',',')}% TEM`;
+                  }
+                  const v = item.parsed.y;
+                  return v !== null ? `Inflación: ${v.toFixed(2).replace('.',',')}% TEM` : 'Sin dato';
+                }
+              }
+            }
           },
           scales: {
-            x: { ticks: { color: '#5B6675', font: { size: 10 } }, grid: { display: false } },
-            y: { ticks: { color: '#5B6675', callback: (v) => v.toFixed(1) + '%' }, grid: { color: 'rgba(28,58,94,.06)' } }
+            x: { ticks: { color: '#5B6675', font: { size: 10 }, maxRotation: 45, minRotation: 30 }, grid: { display: false } },
+            y: { ticks: { color: '#5B6675', callback: (v) => v.toFixed(1) + '%' }, grid: { color: 'rgba(28,58,94,.06)' }, title: { display: true, text: 'TEM (% mensual)', color: '#5B6675', font: { size: 11 } } }
           }
         }
       });
     }
   } catch (e) { console.error('[Chart2 error]', e); }
 
-  // ========== 3) COMPARATIVO en TEM ==========
-  try {
-    if (chartComparativoInstance) { chartComparativoInstance.destroy(); chartComparativoInstance = null; }
-    const cvs3 = document.getElementById('chartComparativo');
-    if (cvs3) {
-      const compLabels = [];
-      const compData = [];
-      const compColors = [];
-      const toTEM = (anual) => (Math.pow(1 + anual, 1/12) - 1) * 100;
-      if (pfAnual !== null) { compLabels.push('Plazo Fijo'); compData.push(toTEM(pfAnual)); compColors.push('#1F7A4D'); }
-      if (CFG.tasas.fci) { compLabels.push('FCI MM'); compData.push(toTEM(CFG.tasas.fci/100)); compColors.push('#2E9D69'); }
-      if (CFG.tasas.caucion) { compLabels.push('Caución'); compData.push(toTEM(CFG.tasas.caucion/100)); compColors.push('#B8975A'); }
-      if (marketData.lecapBenchmark) { compLabels.push('LECAP'); compData.push(toTEM(marketData.lecapBenchmark.tir)); compColors.push('#221C49'); }
-      if (rem !== null) { compLabels.push('Inflación'); compData.push(toTEM(rem)); compColors.push('#B23A2E'); }
+  
 
-      if (compLabels.length > 0) {
-        chartComparativoInstance = new Chart(cvs3.getContext('2d'), {
-          type: 'bar',
-          data: { labels: compLabels, datasets: [{ data: compData, backgroundColor: compColors, borderRadius: 8 }] },
-          options: {
-            indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-            plugins: {
-              legend: { display: false },
-              tooltip: { callbacks: { label: (item) => item.parsed.x.toFixed(2).replace('.',',') + '% mensual' } }
-            },
-            scales: {
-              x: { ticks: { color: '#5B6675', callback: (v) => v.toFixed(1) + '%' }, grid: { color: 'rgba(28,58,94,.06)' }, title: { display: true, text: 'TEM (% mensual)', color: '#5B6675', font: { size: 11 } } },
-              y: { ticks: { color: '#221C49', font: { size: 12, weight: '500' } }, grid: { display: false } }
-            }
-          }
-        });
-      }
-    }
-  } catch (e) { console.error('[Chart3 error]', e); }
-
-  // ========== 4) COMPARACIÓN VL vs REM ==========
-  try {
-    if (chartComparacionREMInstance) { chartComparacionREMInstance.destroy(); chartComparacionREMInstance = null; }
-    const cvs4 = document.getElementById('chartComparacionREM');
-    const curvaVL = marketData.curvaVL;
-    const curvaREM = marketData.curvaREM;
-    if (cvs4 && curvaVL && curvaVL.some(p => p.tem !== null)) {
-      const labels = curvaVL.map(p => p.dias + ' días');
-      const dataVL = curvaVL.map(p => p.tem !== null ? (p.tem * 100) : null);
-      const dataREM = curvaREM ? curvaREM.map(p => p.tem !== null ? (p.tem * 100) : null) : null;
-
-      const datasets = [{
-        label: 'Value Latam (mercado)',
-        data: dataVL,
-        backgroundColor: 'rgba(184,151,90,0.85)',
-        borderColor: '#B8975A',
-        borderRadius: 6,
-        borderWidth: 1,
-      }];
-      if (dataREM) {
-        datasets.push({
-          label: 'REM BCRA (consultoras)',
-          data: dataREM,
-          backgroundColor: 'rgba(178,58,46,0.7)',
-          borderColor: '#B23A2E',
-          borderRadius: 6,
-          borderWidth: 1,
-        });
-      }
-
-      chartComparacionREMInstance = new Chart(cvs4.getContext('2d'), {
-        type: 'bar',
-        data: { labels, datasets },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: {
-            legend: { position: 'top', labels: { font: { size: 11 }, color: '#5B6675', boxWidth: 14 } },
-            tooltip: { callbacks: { label: (item) => `${item.dataset.label}: ${item.parsed.y.toFixed(2).replace('.',',')}% mensual` } }
-          },
-          scales: {
-            x: { ticks: { color: '#5B6675', font: { size: 11 } }, grid: { display: false } },
-            y: { ticks: { color: '#5B6675', callback: (v) => v.toFixed(1) + '%' }, grid: { color: 'rgba(28,58,94,.06)' }, title: { display: true, text: 'Inflación TEM (%)', color: '#5B6675', font: { size: 11 } } }
-          }
-        }
-      });
-    }
-  } catch (e) { console.error('[Chart4 error]', e); }
-}
+  }
 
 document.getElementById('marketRefresh').addEventListener('click', refreshMarket);
 document.getElementById('vinculoCtaMarket').addEventListener('click', () => abrirBalanz('market'));
