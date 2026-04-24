@@ -593,6 +593,79 @@
     border-radius:4px;font-size:11.5px;color:var(--muted);line-height:1.5;
   }
   .vl-rem-footnote strong{color:var(--navy-ink);font-weight:600}
+
+  /* ===== SIMULACIÓN MES A MES ===== */
+  .sim-acordeon{margin:16px 24px 0}
+  .sim-toggle{
+    width:100%;padding:14px 16px;
+    background:#FBFAF7;border:1px solid var(--line);border-radius:12px;
+    display:flex;justify-content:space-between;align-items:center;
+    font:inherit;font-size:13px;font-weight:600;color:var(--navy-ink);
+    cursor:pointer;transition:all .2s;
+  }
+  .sim-toggle:hover{border-color:var(--gold);background:#fff}
+  .sim-toggle-chev{width:16px;height:16px;color:var(--muted);transition:transform .25s}
+  .sim-toggle.open .sim-toggle-chev{transform:rotate(180deg)}
+
+  .sim-body{
+    margin-top:12px;padding:18px 16px;
+    background:#fff;border:1px solid var(--line);border-radius:12px;
+    animation:fadeUp .3s ease;
+  }
+  .sim-explain{
+    padding:14px 16px;background:linear-gradient(135deg, rgba(184,151,90,.08), rgba(34,28,73,.04));
+    border-left:3px solid var(--gold);border-radius:4px;
+    font-size:13px;color:var(--ink);line-height:1.55;margin-bottom:16px;
+  }
+  .sim-explain strong{color:var(--navy-ink);font-weight:600}
+
+  .sim-stats{
+    display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px;
+  }
+  @media (min-width:620px){.sim-stats{grid-template-columns:repeat(4,1fr)}}
+  .sim-stat{
+    padding:10px 12px;background:#FBFAF7;border:1px solid var(--line);border-radius:8px;
+  }
+  .sim-stat-label{
+    font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--muted);font-weight:600;margin-bottom:4px;
+  }
+  .sim-stat-value{
+    font-family:'Fraunces',serif;font-weight:500;font-size:16px;
+    font-variant-numeric:tabular-nums;color:var(--navy-ink);
+  }
+  .sim-pos{color:var(--green)}
+  .sim-neg{color:var(--red)}
+
+  .sim-chart-wrap{
+    height:140px;margin-bottom:6px;
+  }
+  .sim-chart-note{
+    font-size:10.5px;color:var(--muted);text-align:center;letter-spacing:.04em;margin-bottom:14px;
+  }
+
+  .sim-table{
+    border:1px solid var(--line);border-radius:10px;overflow:hidden;
+    font-size:12px;font-variant-numeric:tabular-nums;
+  }
+  .sim-row{
+    display:grid;grid-template-columns:36px 1fr 1fr 1fr 1fr;
+    gap:4px;padding:7px 8px;border-top:1px solid var(--line);
+  }
+  .sim-row:first-of-type{border-top:none}
+  .sim-head{
+    background:#FBFAF7;font-size:9px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--muted);font-weight:700;padding:8px;
+  }
+  .sim-cell{padding:2px 4px;text-align:right;font-size:11.5px}
+  .sim-head .sim-cell{text-align:right}
+  .sim-head .sim-mes, .sim-mes{text-align:center}
+  .sim-mes{font-weight:600;color:var(--navy-ink)}
+  .sim-bold{font-weight:600;color:var(--navy-ink)}
+  @media (max-width:480px){
+    .sim-cell{font-size:10.5px}
+    .sim-head .sim-cell{font-size:8.5px}
+  }
 </style>
 
 <!-- PWA -->
@@ -687,6 +760,9 @@
         <div class="detail"><div class="detail-label">Tu inversión rinde</div><div class="detail-value" id="dInv">—</div><div class="detail-sub">TNA</div></div>
         <div class="detail"><div class="detail-label">Inflación</div><div class="detail-value" id="dInf">—</div><div class="detail-sub">anual estimada</div></div>
       </div>
+      <!-- Acordeón de simulación mes a mes -->
+      <div id="simulacionAcordeon" class="sim-acordeon"></div>
+
       <div class="comp-table" id="compTableWrap" style="display:none">
         <div class="section-label" style="margin-bottom:10px">Todos tus planes</div>
         <div class="comp-table-inner" id="compTable"></div>
@@ -768,12 +844,12 @@
       <div class="chart-header">
         <div>
           <h3 class="chart-title">Curva de inflación breakeven · TEM</h3>
-          <p class="chart-sub">La inflación mensual que está descontando el mercado para cada plazo. Calculada cruzando bonos Fija vs CER al mismo vencimiento.</p>
+          <p class="chart-sub">La inflación mensual que el mercado está descontando para los próximos 12 meses. Calculada cruzando bonos Fija vs CER al mismo vencimiento, proyectada a cada fin de mes.</p>
         </div>
       </div>
       <div class="chart-wrap"><canvas id="chartBreakeven"></canvas></div>
       <div id="curvaSnapshotInfo" class="chart-footnote">
-        <strong>Cómo leerlo:</strong> cada punto es un par de bonos (uno a tasa fija, uno CER) que vencen el mismo día. La altura es la inflación mensual que tiene que pegar para que rindan igual. Si la curva baja a la derecha, el mercado espera que la inflación <strong>desacelere</strong>.
+        <strong>Cómo leerlo:</strong> cada punto marca la inflación mensual esperada para ese mes. Si la curva <strong>baja</strong> a la derecha, el mercado espera que la inflación desacelere. Si <strong>sube</strong>, espera aceleración. Las líneas punteadas indican que es una curva implícita (no observada directamente).
       </div>
     </div>
 
@@ -1266,9 +1342,32 @@ function calcularTIR(PC, C, n) {
 }
 
 function simularFlujo(PC, C, n, r_m) {
+  // Simula la evolución mes a mes:
+  // - capital_inicial del mes
+  // - rinde r_m (intereses generados)
+  // - se paga la cuota C
+  // - queda capital_final para el mes siguiente
   let capital = PC;
-  for (let t=1;t<=n;t++) { capital = capital*(1+r_m); capital = capital - C; }
-  return capital;
+  let totalIntereses = 0;
+  let totalPagado = 0;
+  const flujo = [];
+  for (let t = 1; t <= n; t++) {
+    const capInicial = capital;
+    const intereses = capInicial * r_m;
+    const capDespuesInteres = capInicial + intereses;
+    const capFinal = capDespuesInteres - C;
+    totalIntereses += intereses;
+    totalPagado += C;
+    flujo.push({
+      mes: t,
+      capInicial: capInicial,
+      intereses: intereses,
+      pago: C,
+      capFinal: capFinal,
+    });
+    capital = capFinal;
+  }
+  return { remanente: capital, flujo, totalIntereses, totalPagado };
 }
 
 function decidir({ PC, C, n, infl_anual, tasa_anual }) {
@@ -1278,11 +1377,12 @@ function decidir({ PC, C, n, infl_anual, tasa_anual }) {
   const tir_a = mensualAAnual(tir_m);
   const tir_real = (1+tir_m)/(1+i_m) - 1;
   const r_real = (1+r_m)/(1+i_m) - 1;
-  const remanente = simularFlujo(PC, C, n, r_m);
+  const sim = simularFlujo(PC, C, n, r_m);
+  const remanente = sim.remanente;
   let decision;
   if (tir_m === 0) decision = r_real > 0 ? 'financiar' : 'contado';
   else decision = r_real > tir_real ? 'financiar' : 'contado';
-  return { decision, tir_m, tir_a, tir_real, r_m, r_a:tasa_anual, r_real, i_m, i_a:infl_anual, remanente, sinInteres:tir_m===0, PC, C, n };
+  return { decision, tir_m, tir_a, tir_real, r_m, r_a:tasa_anual, r_real, i_m, i_a:infl_anual, remanente, flujo:sim.flujo, totalIntereses:sim.totalIntereses, totalPagado:sim.totalPagado, sinInteres:tir_m===0, PC, C, n };
 }
 
 function validar({ PC, C, n, infl_anual, tasa_anual }) {
@@ -1367,7 +1467,153 @@ function render(res, planesExtras) {
   renderComparador(res, planesExtras);
   box.classList.add('show');
   guardarEnHistorial(res);
+  // Solo mostramos simulación si conviene financiar (si conviene contado, no tiene sentido invertir)
+  if (res.decision === 'financiar') {
+    renderSimulacionAcordeon(res);
+  } else {
+    const cont = document.getElementById('simulacionAcordeon');
+    if (cont) cont.innerHTML = '';
+  }
   setTimeout(() => box.scrollIntoView({ behavior:'smooth', block:'start' }), 80);
+}
+
+/* ====================================================================
+   ACORDEÓN: simulación mes a mes del costo de oportunidad
+   ==================================================================== */
+function renderSimulacionAcordeon(res) {
+  const cont = document.getElementById('simulacionAcordeon');
+  if (!cont) return;
+
+  if (!res.flujo || !res.flujo.length) { cont.innerHTML = ''; return; }
+
+  const flujo = res.flujo;
+  const totalIntereses = res.totalIntereses;
+  const totalPagado = res.totalPagado;
+  const capFinal = res.remanente;
+  const capInicial = res.PC;
+
+  // Header explicativo según escenario
+  // Llegamos acá solo cuando conviene financiar
+  const explicacion = `Tenías <strong>${fmtMoney(capInicial)}</strong> para pagar al contado. Si en vez de eso financiás la compra y <strong>ponés ese capital a trabajar al ${fmtPct(res.r_a)} anual</strong>, usando la renta mes a mes para pagar las cuotas, <strong>al final del plan te quedan ${fmtMoney(Math.abs(capFinal))} en el bolsillo</strong> que no tendrías pagando contado.`;
+
+  // Armar filas de la tabla
+  let rows = '';
+  flujo.forEach(f => {
+    rows += `<div class="sim-row">
+      <div class="sim-cell sim-mes">${f.mes}</div>
+      <div class="sim-cell">${fmtMoney(f.capInicial)}</div>
+      <div class="sim-cell sim-pos">+${fmtMoney(f.intereses)}</div>
+      <div class="sim-cell sim-neg">−${fmtMoney(f.pago)}</div>
+      <div class="sim-cell sim-bold">${fmtMoney(f.capFinal)}</div>
+    </div>`;
+  });
+
+  cont.innerHTML = `
+    <button class="sim-toggle" id="simToggleBtn" type="button" aria-expanded="false">
+      <span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;margin-right:6px;vertical-align:-2px"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg>
+        Ver simulación mes a mes
+      </span>
+      <svg class="sim-toggle-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="sim-body" id="simBody" style="display:none">
+      <div class="sim-explain">${explicacion}</div>
+
+      <div class="sim-stats">
+        <div class="sim-stat">
+          <div class="sim-stat-label">Capital inicial</div>
+          <div class="sim-stat-value">${fmtMoney(capInicial)}</div>
+        </div>
+        <div class="sim-stat">
+          <div class="sim-stat-label">Rendimiento generado</div>
+          <div class="sim-stat-value sim-pos">+${fmtMoney(totalIntereses)}</div>
+        </div>
+        <div class="sim-stat">
+          <div class="sim-stat-label">Total cuotas pagadas</div>
+          <div class="sim-stat-value sim-neg">−${fmtMoney(totalPagado)}</div>
+        </div>
+        <div class="sim-stat">
+          <div class="sim-stat-label">Capital al final</div>
+          <div class="sim-stat-value sim-pos">+${fmtMoney(capFinal)}</div>
+        </div>
+      </div>
+
+      <div class="sim-chart-wrap">
+        <canvas id="simChart"></canvas>
+      </div>
+      <div class="sim-chart-note">Evolución del capital invertido mes a mes</div>
+
+      <div class="sim-table">
+        <div class="sim-row sim-head">
+          <div class="sim-cell sim-mes">Mes</div>
+          <div class="sim-cell">Capital inicial</div>
+          <div class="sim-cell">Rinde</div>
+          <div class="sim-cell">Pago cuota</div>
+          <div class="sim-cell">Capital final</div>
+        </div>
+        ${rows}
+      </div>
+    </div>
+  `;
+
+  // Toggle handler
+  const btn = document.getElementById('simToggleBtn');
+  const body = document.getElementById('simBody');
+  btn.addEventListener('click', () => {
+    const open = body.style.display !== 'none';
+    body.style.display = open ? 'none' : 'block';
+    btn.setAttribute('aria-expanded', String(!open));
+    btn.classList.toggle('open', !open);
+    if (!open) {
+      // Renderizar el chart cuando se abre
+      setTimeout(() => renderSimChart(flujo), 50);
+    }
+  });
+}
+
+let simChartInstance = null;
+function renderSimChart(flujo) {
+  if (!window.Chart) return;
+  if (simChartInstance) { simChartInstance.destroy(); simChartInstance = null; }
+  const cvs = document.getElementById('simChart');
+  if (!cvs) return;
+  const labels = ['0', ...flujo.map(f => String(f.mes))];
+  const data = [flujo[0].capInicial, ...flujo.map(f => f.capFinal)];
+  simChartInstance = new Chart(cvs.getContext('2d'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Capital invertido',
+        data: data,
+        borderColor: '#B8975A',
+        backgroundColor: 'rgba(184,151,90,.15)',
+        borderWidth: 2.5,
+        tension: 0.25,
+        pointRadius: 3,
+        pointBackgroundColor: '#B8975A',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 1.5,
+        fill: true,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: (items) => items[0].label === '0' ? 'Inicio' : 'Mes ' + items[0].label,
+            label: (item) => 'Capital: ' + fmtMoney(item.parsed.y)
+          }
+        }
+      },
+      scales: {
+        x: { title: { display: true, text: 'Mes', color: '#5B6675', font: { size: 10 } }, ticks: { color: '#5B6675', font: { size: 10 } }, grid: { display: false } },
+        y: { ticks: { color: '#5B6675', font: { size: 10 }, callback: (v) => '$' + (v/1000).toFixed(0) + 'k' }, grid: { color: 'rgba(28,58,94,.06)' } }
+      }
+    }
+  });
 }
 
 function renderComparador(resBase, planesExtras) {
@@ -1841,7 +2087,7 @@ function renderMarketView() {
   if (snapInfoEl && breakevens.length > 0) {
     const fechaFmt = snap.fecha ? new Date(snap.fecha).toLocaleDateString('es-AR', {day:'2-digit', month:'long', year:'numeric'}) : '';
     snapInfoEl.innerHTML = `
-      <strong>Cómo leerlo:</strong> cada punto es un par de bonos (uno a tasa fija, uno CER) que vencen el mismo día. La altura es la inflación mensual que tiene que pegar para que rindan igual. Si la curva baja a la derecha, el mercado espera que la inflación <strong>desacelere</strong>.
+      <strong>Cómo leerlo:</strong> cada punto marca la inflación mensual esperada para ese mes. Si la curva <strong>baja</strong> a la derecha, el mercado espera que la inflación desacelere. Si <strong>sube</strong>, espera aceleración. Las líneas punteadas indican que es una curva implícita (no observada directamente).
       <div class="snapshot-info-row">
         <div class="s-item"><strong>Pares analizados:</strong> ${breakevens.length}</div>
         <div class="s-item"><strong>Fuente:</strong> ${snap.fuente}</div>
@@ -2074,33 +2320,61 @@ function renderCharts() {
 
   console.log('[Charts] Rendering en TEM:', { lecaps: lecaps.length, pfAnual, rem, temRem });
 
-  // ========== 1) CURVA BREAKEVEN REAL (calculada por Value Latam) ==========
+  // ========== 1) CURVA BREAKEVEN por MESES (30/60/.../360) ==========
   try {
     if (chartBreakevenInstance) { chartBreakevenInstance.destroy(); chartBreakevenInstance = null; }
     const cvs1 = document.getElementById('chartBreakeven');
     const beData = marketData.breakevens || [];
     if (cvs1 && beData.length > 0) {
-      const data = beData.map(b => ({
-        x: b.dias,
-        y: b.breakevenTEM * 100,
-        fija: b.fija,
-        cer: b.cer,
-        anual: b.breakeven * 100,
-        vto: b.vto,
-      }));
+      // Plazos cada 30 días hasta 360 → 12 puntos
+      const plazosDias = [30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360];
+      // Interpolamos breakevens reales para obtener el valor en cada plazo
+      const puntosCurva = plazosDias.map(d => {
+        // Buscar el breakeven más cercano, o interpolar entre dos
+        const ord = [...beData].sort((a,b) => Math.abs(a.dias - d) - Math.abs(b.dias - d));
+        if (!ord.length) return { dias: d, tem: null };
+        if (Math.abs(ord[0].dias - d) <= 20) {
+          return { dias: d, tem: ord[0].breakevenTEM, ref: `${ord[0].fija} × ${ord[0].cer}` };
+        }
+        const antes = ord.find(b => b.dias <= d);
+        const despues = ord.find(b => b.dias > d);
+        if (antes && despues) {
+          const peso = (d - antes.dias) / (despues.dias - antes.dias);
+          const tem = antes.breakevenTEM + peso * (despues.breakevenTEM - antes.breakevenTEM);
+          return { dias: d, tem, ref: `interp. ${antes.fija}↔${despues.fija}` };
+        }
+        return { dias: d, tem: ord[0].breakevenTEM, ref: `~${ord[0].fija}` };
+      });
+
+      // Etiquetas: nombres de mes desde hoy +1 hasta +12
+      const hoy = new Date();
+      const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+      const labels = plazosDias.map((d, i) => {
+        const m = new Date(hoy.getFullYear(), hoy.getMonth() + (i+1), 1);
+        return MESES[m.getMonth()] + ' ' + String(m.getFullYear()).slice(-2);
+      });
+
+      const dataTEM = puntosCurva.map(p => p.tem !== null ? (p.tem * 100) : null);
+
       chartBreakevenInstance = new Chart(cvs1.getContext('2d'), {
         type: 'line',
         data: {
+          labels,
           datasets: [{
             label: 'Inflación breakeven TEM (%)',
-            data: data,
+            data: dataTEM,
             borderColor: '#B8975A',
-            backgroundColor: 'rgba(184,151,90,.18)',
-            borderWidth: 2.5, tension: 0.25,
-            pointRadius: 6, pointBackgroundColor: '#B8975A',
-            pointBorderColor: '#fff', pointBorderWidth: 2,
-            pointHoverRadius: 8,
+            backgroundColor: 'rgba(184,151,90,.12)',
+            borderWidth: 2,
+            borderDash: [6, 5],
+            tension: 0.25,
+            pointRadius: 5,
+            pointBackgroundColor: '#B8975A',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointHoverRadius: 7,
             fill: true,
+            spanGaps: true,
           }]
         },
         options: {
@@ -2110,25 +2384,26 @@ function renderCharts() {
             tooltip: {
               callbacks: {
                 title: (items) => {
-                  const d = data[items[0].dataIndex];
-                  if (!d) return '';
-                  const vtoFmt = new Date(d.vto).toLocaleDateString('es-AR', {day:'2-digit', month:'short', year:'numeric'});
-                  return `${vtoFmt} · ${d.dias || items[0].parsed.x} días`;
+                  const idx = items[0].dataIndex;
+                  return `${labels[idx]} · +${plazosDias[idx]} días`;
                 },
                 label: (item) => {
-                  const d = data[item.dataIndex];
+                  const p = puntosCurva[item.dataIndex];
+                  if (!p || p.tem === null) return 'Sin dato';
+                  const tem = (p.tem * 100).toFixed(2).replace('.',',') + '% mensual';
+                  const anual = (Math.pow(1 + p.tem, 12) - 1) * 100;
                   return [
-                    `Inflación esperada: ${item.parsed.y.toFixed(2).replace('.',',')}% mensual`,
-                    `(${d.anual.toFixed(1).replace('.',',')}% anual)`,
-                    `${d.fija} vs ${d.cer}`,
-                  ];
+                    `Inflación: ${tem}`,
+                    `Equivale a ${anual.toFixed(1).replace('.',',')}% anual`,
+                    p.ref ? `Fuente: ${p.ref}` : '',
+                  ].filter(Boolean);
                 }
               }
             }
           },
           scales: {
-            x: { type: 'linear', title: { display: true, text: 'Días al vencimiento', color: '#5B6675', font: { size: 11 } }, ticks: { color: '#5B6675' }, grid: { color: 'rgba(28,58,94,.06)' } },
-            y: { title: { display: true, text: 'Inflación breakeven · TEM (%)', color: '#5B6675', font: { size: 11 } }, ticks: { color: '#5B6675', callback: (v) => v.toFixed(1).replace('.',',') + '%' }, grid: { color: 'rgba(28,58,94,.06)' } }
+            x: { title: { display: true, text: 'Mes proyectado', color: '#5B6675', font: { size: 11 } }, ticks: { color: '#5B6675', font: { size: 10 }, maxRotation: 45, minRotation: 30 }, grid: { color: 'rgba(28,58,94,.04)' } },
+            y: { title: { display: true, text: 'Inflación TEM (%)', color: '#5B6675', font: { size: 11 } }, ticks: { color: '#5B6675', callback: (v) => v.toFixed(1).replace('.',',') + '%' }, grid: { color: 'rgba(28,58,94,.06)' } }
           }
         }
       });
