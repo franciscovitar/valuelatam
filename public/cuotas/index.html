@@ -545,6 +545,54 @@
   .snap-rm-btn:hover{color:var(--red)}
   .snap-editor-row.with-rm{grid-template-columns:60px 1fr 75px 75px 75px 24px}
   .snap-editor-head.with-rm{grid-template-columns:60px 1fr 75px 75px 75px 24px}
+
+  /* ===== COMPARACIÓN VL vs REM ===== */
+  .vl-rem-card{
+    margin:0 24px 16px;padding:22px 24px;
+    background:#fff;border:1px solid var(--line);
+    border-radius:16px;box-shadow:var(--shadow);
+    border-top:3px solid var(--gold);
+  }
+  .vl-rem-header{margin-bottom:16px}
+  .vl-rem-badge{
+    display:inline-block;padding:4px 10px;
+    background:var(--navy-ink);color:var(--gold-soft);
+    font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;
+    border-radius:999px;margin-bottom:10px;
+  }
+  .vl-rem-title{
+    font-family:'Fraunces',serif;font-weight:500;font-size:20px;
+    color:var(--navy-ink);margin:0 0 8px;letter-spacing:-.01em;line-height:1.2;
+  }
+  .vl-rem-title em{font-style:italic;color:var(--gold);font-weight:400}
+  .vl-rem-sub{
+    font-size:13px;color:var(--ink);line-height:1.55;margin:0;opacity:.88;
+  }
+  .vl-rem-sub strong{color:var(--navy-ink);font-weight:600}
+
+  .comp-vl-rem-table{
+    margin-top:16px;border:1px solid var(--line);border-radius:10px;overflow:hidden;
+  }
+  .comp-vl-rem-head{
+    display:grid;grid-template-columns:70px 1fr 1fr 100px;gap:8px;
+    padding:10px 14px;background:#FBFAF7;
+    font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--muted);font-weight:600;
+  }
+  .comp-vl-rem-row{
+    display:grid;grid-template-columns:70px 1fr 1fr 100px;gap:8px;
+    padding:10px 14px;font-size:13px;
+    border-top:1px solid var(--line);
+    font-variant-numeric:tabular-nums;
+  }
+  .comp-vl-rem-row:first-of-type{border-top:none}
+
+  .vl-rem-footnote{
+    margin-top:14px;padding:10px 12px;
+    background:#FBFAF7;border-left:3px solid var(--gold);
+    border-radius:4px;font-size:11.5px;color:var(--muted);line-height:1.5;
+  }
+  .vl-rem-footnote strong{color:var(--navy-ink);font-weight:600}
 </style>
 
 <!-- PWA -->
@@ -687,6 +735,9 @@
 
     <!-- CARDS DE MERCADO -->
     <div class="market-grid" id="marketGrid"></div>
+
+    <!-- SECCIÓN: COMPARACIÓN VL vs REM -->
+    <div id="comparacionVLREM"></div>
 
     <!-- CARD VL: ANÁLISIS PROPIO (Value Latam) -->
     <div class="vl-analysis-card">
@@ -888,7 +939,7 @@
     <div id="adminStep2" style="display:none">
       <div class="admin-kicker">Panel admin</div>
       <h2 class="admin-title">Configuración</h2>
-      <p class="admin-sub">Plazo Fijo, LECAP y FCI se traen automáticamente del mercado. <strong style="color:var(--navy-ink)">Solo Caución se carga a mano</strong>. Los valores de FCI y tasas acá son fallback si las APIs fallan.</p>
+      <p class="admin-sub">Plazo Fijo, LECAP y FCI se traen automáticamente del mercado. <strong style="color:var(--navy-ink)">Solo Caución se carga a mano</strong>. La inflación ahora se calcula con el breakeven de bonos (snapshot abajo).</p>
 
       <div style="font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:10px">Tasas anuales (%)</div>
       <div class="admin-grid">
@@ -899,11 +950,12 @@
       </div>
 
       <div class="admin-section">
-        <div style="font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:10px">Inflación esperada</div>
+        <div style="font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:10px">Inflación (fallback)</div>
         <div class="admin-grid">
           <div class="admin-field"><label>Inflación anual default (%)</label><input type="number" step="0.1" id="adm-infl"></div>
-          <div class="admin-field"><label>Inflación REM manual (%)</label><input type="number" step="0.1" id="adm-rem"></div>
         </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.4">Solo se usa si no hay bonos cargados. Normalmente la app calcula la inflación real desde el snapshot de bonos abajo.</div>
+        <input type="hidden" id="adm-rem" value="40">
       </div>
 
       <div class="admin-section">
@@ -1114,6 +1166,48 @@ function calcularBreakevens(snap) {
   });
   pares.sort((a,b) => a.dias - b.dias);
   return pares;
+}
+
+/* Generar curva TEM de inflación VL para plazos fijos 30/60/90/120 días
+   interpolando entre los breakevens disponibles */
+function curvaTEMInflacionVL(breakevens, plazos = [30, 60, 90, 120]) {
+  if (!breakevens || breakevens.length === 0) return null;
+  const resultado = [];
+  plazos.forEach(diasTarget => {
+    // Buscar los 2 breakevens más cercanos a diasTarget
+    const ordenados = [...breakevens].sort((a,b) => Math.abs(a.dias - diasTarget) - Math.abs(b.dias - diasTarget));
+    if (ordenados.length === 0) { resultado.push({ dias: diasTarget, tem: null }); return; }
+    // Si el más cercano está muy cerca, lo usamos directo
+    if (Math.abs(ordenados[0].dias - diasTarget) <= 15) {
+      resultado.push({ dias: diasTarget, tem: ordenados[0].breakevenTEM });
+      return;
+    }
+    // Interpolación lineal entre los dos más cercanos si uno está antes y otro después
+    const antes = ordenados.find(b => b.dias <= diasTarget);
+    const despues = ordenados.find(b => b.dias > diasTarget);
+    if (antes && despues) {
+      const peso = (diasTarget - antes.dias) / (despues.dias - antes.dias);
+      const tem = antes.breakevenTEM + peso * (despues.breakevenTEM - antes.breakevenTEM);
+      resultado.push({ dias: diasTarget, tem });
+    } else {
+      // Sin datos para interpolar, usar el más cercano
+      resultado.push({ dias: diasTarget, tem: ordenados[0].breakevenTEM });
+    }
+  });
+  return resultado;
+}
+
+/* Extraer curva TEM del REM para los mismos plazos */
+function curvaTEMInflacionREM(remCurva, plazos = [30, 60, 90, 120]) {
+  if (!remCurva || remCurva.length === 0) return null;
+  // remCurva tiene { periodo: "YYYY-MM", mensual: decimal }
+  // Asumimos el primer dato es "próximo mes" (30 días), segundo 60 días, etc.
+  const resultado = plazos.map((diasTarget, idx) => {
+    const punto = remCurva[idx];
+    if (!punto) return { dias: diasTarget, tem: null };
+    return { dias: diasTarget, tem: punto.mensual, periodo: punto.periodo };
+  });
+  return resultado;
 }
 
 
@@ -1432,24 +1526,21 @@ async function fetchFCIMercado() {
 }
 
 async function fetchREM() {
-  // BCRA API tiene muchas series; intentamos varias
-  const urls = [
-    'https://api.bcra.gob.ar/estadisticas/v3.0/monetarias/29',
-    'https://api.argentinadatos.com/v1/finanzas/indices/inflacion',
-  ];
-  for (const url of urls) {
-    const data = await safeFetch(url, 'REM/inflacion');
-    if (!data) continue;
-    const results = data?.results || data;
-    if (!Array.isArray(results) || !results.length) continue;
-    const last = results[results.length - 1];
-    const val = last?.valor ?? last?.valorInflacion;
-    if (!isFinite(val)) continue;
-    // Si es mensual (<10), anualizar; si es anual (>10), usar directo
-    const monthly = val < 10;
-    const anual = monthly ? Math.pow(1 + val/100, 12) - 1 : val / 100;
-    if (anual > 0.05 && anual < 3) return anual;
-  }
+  // API pública que scrappea el Excel del REM del BCRA
+  // Devuelve mediana de IPC general por periodo
+  try {
+    const data = await safeFetch('https://bcra-rem-api.facujallia.workers.dev/api/ipc_general', 'REM_facujallia');
+    if (data?.datos && Array.isArray(data.datos) && data.datos.length > 0) {
+      // Devuelve array de { periodo: "YYYY-MM", mediana: %, ... }
+      const puntos = data.datos
+        .filter(d => isFinite(d.mediana) && d.mediana > 0 && d.mediana < 20)
+        .map(d => ({ periodo: d.periodo, mensual: d.mediana / 100 })); // decimal mensual
+      if (puntos.length > 0) {
+        // Guardamos la curva completa en marketData.remCurva para el gráfico
+        return { puntos, ultimaActualizacion: data.ultima_actualizacion };
+      }
+    }
+  } catch (e) { console.warn('[REM facujallia falla]', e); }
   return null;
 }
 
@@ -1516,9 +1607,15 @@ async function refreshMarket() {
 
   console.log('[Market] Iniciando carga...');
 
-  const [notes, cer, pfRate, rem, fciRate] = await Promise.all([
+  const [notes, cer, pfRate, remData, fciRate] = await Promise.all([
     fetchArgNotes(), fetchBonosCER(), fetchPlazoFijo(), fetchREM(), fetchFCIMercado()
   ]);
+
+  // REM viene como objeto con curva completa (puntos mensuales)
+  // Lo guardamos para el gráfico de comparación, pero ya NO lo usamos como input
+  const remCurva = remData?.puntos || null;
+  const remUpdated = remData?.ultimaActualizacion || null;
+  const rem = null; // ya no usamos REM como input de cálculos
 
   console.log('[Market] Respuestas:', { notes: !!notes, cer: !!cer, pfRate, rem, fciRate });
 
@@ -1576,7 +1673,9 @@ async function refreshMarket() {
       lecaps: SAMPLE_DATA.lecaps.slice(),
       boncer: SAMPLE_DATA.boncer.slice(),
       pfAnual: SAMPLE_DATA.pfAnual,
-      rem: SAMPLE_DATA.rem,
+      rem: null,
+      remCurva: null,
+      remUpdated: null,
       lecapBenchmark: SAMPLE_DATA.lecaps[4],
       isSample: true,
       tasasLive: { pf: SAMPLE_DATA.pfAnual * 100, lecap: SAMPLE_DATA.lecaps[4].tir * 100, fci: null, caucion: null }
@@ -1588,10 +1687,12 @@ async function refreshMarket() {
       lecaps: lecaps.length ? lecaps : SAMPLE_DATA.lecaps.slice(),
       boncer: boncer.length ? boncer : SAMPLE_DATA.boncer.slice(),
       pfAnual: pfRate ?? SAMPLE_DATA.pfAnual,
-      rem: rem ?? SAMPLE_DATA.rem,
+      rem: null,
+      remCurva: remCurva,
+      remUpdated: remUpdated,
       lecapBenchmark: lecapMedia || SAMPLE_DATA.lecaps[4],
       isSample: false,
-      hasPartialFallback: !lecaps.length || !boncer.length || pfRate === null || rem === null,
+      hasPartialFallback: !lecaps.length || !boncer.length || pfRate === null,
       tasasLive: {
         pf: (pfRate ?? null) !== null ? (pfRate ?? 0) * 100 : null,
         lecap: lecapMedia ? lecapMedia.tir * 100 : null,
@@ -1619,13 +1720,20 @@ async function refreshMarket() {
 
 function updateInflHint() {
   const hint = document.getElementById('inflHint');
-  if (!hint || !marketData?.rem) return;
-  const tag = marketData.isSample ? '(ejemplo)' : 'REM BCRA';
-  hint.innerHTML = `<span style="color:${marketData.isSample ? 'var(--amber)' : 'var(--green)'}">●</span> ${tag}: ${fmtPct(marketData.rem)}`;
-  const curr = parseNum(document.getElementById('infl').value);
-  if (curr === CFG.infl || !curr) {
-    document.getElementById('infl').value = (marketData.rem * 100).toFixed(1);
+  if (!hint) return;
+  // Priorizamos la inflación calculada de VL (breakeven)
+  const inflVL = marketData?.inflBreakeven?.anual;
+  if (inflVL) {
+    const color = marketData.isSample ? 'var(--amber)' : 'var(--gold)';
+    const tag = marketData.isSample ? '(ejemplo)' : 'Breakeven VL';
+    hint.innerHTML = `<span style="color:${color}">●</span> ${tag}: ${fmtPct(inflVL)}`;
+    const curr = parseNum(document.getElementById('infl').value);
+    if (curr === CFG.infl || !curr) {
+      document.getElementById('infl').value = (inflVL * 100).toFixed(1);
+    }
+    return;
   }
+  hint.textContent = 'Ajustá según tu expectativa';
 }
 
 /* =========================================================
@@ -1635,28 +1743,32 @@ function renderMarketView() {
   if (!marketData) return;
   const grid = document.getElementById('marketGrid');
 
-  // ===== Calcular breakevens de Value Latam (Fija vs CER) =====
+  // ===== Calcular breakevens de Value Latam =====
   const snap = getSnapshot();
   const breakevens = calcularBreakevens(snap);
   marketData.breakevens = breakevens;
 
-  // Inflación de referencia: mediana de TEM breakevens de corto plazo (primeros 6)
-  let temInflBE = null;
-  let anualInflBE = null;
+  // Inflación de referencia: mediana de TEM breakevens de corto plazo
+  let temInflVL = null;
+  let anualInflVL = null;
   if (breakevens.length > 0) {
     const cortos = breakevens.slice(0, Math.min(6, breakevens.length));
     const temSorted = cortos.map(b => b.breakevenTEM).sort((a,b) => a-b);
     const mid = Math.floor(temSorted.length / 2);
-    temInflBE = temSorted.length % 2 === 0 ? (temSorted[mid-1] + temSorted[mid])/2 : temSorted[mid];
-    anualInflBE = Math.pow(1 + temInflBE, 12) - 1;
-    marketData.inflBreakeven = { anual: anualInflBE, tem: temInflBE };
+    temInflVL = temSorted.length % 2 === 0 ? (temSorted[mid-1] + temSorted[mid])/2 : temSorted[mid];
+    anualInflVL = Math.pow(1 + temInflVL, 12) - 1;
+    marketData.inflBreakeven = { anual: anualInflVL, tem: temInflVL };
   }
 
-  // Usamos el breakeven como inflación principal (fallback: REM si no hay)
-  const inflAnual = anualInflBE !== null ? anualInflBE : marketData.rem;
-  const temInfl = temInflBE !== null ? temInflBE : (marketData.rem !== null ? Math.pow(1+marketData.rem,1/12)-1 : null);
+  // USAMOS SOLO breakeven como inflación de cálculo (no REM)
+  const inflAnual = anualInflVL;
+  const temInfl = temInflVL;
 
-  // ===== TEMs de cada instrumento =====
+  // Curvas para el gráfico de comparación
+  marketData.curvaVL = curvaTEMInflacionVL(breakevens);
+  marketData.curvaREM = curvaTEMInflacionREM(marketData.remCurva);
+
+  // ===== TEMs de instrumentos =====
   const { pfAnual, lecapBenchmark } = marketData;
   const temLecap = lecapBenchmark ? Math.pow(1 + lecapBenchmark.tir, 1/12) - 1 : null;
   const temPF = pfAnual !== null ? Math.pow(1 + pfAnual, 1/12) - 1 : null;
@@ -1669,17 +1781,12 @@ function renderMarketView() {
   // ===== CARDS =====
   let html = '';
 
-  // HERO: inflación breakeven REAL
+  // HERO: inflación breakeven VL
   if (inflAnual !== null && temInfl !== null) {
-    const esReal = anualInflBE !== null;
-    const label = esReal ? 'Inflación breakeven · Value Latam' : 'Inflación esperada (REM)';
-    const fuenteTxt = esReal
-      ? `<strong style="color:var(--gold-soft)">Calculada con ${breakevens.length} pares de bonos</strong> · Fuente: ${snap.fuente} · ${snap.fecha}`
-      : 'Fuente: BCRA REM';
     html += `<div class="market-card hero">
-      <div class="market-card-label">${label}</div>
+      <div class="market-card-label">Inflación breakeven · Value Latam</div>
       <div class="market-card-value">${(temInfl*100).toFixed(2).replace('.',',')}% <span style="font-size:16px;opacity:.7;font-weight:400">mensual</span></div>
-      <div class="market-card-sub">Equivale a <strong style="color:#fff">${fmtPct(inflAnual, 1)} anual</strong>. Es la inflación que el mercado está apostando con plata real, ahora mismo.<br><br>${fuenteTxt}</div>
+      <div class="market-card-sub">Equivale a <strong style="color:#fff">${fmtPct(inflAnual, 1)} anual</strong>. Es la inflación que el mercado está apostando con plata real, ahora mismo.<br><br><strong style="color:var(--gold-soft)">Calculada con ${breakevens.length} pares de bonos</strong> · Fuente: ${snap.fuente} · ${snap.fecha}</div>
     </div>`;
   }
 
@@ -1726,6 +1833,9 @@ function renderMarketView() {
 
   grid.innerHTML = html;
 
+  // Renderizar card de comparación VL vs REM
+  renderComparacionVLvsREM();
+
   // Info del snapshot al final del chart1
   const snapInfoEl = document.getElementById('curvaSnapshotInfo');
   if (snapInfoEl && breakevens.length > 0) {
@@ -1741,6 +1851,99 @@ function renderMarketView() {
   }
 
   renderCharts();
+}
+
+/* Render del card de comparación VL vs REM */
+function renderComparacionVLvsREM() {
+  const cont = document.getElementById('comparacionVLREM');
+  if (!cont) return;
+  const { curvaVL, curvaREM, remUpdated } = marketData;
+
+  if (!curvaVL) {
+    cont.innerHTML = '';
+    return;
+  }
+
+  // Calcular diferencia promedio VL - REM si tenemos ambas
+  let diffPromedio = null;
+  let diffStr = '';
+  if (curvaREM) {
+    const diffs = [];
+    curvaVL.forEach((v, i) => {
+      const r = curvaREM[i];
+      if (v.tem !== null && r && r.tem !== null) {
+        diffs.push((v.tem - r.tem) * 100);
+      }
+    });
+    if (diffs.length > 0) {
+      diffPromedio = diffs.reduce((a,b) => a+b, 0) / diffs.length;
+      const signo = diffPromedio >= 0 ? '+' : '';
+      diffStr = `${signo}${diffPromedio.toFixed(2).replace('.',',')} puntos mensuales`;
+    }
+  }
+
+  let headerTxt = '';
+  if (diffPromedio !== null) {
+    if (diffPromedio > 0.15) {
+      headerTxt = `El mercado espera <strong>${diffStr}</strong> MÁS de inflación mensual que el REM. Las consultoras son más optimistas que la plata.`;
+    } else if (diffPromedio < -0.15) {
+      headerTxt = `El mercado espera <strong>${diffStr}</strong> inflación mensual que el REM. Las consultoras son más pesimistas que la plata.`;
+    } else {
+      headerTxt = `El mercado y el REM están casi en línea (diferencia: <strong>${diffStr}</strong>).`;
+    }
+  }
+
+  // Tabla comparativa
+  let tablaHTML = `<div class="comp-vl-rem-table">
+    <div class="comp-vl-rem-head">
+      <div>Plazo</div>
+      <div>VL (mercado)</div>
+      <div>REM BCRA</div>
+      <div>Diferencia</div>
+    </div>`;
+  curvaVL.forEach((v, i) => {
+    const r = curvaREM ? curvaREM[i] : null;
+    const vStr = v.tem !== null ? (v.tem * 100).toFixed(2).replace('.',',') + '%' : '—';
+    const rStr = r && r.tem !== null ? (r.tem * 100).toFixed(2).replace('.',',') + '%' : '—';
+    let diffInline = '—';
+    if (v.tem !== null && r && r.tem !== null) {
+      const d = (v.tem - r.tem) * 100;
+      const signo = d >= 0 ? '+' : '';
+      const color = d > 0.1 ? 'var(--gold)' : d < -0.1 ? 'var(--red)' : 'var(--muted)';
+      diffInline = `<span style="color:${color};font-weight:600">${signo}${d.toFixed(2).replace('.',',')}</span>`;
+    }
+    tablaHTML += `<div class="comp-vl-rem-row">
+      <div><strong>${v.dias}d</strong></div>
+      <div>${vStr}</div>
+      <div>${rStr}</div>
+      <div>${diffInline}</div>
+    </div>`;
+  });
+  tablaHTML += '</div>';
+
+  let remFecha = '';
+  if (remUpdated) {
+    try {
+      remFecha = ` · REM actualizado ${new Date(remUpdated).toLocaleDateString('es-AR', {day:'2-digit', month:'short'})}`;
+    } catch {}
+  }
+
+  cont.innerHTML = `
+    <div class="vl-rem-card">
+      <div class="vl-rem-header">
+        <div class="vl-rem-badge">Value Latam × REM</div>
+        <h3 class="vl-rem-title">Nuestra inflación <em>vs</em> la del REM</h3>
+        <p class="vl-rem-sub">
+          ${curvaREM ? headerTxt : 'Esta es nuestra curva de inflación mensual calculada con bonos. No pudimos traer el REM en este momento — cuando esté disponible vas a ver acá la comparación.'}
+        </p>
+      </div>
+      ${tablaHTML}
+      <div class="chart-wrap" style="margin-top:16px;height:240px"><canvas id="chartComparacionREM"></canvas></div>
+      <div class="vl-rem-footnote">
+        <strong>¿Por qué no usamos REM para calcular?</strong> El REM es una encuesta de consultoras (opinión). El breakeven sale de bonos (plata apostada, hecho). Te mostramos el REM solo para que veas la diferencia${remFecha}.
+      </div>
+    </div>
+  `;
 }
 
 // ========== Genera la conclusión dinámica "qué hacer hoy" ==========
@@ -1855,6 +2058,7 @@ function generarConclusion(data) {
 let chartBreakevenInstance = null;
 let chartTasasInstance = null;
 let chartComparativoInstance = null;
+let chartComparacionREMInstance = null;
 
 function renderCharts() {
   if (!marketData) { console.warn('[Charts] sin marketData'); return; }
@@ -2001,6 +2205,54 @@ function renderCharts() {
       }
     }
   } catch (e) { console.error('[Chart3 error]', e); }
+
+  // ========== 4) COMPARACIÓN VL vs REM ==========
+  try {
+    if (chartComparacionREMInstance) { chartComparacionREMInstance.destroy(); chartComparacionREMInstance = null; }
+    const cvs4 = document.getElementById('chartComparacionREM');
+    const curvaVL = marketData.curvaVL;
+    const curvaREM = marketData.curvaREM;
+    if (cvs4 && curvaVL && curvaVL.some(p => p.tem !== null)) {
+      const labels = curvaVL.map(p => p.dias + ' días');
+      const dataVL = curvaVL.map(p => p.tem !== null ? (p.tem * 100) : null);
+      const dataREM = curvaREM ? curvaREM.map(p => p.tem !== null ? (p.tem * 100) : null) : null;
+
+      const datasets = [{
+        label: 'Value Latam (mercado)',
+        data: dataVL,
+        backgroundColor: 'rgba(184,151,90,0.85)',
+        borderColor: '#B8975A',
+        borderRadius: 6,
+        borderWidth: 1,
+      }];
+      if (dataREM) {
+        datasets.push({
+          label: 'REM BCRA (consultoras)',
+          data: dataREM,
+          backgroundColor: 'rgba(178,58,46,0.7)',
+          borderColor: '#B23A2E',
+          borderRadius: 6,
+          borderWidth: 1,
+        });
+      }
+
+      chartComparacionREMInstance = new Chart(cvs4.getContext('2d'), {
+        type: 'bar',
+        data: { labels, datasets },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'top', labels: { font: { size: 11 }, color: '#5B6675', boxWidth: 14 } },
+            tooltip: { callbacks: { label: (item) => `${item.dataset.label}: ${item.parsed.y.toFixed(2).replace('.',',')}% mensual` } }
+          },
+          scales: {
+            x: { ticks: { color: '#5B6675', font: { size: 11 } }, grid: { display: false } },
+            y: { ticks: { color: '#5B6675', callback: (v) => v.toFixed(1) + '%' }, grid: { color: 'rgba(28,58,94,.06)' }, title: { display: true, text: 'Inflación TEM (%)', color: '#5B6675', font: { size: 11 } } }
+          }
+        }
+      });
+    }
+  } catch (e) { console.error('[Chart4 error]', e); }
 }
 
 document.getElementById('marketRefresh').addEventListener('click', refreshMarket);
