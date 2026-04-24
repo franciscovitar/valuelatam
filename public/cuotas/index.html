@@ -346,9 +346,11 @@
   .retake:hover{border-color:var(--navy-ink);color:var(--navy-ink)}
 
   /* ADMIN */
-  .admin-overlay{position:fixed;inset:0;z-index:200;background:rgba(15,28,46,.85);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:20px;overflow-y:auto}
+  .admin-overlay{position:fixed;inset:0;z-index:200;background:rgba(15,28,46,.85);backdrop-filter:blur(6px);display:none;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .admin-overlay.show{padding-top:20px;padding-bottom:40px}
   .admin-overlay.show{display:flex}
-  .admin-modal{width:100%;max-width:540px;background:#fff;border-radius:20px;padding:28px 26px;box-shadow:0 30px 80px rgba(0,0,0,.4);position:relative;max-height:90vh;overflow-y:auto}
+  .admin-modal{width:100%;max-width:540px;background:#fff;border-radius:20px;padding:28px 26px;box-shadow:0 30px 80px rgba(0,0,0,.4);position:relative;max-height:92vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .admin-modal::after{content:"";display:block;height:80px} /* espacio extra abajo para que no tape el teclado */
   .admin-close{position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:#F5F1EA;border-radius:50%;font-size:20px;cursor:pointer;color:var(--muted);line-height:1}
   .admin-close:hover{background:var(--red-soft);color:var(--red)}
   .admin-title{font-family:'Fraunces',serif;font-weight:500;font-size:24px;margin:0 0 4px;color:var(--navy-ink);letter-spacing:-.01em}
@@ -544,6 +546,18 @@
   .snap-editor-row.with-rm{grid-template-columns:60px 1fr 75px 75px 75px 24px}
   .snap-editor-head.with-rm{grid-template-columns:60px 1fr 75px 75px 75px 24px}
 </style>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Cuotas VL">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="Cuotas · Value Latam">
+<meta name="description" content="Calculadora que te dice si conviene cuotas o contado, con datos de mercado en vivo. Por Value Latam.">
 </head>
 <body>
 
@@ -2015,7 +2029,9 @@ document.getElementById('brandLogo').addEventListener('click', () => {
 });
 
 document.getElementById('adminClose').addEventListener('click', closeAdmin);
-document.getElementById('adminOverlay').addEventListener('click', (e) => { if (e.target.id === 'adminOverlay') closeAdmin(); });
+// Modal se cierra SOLO con la X — evitamos cierre accidental en mobile
+// document.getElementById('adminOverlay').addEventListener('click', (e) => { if (e.target.id === 'adminOverlay') closeAdmin(); });
+
 
 document.getElementById('adminLogin').addEventListener('click', () => {
   const pass = document.getElementById('adminPass').value;
@@ -2072,7 +2088,7 @@ document.getElementById('adminSave').addEventListener('click', () => {
   // Re-render mercado si está visible
   if (marketData) renderMarketView();
   document.getElementById('infl').value = CFG.infl;
-  document.getElementById('tasa').value = CFG.tasas.pf;
+  document.getElementById('tasa').value = CFG.tasas.fci;
   closeAdmin();
   toast('Configuración guardada ✓');
 });
@@ -2409,7 +2425,7 @@ document.querySelectorAll('#view-calc input').forEach(inp => {
 
 /* INIT */
 document.getElementById('infl').value = CFG.infl;
-document.getElementById('tasa').value = CFG.tasas.pf;
+document.getElementById('tasa').value = CFG.tasas.fci;
 renderPresets();
 
 // Fetch mercado en background (sin bloquear UI)
@@ -2439,5 +2455,40 @@ function initMarket() {
 setTimeout(initMarket, 300);
 
 </script>
+
+<script>
+// Registro del service worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').then((reg) => {
+      console.log('[PWA] Service worker registrado', reg.scope);
+      // Escuchar cuando hay nueva versión lista
+      reg.addEventListener('updatefound', () => {
+        const newSW = reg.installing;
+        if (!newSW) return;
+        newSW.addEventListener('statechange', () => {
+          if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+            console.log('[PWA] Nueva versión disponible. Recargá para aplicarla.');
+          }
+        });
+      });
+    }).catch((e) => console.warn('[PWA] SW fail:', e));
+  });
+}
+
+// Install prompt handler — cuando el navegador detecta que se puede instalar
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  console.log('[PWA] App instalable — prompt disponible');
+});
+
+window.addEventListener('appinstalled', () => {
+  console.log('[PWA] App instalada');
+  deferredInstallPrompt = null;
+});
+</script>
+
 </body>
 </html>
