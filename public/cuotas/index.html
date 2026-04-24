@@ -1579,17 +1579,37 @@ function curvaTEMInflacionVL(breakevens, plazos) {
   return resultado;
 }
 
-/* Extraer curva TEM del REM para 12 meses */
+/* Extraer curva TEM del REM para 12 meses.
+   Matchea cada mes objetivo con el período REM correspondiente por fecha. */
 function curvaTEMInflacionREM(remCurva, plazos) {
   if (!remCurva || remCurva.length === 0) return null;
   if (!plazos) plazos = [30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360];
-  // remCurva tiene { periodo: "YYYY-MM", mensual: decimal }
-  // Asumimos el primer dato es "próximo mes" (30 días), segundo 60 días, etc.
-  const resultado = plazos.map((diasTarget, idx) => {
-    const punto = remCurva[idx];
-    if (!punto) return { dias: diasTarget, tem: null };
-    return { dias: diasTarget, tem: punto.mensual, periodo: punto.periodo };
+
+  // Indexar REM por YYYY-MM para lookup rápido
+  const remMap = {};
+  remCurva.forEach(p => {
+    try {
+      const d = new Date(p.periodo);
+      if (isFinite(d.getTime())) {
+        const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+        remMap[key] = p.mensual;
+      }
+    } catch {}
   });
+
+  // Para cada mes objetivo (hoy+1, hoy+2, ... hoy+12), buscar el REM de ese mes
+  const hoy = new Date();
+  const resultado = plazos.map((diasTarget, idx) => {
+    const mesObj = new Date(hoy.getFullYear(), hoy.getMonth() + (idx + 1), 1);
+    const key = mesObj.getFullYear() + '-' + String(mesObj.getMonth() + 1).padStart(2, '0');
+    const tem = remMap[key];
+    return {
+      dias: diasTarget,
+      tem: tem !== undefined ? tem : null,
+      periodo: key,
+    };
+  });
+
   return resultado;
 }
 
@@ -2080,19 +2100,35 @@ async function fetchFCIMercado() {
 
 async function fetchREM() {
   // API pública que scrappea el Excel del REM del BCRA
-  // Devuelve mediana de IPC general por periodo
+  // IMPORTANTE: devuelve 12 filas pero SOLO las primeras ~7 son mensuales.
+  // El resto son proyecciones anuales interanuales (ej: "próx. 12 meses", "2026", "2027").
+  // Hay que filtrar SOLO por referencia = "var. % mensual"
   try {
     const data = await safeFetch('https://bcra-rem-api.facujallia.workers.dev/api/ipc_general', 'REM_facujallia');
-    if (data?.datos && Array.isArray(data.datos) && data.datos.length > 0) {
-      // Devuelve array de { periodo: "YYYY-MM", mediana: %, ... }
-      const puntos = data.datos
-        .filter(d => isFinite(d.mediana) && d.mediana > 0 && d.mediana < 20)
-        .map(d => ({ periodo: d.periodo, mensual: d.mediana / 100 })); // decimal mensual
-      if (puntos.length > 0) {
-        // Guardamos la curva completa en marketData.remCurva para el gráfico
-        return { puntos, ultimaActualizacion: data.ultima_actualizacion };
-      }
-    }
+    const raw = data?.datos;
+    if (!Array.isArray(raw) || raw.length === 0) return null;
+
+    // Filtrar SOLO los mensuales (no los anuales interanuales)
+    const mensuales = raw
+      .filter(d => {
+        const ref = (d.referencia || '').toLowerCase();
+        // Solo aceptamos los que explícitamente son "var. % mensual"
+        if (!ref.includes('mensual')) return false;
+        // Doble chequeo: mediana razonable (<10% mensual)
+        if (!isFinite(d.mediana) || d.mediana < 0 || d.mediana > 10) return false;
+        return true;
+      })
+      .map(d => ({
+        periodo: d['período'] || d.periodo,
+        mensual: d.mediana / 100
+      }))
+      // Ordenar por fecha ascendente (por si vienen desordenados)
+      .sort((a, b) => new Date(a.periodo) - new Date(b.periodo));
+
+    if (mensuales.length === 0) return null;
+
+    console.log(`[REM] ${mensuales.length} períodos mensuales válidos`);
+    return { puntos: mensuales, ultimaActualizacion: data.ultima_actualizacion };
   } catch (e) { console.warn('[REM facujallia falla]', e); }
   return null;
 }
