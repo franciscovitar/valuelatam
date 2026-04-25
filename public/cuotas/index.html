@@ -4123,23 +4123,13 @@ if (window.location.search.includes('reset=1')) {
   }
 }
 
-// Registro del service worker
+// Registro del service worker — DESACTIVADO temporalmente
+// El sw.js no existe en /cuotas/ y estaba causando errores 404 que rompían la inicialización
+// Desregistramos cualquier SW previo y limpiamos cache
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').then((reg) => {
-      console.log('[PWA] Service worker registrado', reg.scope);
-      // Escuchar cuando hay nueva versión lista
-      reg.addEventListener('updatefound', () => {
-        const newSW = reg.installing;
-        if (!newSW) return;
-        newSW.addEventListener('statechange', () => {
-          if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
-            console.log('[PWA] Nueva versión disponible. Recargá para aplicarla.');
-          }
-        });
-      });
-    }).catch((e) => console.warn('[PWA] SW fail:', e));
-  });
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    regs.forEach(reg => reg.unregister().then(() => console.log('[PWA] SW desregistrado')));
+  }).catch(() => {});
 }
 
 // Install prompt handler — cuando el navegador detecta que se puede instalar
