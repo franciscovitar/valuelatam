@@ -838,6 +838,9 @@
     .intro-features{gap:10px}
     .intro-feature{padding:10px 14px}
   }
+
+  /* Indicador manual (admin) */
+  .preset-manual-dot{display:inline-block;color:var(--amber);margin-right:4px;font-size:9px;vertical-align:middle}
 </style>
 
 <!-- PWA -->
@@ -1461,10 +1464,42 @@ const VL_SNAPSHOT_DEFAULT = {
 };
 
 function getSnapshot() {
+  // Prioridad: 1) Datos LIVE de marketData, 2) Override del admin, 3) Default hardcoded
+  // 1) LIVE — si tenemos datos del mercado procesados, los usamos
+  if (typeof marketData !== 'undefined' && marketData && !marketData.isSample) {
+    const cerLive = marketData.boncer || [];
+    const fijaLive = marketData.lecaps || [];
+    if (cerLive.length > 0 || fijaLive.length > 0) {
+      const hoy = new Date();
+      return {
+        fecha: hoy.toISOString().slice(0, 10),
+        fuente: "data912 (live)",
+        cer: cerLive.map(b => ({
+          ticker: b.ticker,
+          precio: b.precio,
+          tirReal: b.tirReal,
+          duration: b.duration,
+          vto: b.vto,
+          paridad: b.paridad,
+        })),
+        fija: fijaLive.map(l => ({
+          ticker: l.ticker,
+          precio: l.precio,
+          tem: l.tem,
+          tea: l.tea,
+          dtm: l.dias,
+          vto: l.vto,
+          dias: l.dias,
+        })),
+      };
+    }
+  }
+  // 2) Override del admin
   try {
     const override = localStorage.getItem('vl_snapshot_v1');
     if (override) return JSON.parse(override);
   } catch {}
+  // 3) Default hardcoded
   return VL_SNAPSHOT_DEFAULT;
 }
 
@@ -1983,18 +2018,27 @@ function pintarErrores(err) {
 function renderPresets() {
   const t = CFG.tasas;
   const lv = marketData?.tasasLive || {};
+  const lecapBench = marketData?.lecapBenchmark || null;
+  // Mostrar el ticker de la LECAP benchmark (la más corta)
+  const lecapLabel = lecapBench ? `LECAP <span style="opacity:.65;font-size:.85em;font-weight:500">(${lecapBench.ticker})</span>` : 'LECAP';
+
   const items = [
-    { key:'pf', label:'Plazo fijo', tasa: t.pf, live: lv.pf },
-    { key:'fci', label:'FCI', tasa: t.fci, live: lv.fci },
-    { key:'caucion', label:'Caución', tasa: t.caucion, live: lv.caucion },
-    { key:'lecap', label:'LECAP', tasa: t.lecap, live: lv.lecap },
+    { key:'fci', label:'FCI Money Market', tasa: t.fci, live: lv.fci, manual: false },
+    { key:'pf', label:'Plazo fijo', tasa: t.pf, live: lv.pf, manual: false },
+    { key:'lecap', label: lecapLabel, tasa: t.lecap, live: lv.lecap, manual: false },
+    { key:'caucion', label:'Caución', tasa: t.caucion, live: lv.caucion, manual: true },
   ];
   const wrap = document.getElementById('presetsWrap');
   wrap.innerHTML = items.map(it => {
     const val = it.live ?? it.tasa;
-    const dot = it.live ? '<span class="preset-live-dot" title="Dato en vivo"></span>' : '';
+    let badge = '';
+    if (it.live) {
+      badge = '<span class="preset-live-dot" title="Dato en vivo del mercado"></span>';
+    } else if (it.manual) {
+      badge = '<span class="preset-manual-dot" title="Tasa cargada manualmente · puede estar desactualizada">●</span>';
+    }
     return `<div class="preset-group">
-      <button class="preset" data-tasa="${val.toFixed(1)}" type="button">${dot}${it.label}</button>
+      <button class="preset" data-tasa="${val.toFixed(1)}" type="button">${badge}${it.label}</button>
       <button class="preset-invest" data-balanz="preset_${it.key}" type="button">Invertir <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8 7h9v9"/></svg></button>
     </div>`;
   }).join('');
@@ -2066,7 +2110,132 @@ async function safeFetch(url, label) {
 }
 
 async function fetchArgNotes() { return safeFetch('https://data912.com/live/arg_notes', 'arg_notes'); }
-async function fetchBonosCER() { return safeFetch('https://data912.com/live/arg_cer', 'arg_cer'); }
+/* ===========================================================
+   Bonos CER — metadata + precios en vivo
+   =========================================================== */
+
+// Metadata de bonos CER zero-coupon. precio_tecnico = 100 * CER_actual/CER_emision
+// Para todos estos bonos usamos la convención de mercado: el precio de data912 ya
+// está ajustado por CER y la TIR_real se calcula como (100/precio)^(365/dias)-1
+// Para bonos con cupones (DICP, PARP, TX26, TX28) se agrega lógica de cupones.
+const BONOS_CER_META = {
+  // Zero Coupons (más comunes y nuevos)
+  "X15Y6": { vto: "2026-05-15", cupon: 0, tipo: "ZC" },
+  "X29Y6": { vto: "2026-05-29", cupon: 0, tipo: "ZC" },
+  "X31L6": { vto: "2026-07-31", cupon: 0, tipo: "ZC" },
+  "X30S6": { vto: "2026-09-30", cupon: 0, tipo: "ZC" },
+  "X29D6": { vto: "2026-12-29", cupon: 0, tipo: "ZC" },
+  "X30J7": { vto: "2027-06-30", cupon: 0, tipo: "ZC" },
+  // BONCERs Zero Coupon
+  "TZX26": { vto: "2026-06-30", cupon: 0, tipo: "ZC" },
+  "TZXO6": { vto: "2026-10-30", cupon: 0, tipo: "ZC" },
+  "TZXD6": { vto: "2026-12-15", cupon: 0, tipo: "ZC" },
+  "TZXM7": { vto: "2027-03-31", cupon: 0, tipo: "ZC" },
+  "TZX27": { vto: "2027-06-30", cupon: 0, tipo: "ZC" },
+  "TZXD7": { vto: "2027-12-15", cupon: 0, tipo: "ZC" },
+  "TZXM8": { vto: "2028-03-31", cupon: 0, tipo: "ZC" },
+  "TZX28": { vto: "2028-06-30", cupon: 0, tipo: "ZC" },
+  "TZXD8": { vto: "2028-12-15", cupon: 0, tipo: "ZC" },
+  "TZX29": { vto: "2029-06-30", cupon: 0, tipo: "ZC" },
+  // Bonos viejos con cupones (TX26 = 2% anual; TX28 = 2.25%; DICP = 5.83%; PARP = 1.18%)
+  "TX26": { vto: "2026-11-09", cupon: 0.02, tipo: "CUP" },
+  "TX28": { vto: "2028-11-09", cupon: 0.0225, tipo: "CUP" },
+  "DICP": { vto: "2033-12-31", cupon: 0.0583, tipo: "CUP" },
+  "PARP": { vto: "2038-12-31", cupon: 0.0118, tipo: "CUP" },
+};
+
+/* TIR real de un bono CER zero-coupon a partir del precio dirty */
+function calcTIRRealZC(precioDirty, dias) {
+  if (precioDirty <= 0 || dias <= 0) return null;
+  // Convención del mercado: precio dirty ya CER-adjustado, VN nominal = 100
+  // TIR_real = (100/precio)^(365/dias) - 1
+  const ratio = 100 / precioDirty;
+  if (ratio <= 0) return null;
+  return Math.pow(ratio, 365 / dias) - 1;
+}
+
+/* TIR real aproximada para bonos CER con cupón anual fijo */
+function calcTIRRealConCupon(precioDirty, dias, cuponAnual) {
+  if (precioDirty <= 0 || dias <= 0) return null;
+  // Aproximación: para bonos con cupones, TIR_real_total ≈ TIR_ZC + cupon
+  const tirZC = calcTIRRealZC(precioDirty, dias);
+  if (tirZC === null) return null;
+  return tirZC + (cuponAnual || 0);
+}
+
+/* Fetch principal: precios en vivo + cálculo de TIR real */
+async function fetchBonosCER() {
+  const data = await safeFetch('https://data912.com/live/arg_cer', 'arg_cer');
+  if (!Array.isArray(data) || data.length === 0) return null;
+
+  const hoy = new Date();
+  const bonos = [];
+
+  data.forEach(item => {
+    const ticker = (item.symbol || item.ticker || '').toUpperCase();
+    const precio = item.c || item.close || item.price;
+    if (!ticker || !isFinite(precio) || precio <= 0) return;
+
+    const meta = BONOS_CER_META[ticker];
+    if (!meta) return; // Solo procesamos bonos con metadata conocida
+
+    const vto = new Date(meta.vto);
+    if (!isFinite(vto.getTime())) return;
+    const dias = Math.ceil((vto - hoy) / 86400000);
+    if (dias <= 0) return; // bono ya venció
+
+    let tirReal;
+    if (meta.tipo === 'ZC') {
+      tirReal = calcTIRRealZC(precio, dias);
+    } else {
+      tirReal = calcTIRRealConCupon(precio, dias, meta.cupon);
+    }
+    if (tirReal === null || !isFinite(tirReal)) return;
+
+    bonos.push({
+      ticker,
+      precio,
+      tirReal,
+      duration: dias / 365,
+      vto: meta.vto,
+      paridad: precio / 100,
+    });
+  });
+
+  bonos.sort((a, b) => new Date(a.vto) - new Date(b.vto));
+  console.log(`[CER] ${bonos.length} bonos procesados con TIR real calculada`);
+  return bonos;
+}
+
+/* Igual para LECAPs/BONCAPs: traemos precios + metadata fija */
+const BONOS_FIJA_META = {
+  "S30A6": { vto: "2026-04-30" },
+  "S15Y6": { vto: "2026-05-15" },
+  "S29Y6": { vto: "2026-05-29" },
+  "T13F6": { vto: "2026-06-13" },
+  "S30J6": { vto: "2026-06-30" },
+  "T30J6": { vto: "2026-06-30" },
+  "S31L6": { vto: "2026-07-31" },
+  "T31L6": { vto: "2026-07-31" },
+  "S29G6": { vto: "2026-08-29" },
+  "S30S6": { vto: "2026-09-30" },
+  "T30S6": { vto: "2026-09-30" },
+  "S31O6": { vto: "2026-10-31" },
+  "T30O6": { vto: "2026-10-30" },
+  "T30N6": { vto: "2026-11-30" },
+  "T15D6": { vto: "2026-12-15" },
+  "T15E7": { vto: "2027-01-15" },
+  "T13F7": { vto: "2027-02-13" },
+  "T30A7": { vto: "2027-04-30" },
+  "T30J7": { vto: "2027-06-30" },
+  "T15D7": { vto: "2027-12-15" },
+};
+
+/* Calcular TIR de una LECAP/BONCAP */
+function calcTIRLecap(precio, dias, vnFinal = 100) {
+  if (precio <= 0 || dias <= 0) return null;
+  return Math.pow(vnFinal / precio, 365 / dias) - 1;
+}
 
 async function fetchPlazoFijo() {
   const data = await safeFetch('https://api.argentinadatos.com/v1/finanzas/tasas/plazoFijo', 'plazoFijo');
@@ -2217,35 +2386,55 @@ async function refreshMarket() {
   const lecaps = [];
   const boncer = [];
 
-  // Procesar LECAPs
+  // Procesar LECAPs / BONCAPs — preferimos metadata hardcodeada de BONOS_FIJA_META
   if (notes && Array.isArray(notes)) {
     notes.forEach(n => {
-      // Probar distintos nombres de campo
-      const ticker = n.symbol || n.ticker || n.especie || n.simbolo || n.c;
+      const ticker = (n.symbol || n.ticker || n.especie || n.simbolo || n.c || '').toUpperCase();
       const precio = parseFloat(n.c ?? n.close ?? n.px_bid ?? n.ultimo ?? n.precio ?? n.cierre);
       if (!ticker || !isFinite(precio) || precio <= 0) return;
-      const venc = parseVencimientoTicker(ticker);
-      if (!venc) return;
+      // Preferir metadata hardcodeada (más precisa). Fallback a parseVencimientoTicker.
+      const meta = (typeof BONOS_FIJA_META !== 'undefined' && BONOS_FIJA_META[ticker]) || null;
+      let venc;
+      if (meta && meta.vto) {
+        venc = new Date(meta.vto);
+      } else {
+        venc = parseVencimientoTicker(ticker);
+      }
+      if (!venc || !isFinite(venc.getTime())) return;
       const dias = diasEntre(today, venc);
       if (dias <= 0 || dias > 2000) return;
       const tir = tirLECAP(precio, dias);
       if (!tir || tir <= 0 || tir > 5) return;
-      lecaps.push({ ticker, precio, venc, dias, tir });
+      const tem = Math.pow(1 + tir, 1/12) - 1;
+      lecaps.push({
+        ticker, precio, venc, dias, tir,
+        tea: tir,
+        tem,
+        vto: meta?.vto || (venc instanceof Date ? venc.toISOString().slice(0,10) : null)
+      });
     });
     lecaps.sort((a,b) => a.dias - b.dias);
   }
 
-  // Procesar BONCER (solo para listar, sin TIR real sin CER base)
+  // Procesar BONCER — fetchBonosCER ya devuelve estructura procesada con tirReal calculada
   if (cer && Array.isArray(cer)) {
-    cer.forEach(n => {
-      const ticker = n.symbol || n.ticker || n.especie || n.simbolo;
-      const precio = parseFloat(n.c ?? n.close ?? n.ultimo ?? n.precio ?? n.cierre);
-      if (!ticker || !isFinite(precio) || precio <= 0) return;
-      const venc = parseVencimientoTicker(ticker);
-      if (!venc) return;
+    cer.forEach(b => {
+      // b ya viene del nuevo fetchBonosCER con: { ticker, precio, tirReal, duration, vto, paridad }
+      if (!b.ticker || !isFinite(b.precio) || b.precio <= 0) return;
+      const venc = new Date(b.vto);
+      if (!isFinite(venc.getTime())) return;
       const dias = diasEntre(today, venc);
       if (dias <= 0 || dias > 3000) return;
-      boncer.push({ ticker, precio, venc, dias });
+      boncer.push({
+        ticker: b.ticker,
+        precio: b.precio,
+        venc,
+        vto: b.vto,
+        dias,
+        tirReal: b.tirReal,
+        duration: b.duration,
+        paridad: b.paridad,
+      });
     });
     boncer.sort((a,b) => a.dias - b.dias);
   }
@@ -2270,7 +2459,10 @@ async function refreshMarket() {
       tasasLive: { pf: SAMPLE_DATA.pfAnual * 100, lecap: SAMPLE_DATA.lecaps[4].tir * 100, fci: null, caucion: null }
     };
   } else {
-    const lecapMedia = lecaps.find(l => l.dias >= 60 && l.dias <= 240) || lecaps[Math.floor(lecaps.length/2)] || null;
+    // LECAP benchmark: preferimos la MÁS CORTA disponible para reflejar la tasa de mercado actual
+    // Idealmente <30 días, pero si no hay tan corta tomamos la más cercana al presente
+    const lecapsOrdenadas = [...lecaps].sort((a, b) => a.dias - b.dias);
+    const lecapMedia = lecapsOrdenadas.find(l => l.dias > 0) || null;
     marketData = {
       ts: new Date(),
       lecaps: lecaps.length ? lecaps : SAMPLE_DATA.lecaps.slice(),
@@ -2310,19 +2502,45 @@ async function refreshMarket() {
 function updateInflHint() {
   const hint = document.getElementById('inflHint');
   if (!hint) return;
-  // Priorizamos la inflación calculada de VL (breakeven)
+
+  // Calcular REM anual a partir de la curva REM si está disponible
+  let remAnual = null;
+  if (marketData?.curvaREM && Array.isArray(marketData.curvaREM)) {
+    const validRem = marketData.curvaREM.filter(p => p.tem !== null);
+    if (validRem.length > 0) {
+      const prom = validRem.reduce((s, p) => s + p.tem, 0) / validRem.length;
+      remAnual = Math.pow(1 + prom, 12) - 1;
+    }
+  }
+
+  // Inflación VL (breakeven, anualizada)
   const inflVL = marketData?.inflBreakeven?.anual;
+
+  // Pisar el campo automáticamente con el breakeven VL si el campo está vacío
+  // o si todavía contiene el default
+  const inflInput = document.getElementById('infl');
+  const curr = parseNum(inflInput.value);
+  if (inflVL && (!curr || curr === CFG.infl)) {
+    inflInput.value = (inflVL * 100).toFixed(1);
+  }
+
+  // Componer el hint con dos líneas: VL (principal) + REM (referencia)
+  let html = '';
   if (inflVL) {
     const color = marketData.isSample ? 'var(--amber)' : 'var(--gold)';
-    const tag = marketData.isSample ? '(ejemplo)' : 'Breakeven VL';
-    hint.innerHTML = `<span style="color:${color}">●</span> ${tag}: ${fmtPct(inflVL)}`;
-    const curr = parseNum(document.getElementById('infl').value);
-    if (curr === CFG.infl || !curr) {
-      document.getElementById('infl').value = (inflVL * 100).toFixed(1);
-    }
-    return;
+    const tag = marketData.isSample ? 'Breakeven VL (ejemplo)' : 'Breakeven Value Latam';
+    html += `<span style="color:${color}">●</span> <strong>${tag}: ${fmtPct(inflVL)}</strong>`;
   }
-  hint.textContent = 'Ajustá según tu expectativa';
+  if (remAnual !== null) {
+    if (html) html += ' &nbsp; · &nbsp; ';
+    html += `<span style="color:var(--muted);font-weight:500">REM BCRA: ${fmtPct(remAnual)}</span>`;
+  }
+  if (!html) {
+    html = 'Ajustá según tu expectativa';
+  } else {
+    html += '<div style="font-size:11px;color:var(--muted);margin-top:3px;font-weight:500">El campo se autocompleta con el Breakeven VL. Podés modificarlo si tenés otra expectativa.</div>';
+  }
+  hint.innerHTML = html;
 }
 
 /* =========================================================
@@ -2563,29 +2781,68 @@ function generarConclusionInflacion() {
   const { curvaVL, curvaREM } = marketData;
   if (!curvaVL || curvaVL.length < 4) { el.innerHTML = ''; return; }
 
-  // Obtener valores sin nulos
   const validVL = curvaVL.filter(p => p.tem !== null);
   if (validVL.length < 4) { el.innerHTML = ''; return; }
 
+  // ===== Métricas clave de la curva =====
   const primerTEM = validVL[0].tem * 100;
   const ultimoTEM = validVL[validVL.length - 1].tem * 100;
-  const diff = ultimoTEM - primerTEM;
+  const diff = ultimoTEM - primerTEM; // pendiente (negativa = curva baja, positiva = sube)
+  const absDiff = Math.abs(diff);
+  const promTEM = validVL.reduce((s, p) => s + p.tem * 100, 0) / validVL.length;
+  const acumAnual = validVL.reduce((s, p) => s * (1 + p.tem), 1);
+  const inflaProyAnual = (Math.pow(acumAnual, 12 / validVL.length) - 1) * 100;
 
-  let tendencia = '';
-  let recomendacion = '';
-  if (diff < -0.3) {
-    tendencia = `El mercado piensa que la inflación <strong>va a bajar</strong>. Ahora espera ${primerTEM.toFixed(2).replace('.',',')}% mensual y en 12 meses ${ultimoTEM.toFixed(2).replace('.',',')}%.`;
-    recomendacion = `Si coincidís con esta visión, <strong>andá a tasa fija larga</strong> (LECAPs a 6-12 meses): te fijás una tasa alta antes de que caiga. Si creés que la inflación <strong>no va a bajar tanto</strong>, el CER te puede sorprender para bien.`;
-  } else if (diff > 0.3) {
-    tendencia = `El mercado descuenta <strong>aceleración de la inflación</strong>. Arranca en ${primerTEM.toFixed(2).replace('.',',')}% y termina en ${ultimoTEM.toFixed(2).replace('.',',')}%.`;
-    recomendacion = `Si compartís esa visión, <strong>andá a CER</strong> para cubrirte. Si te parece exagerado, la tasa fija larga te paga una prima por asumir el riesgo.`;
+  // Etiquetas de meses (primer y último mes con dato)
+  const hoy = new Date();
+  const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const primerIdx = curvaVL.findIndex(p => p.tem !== null);
+  const ultimoIdx = curvaVL.length - 1 - [...curvaVL].reverse().findIndex(p => p.tem !== null);
+  const primerMesNombre = MESES[new Date(hoy.getFullYear(), hoy.getMonth() + (primerIdx + 1), 1).getMonth()];
+  const ultimoMesFecha = new Date(hoy.getFullYear(), hoy.getMonth() + (ultimoIdx + 1), 1);
+  const ultimoMesNombre = MESES[ultimoMesFecha.getMonth()] + ' ' + ultimoMesFecha.getFullYear();
+
+  // ===== Bloque 1: lectura de la curva (pendiente) =====
+  let bloqueCurva = '';
+  if (diff < -0.5) {
+    // Curva fuertemente desinflacionaria
+    const variantes = [
+      `La curva está claramente invertida. El mercado paga hoy ${primerTEM.toFixed(2).replace('.',',')}% mensual de inflación esperada para ${primerMesNombre} y solo ${ultimoTEM.toFixed(2).replace('.',',')}% para ${ultimoMesNombre}. Es decir, los inversores están apostando con plata real a que el proceso de desinflación es genuino. Para los próximos meses esto plantea dos jugadas: si compartís la visión, la tasa fija larga (LECAPs a 6-12 meses) te fija un rendimiento nominal alto antes de que ceda; si pensás que la inflación se va a empacar arriba, los CER cortos siguen ofreciendo cobertura barata.`,
+      `Pendiente decreciente y pronunciada: el mercado descuenta una caída de inflación de ${absDiff.toFixed(2).replace('.',',')} puntos mensuales en los próximos 12 meses. En contextos así, la tasa fija larga suele rendir más en términos absolutos que la tasa fija corta — pero solo si la desinflación se confirma. La cobertura CER queda como red de seguridad: si la inflación se resiste, los CER capturan ese exceso.`,
+      `La curva descuenta desinflación rápida: arranca en ${primerTEM.toFixed(2).replace('.',',')}% mensual y termina en ${ultimoTEM.toFixed(2).replace('.',',')}%. Una caída de casi ${absDiff.toFixed(1).replace('.',',')} puntos en un año es una apuesta optimista que el mercado está validando con precios. Si tu lectura macro coincide, conviene extender duración en tasa fija; si tenés dudas, repartir con CER neutraliza el riesgo.`,
+    ];
+    bloqueCurva = variantes[Math.floor(Math.random() * variantes.length)];
+  } else if (diff < -0.15) {
+    // Curva moderadamente decreciente
+    const variantes = [
+      `La curva es decreciente pero suave: el mercado espera que la inflación pase de ${primerTEM.toFixed(2).replace('.',',')}% mensual en ${primerMesNombre} a ${ultimoTEM.toFixed(2).replace('.',',')}% al cierre del horizonte. Una desaceleración gradual, no abrupta. En este escenario la diferencia entre tasa fija y CER se vuelve fina — la elección depende más de tu horizonte de plazo que de una visión macro fuerte.`,
+      `Pendiente moderadamente desinflacionaria. La inflación implícita promedio del año está en torno a ${promTEM.toFixed(2).replace('.',',')}% mensual, equivalente a ${inflaProyAnual.toFixed(0)}% anual aproximadamente. Cuando la curva tiene esta forma, el carry de tasa fija suele ser razonable sin asumir riesgos extremos.`,
+      `El mercado ve una desinflación ordenada. La caída esperada es de ${absDiff.toFixed(2).replace('.',',')} puntos en 12 meses — significativa pero no agresiva. Para inversores con horizonte definido, conviene mirar los plazos donde la tasa real implícita es más alta y aprovechar ahí.`,
+    ];
+    bloqueCurva = variantes[Math.floor(Math.random() * variantes.length)];
+  } else if (diff > 0.5) {
+    // Curva creciente fuerte
+    const variantes = [
+      `La curva descuenta aceleración inflacionaria: arranca en ${primerTEM.toFixed(2).replace('.',',')}% mensual y termina en ${ultimoTEM.toFixed(2).replace('.',',')}%. Es un escenario poco común — implica que el mercado ve un deterioro futuro. Cuando la curva tiene esta forma, los CER suelen ser preferidos por encima de la tasa fija. La tasa fija larga, en cambio, paga una prima por asumir el riesgo de que la inflación termine arriba.`,
+      `Pendiente creciente: el mercado piensa que la inflación va a ser peor adelante que ahora. En contextos así, la cobertura por inflación (CER) tiende a comprimir más fuerte que la tasa fija. Si compartís la visión, los CER de duración media son la jugada natural; si pensás que el mercado exagera, la tasa fija larga ofrece tasas reales atractivas.`,
+      `La curva sube en el horizonte: ${primerTEM.toFixed(2).replace('.',',')}% en ${primerMesNombre}, ${ultimoTEM.toFixed(2).replace('.',',')}% en ${ultimoMesNombre}. Esto suele pasar antes de eventos macro o cuando hay incertidumbre sobre la política monetaria. La elección típica es CER medio para quien acompaña, tasa fija larga para quien apuesta al ajuste.`,
+    ];
+    bloqueCurva = variantes[Math.floor(Math.random() * variantes.length)];
+  } else if (diff > 0.15) {
+    // Curva creciente moderada
+    bloqueCurva = `La curva es ligeramente creciente: la inflación esperada sube de ${primerTEM.toFixed(2).replace('.',',')}% a ${ultimoTEM.toFixed(2).replace('.',',')}% mensual a 12 meses. No es un movimiento agresivo, pero sugiere que el mercado no termina de creer en una desinflación rápida. En este escenario los CER mantienen su atractivo y la tasa fija paga una prima razonable.`;
   } else {
-    tendencia = `El mercado ve la inflación <strong>estable</strong> alrededor de ${primerTEM.toFixed(2).replace('.',',')}% mensual durante el próximo año.`;
-    recomendacion = `Con esta visión, la diferencia entre tasa fija y CER es chica. Elegí por <strong>liquidez</strong> y <strong>plazo</strong> que necesites, más que por cobertura.`;
+    // Curva plana
+    const variantes = [
+      `La curva está prácticamente plana: el mercado espera una inflación estable alrededor de ${promTEM.toFixed(2).replace('.',',')}% mensual durante los próximos 12 meses (${inflaProyAnual.toFixed(0)}% anual aproximadamente). Cuando la curva tiene esta forma, la diferencia entre tasa fija y CER es marginal — la elección pasa más por liquidez y plazo deseado que por una visión macro.`,
+      `Inflación esperada estable: ${primerTEM.toFixed(2).replace('.',',')}% en ${primerMesNombre} y ${ultimoTEM.toFixed(2).replace('.',',')}% en ${ultimoMesNombre}. Una curva plana indica que el mercado no descuenta cambios de régimen. Para inversores con horizonte mediano, los CER ofrecen cobertura asegurada; para quienes priorizan la previsibilidad del flujo, la tasa fija sirve sin penalidad clara.`,
+      `Curva sin pendiente clara. El mercado proyecta una inflación que no acelera ni cede en el horizonte de 12 meses (en torno a ${promTEM.toFixed(2).replace('.',',')}% mensual). En estos casos el dilema CER-vs-fija pierde fuerza y la decisión vira hacia plazos: cortos para liquidez, medianos para mejor rendimiento.`,
+    ];
+    bloqueCurva = variantes[Math.floor(Math.random() * variantes.length)];
   }
 
-  // Comparación con REM
-  let vsREM = '';
+  // ===== Bloque 2: comparación con REM =====
+  let bloqueREM = '';
   if (curvaREM && curvaREM.some(p => p.tem !== null)) {
     const diffs = [];
     curvaVL.forEach((v, i) => {
@@ -2594,24 +2851,33 @@ function generarConclusionInflacion() {
     });
     if (diffs.length > 2) {
       const promDiff = diffs.reduce((a,b) => a+b, 0) / diffs.length;
-      if (Math.abs(promDiff) > 0.2) {
-        const quien = promDiff > 0 ? 'el mercado' : 'las consultoras del REM';
-        const otro = promDiff > 0 ? 'las consultoras' : 'el mercado';
-        const cuantos = Math.abs(promDiff).toFixed(2).replace('.',',');
-        vsREM = `<br><br><strong>VL vs REM:</strong> ${quien} espera ${cuantos} puntos mensuales más de inflación que ${otro}. Cuando el mercado y las consultoras difieren así, la plata de los inversores suele pegarle más cerca — el REM es una encuesta, acá hay billetes reales jugados.`;
+      const absPromDiff = Math.abs(promDiff);
+      if (absPromDiff > 0.6) {
+        const quien = promDiff > 0 ? 'el mercado' : 'el REM';
+        const otro = promDiff > 0 ? 'las consultoras del REM' : 'el mercado';
+        const variantes = [
+          `<br><br><strong>VL vs REM:</strong> hay una brecha amplia entre fuentes — ${quien} descuenta ${absPromDiff.toFixed(2).replace('.',',')} puntos mensuales más de inflación que ${otro}. Cuando se abre tanto la diferencia, suele haber dos lecturas: o una de las dos está procesando un cambio de régimen con desfasaje, o el mercado está pagando una prima por cobertura. Conviene mirar el dato del INDEC mensual para ver quién está más cerca.`,
+          `<br><br><strong>VL vs REM:</strong> divergencia significativa de ${absPromDiff.toFixed(2).replace('.',',')} puntos mensuales en promedio. Históricamente, cuando hay tanta diferencia, el mercado suele anticiparse mejor a los puntos de inflexión, pero las consultoras suelen ser más precisas en regímenes estables. La diferencia es información en sí misma — algo está pasando con las expectativas.`,
+        ];
+        bloqueREM = variantes[Math.floor(Math.random() * variantes.length)];
+      } else if (absPromDiff > 0.2) {
+        const quien = promDiff > 0 ? 'el mercado' : 'las consultoras';
+        bloqueREM = `<br><br><strong>VL vs REM:</strong> ${quien} espera ${absPromDiff.toFixed(2).replace('.',',')} puntos mensuales más de inflación que la otra fuente. Una diferencia moderada que no alcanza para hablar de ruptura, pero sí para pensar dónde te paras vos: la plata jugada es del mercado, las opiniones agregadas son del REM. Ambas tienen información útil.`;
       } else {
-        vsREM = `<br><br><strong>VL vs REM:</strong> están casi en línea (diferencia menor a 0,2 pts). Cuando ambos coinciden, la probabilidad de que la inflación ande por ahí es alta.`;
+        const variantes = [
+          `<br><br><strong>VL vs REM:</strong> alineación clara — la diferencia entre ambas fuentes es menor a 0,2 puntos mensuales. Cuando mercado y consultoras coinciden, la probabilidad de que la inflación cierre cerca de esa zona aumenta. Es uno de los pocos momentos donde el consenso es robusto.`,
+          `<br><br><strong>VL vs REM:</strong> mercado y consultoras están en línea (diferencia menor a 0,2 puntos mensuales). Cuando ambas fuentes coinciden, los datos suelen converger ahí. Para tomar decisiones tácticas con esta información, basta con seguir cualquiera de las dos curvas como referencia.`,
+        ];
+        bloqueREM = variantes[Math.floor(Math.random() * variantes.length)];
       }
     }
   }
 
   el.innerHTML = `
-    <div class="experta-kicker">🎯 Conclusión del experto</div>
+    <div class="experta-kicker">Conclusión del experto</div>
     <div class="experta-body">
-      ${tendencia}
-      <br><br>
-      ${recomendacion}
-      ${vsREM}
+      ${bloqueCurva}
+      ${bloqueREM}
     </div>
   `;
 }
@@ -2624,55 +2890,86 @@ function generarConclusionLecaps() {
   const { curvaVL } = marketData;
   if (!lecaps.length || !curvaVL || !curvaVL.length) { el.innerHTML = ''; return; }
 
-  // Para cada LECAP encontrar la inflación esperada VL del mes de su vencimiento
+  // Para cada LECAP, encontrar la inflación esperada VL del mes de su vencimiento
   const hoy = new Date();
+  const MESES_CORTO = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+
   const comparacion = lecaps.map(l => {
     const vto = new Date(l.vto);
     const mesesDiff = (vto.getFullYear() - hoy.getFullYear()) * 12 + (vto.getMonth() - hoy.getMonth());
     const idx = Math.max(0, Math.min(curvaVL.length - 1, mesesDiff - 1));
     const inflTEM = curvaVL[idx] ? curvaVL[idx].tem : null;
     if (inflTEM === null) return null;
+    const margen = (l.tem - inflTEM) * 100; // pts mensuales
+    const vtoFmt = `${MESES_CORTO[vto.getMonth()]}-${String(vto.getFullYear()).slice(-2)}`;
+    const dias = Math.ceil((vto - hoy) / 86400000);
     return {
       ticker: l.ticker,
       vto: l.vto,
+      vtoFmt,
       tem: l.tem,
       infl: inflTEM,
-      margen: (l.tem - inflTEM) * 100, // puntos mensuales
-      dtm: l.dtm,
+      margen,
+      dias,
+      plazoNombre: dias <= 90 ? 'corta' : dias <= 240 ? 'media' : 'larga',
     };
   }).filter(Boolean);
 
   if (comparacion.length === 0) { el.innerHTML = ''; return; }
 
-  // Clasificar: ganadoras (margen > 0.1), neutras, perdedoras
+  // Clasificación
   const ganadoras = comparacion.filter(c => c.margen > 0.1).sort((a,b) => b.margen - a.margen);
   const perdedoras = comparacion.filter(c => c.margen < -0.1).sort((a,b) => a.margen - b.margen);
   const neutras = comparacion.filter(c => Math.abs(c.margen) <= 0.1);
 
+  // ===== Construir mensaje según escenario =====
   let mensaje = '';
 
-  if (ganadoras.length > 0) {
+  // === ESCENARIO A: Hay ganadoras y perdedoras (mix típico)
+  if (ganadoras.length > 0 && perdedoras.length > 0) {
     const mejor = ganadoras[0];
-    const vtoFmt = new Date(mejor.vto).toLocaleDateString('es-AR', {day:'2-digit', month:'short'});
-    mensaje += `<strong>La que más pagaría real:</strong> <strong style="color:var(--gold)">${mejor.ticker}</strong> (vence ${vtoFmt}). Paga ${(mejor.tem*100).toFixed(2).replace('.',',')}% mensual contra una inflación esperada de ${(mejor.infl*100).toFixed(2).replace('.',',')}%. <strong>Margen real: +${mejor.margen.toFixed(2).replace('.',',')} pts por mes.</strong>`;
-  }
-
-  if (perdedoras.length > 0) {
     const peor = perdedoras[0];
-    const vtoFmt = new Date(peor.vto).toLocaleDateString('es-AR', {day:'2-digit', month:'short'});
-    mensaje += `<br><br><strong>Ojo con:</strong> <strong style="color:var(--red)">${peor.ticker}</strong> (vence ${vtoFmt}). Paga ${(peor.tem*100).toFixed(2).replace('.',',')}% mensual pero la inflación esperada para ese mes es ${(peor.infl*100).toFixed(2).replace('.',',')}%. <strong>Margen real: ${peor.margen.toFixed(2).replace('.',',')} pts.</strong> Con esa LECAP perdés poder de compra si el mercado acierta.`;
-  }
+    const variantes = [
+      `<strong>Punto destacado de la curva:</strong> la LECAP a ${mejor.plazoNombre} ${mejor.vtoFmt} <strong>(${mejor.ticker})</strong> paga ${(mejor.tem*100).toFixed(2).replace('.',',')}% mensual contra una inflación esperada de ${(mejor.infl*100).toFixed(2).replace('.',',')}% para ese mes. Margen real proyectado: <strong style="color:var(--gold)">+${mejor.margen.toFixed(2).replace('.',',')} puntos por mes</strong>. A 12 meses ese spread se acumula y compone, pero depende de que la inflación efectivamente cierre cerca del breakeven. Si pegan por arriba, el resultado real puede invertirse.<br><br><strong>Punto a evitar:</strong> la LECAP <strong>${peor.ticker}</strong> con vencimiento en ${peor.vtoFmt} paga ${(peor.tem*100).toFixed(2).replace('.',',')}% mensual, mientras que la inflación esperada para ese mes es ${(peor.infl*100).toFixed(2).replace('.',',')}%. Margen real: <strong style="color:var(--red)">${peor.margen.toFixed(2).replace('.',',')} puntos</strong>. Si la inflación pega cerca del breakeven, se pierde poder de compra con esta posición. Para ese plazo conviene mirar CER.`,
 
-  if (ganadoras.length === 0 && perdedoras.length === 0) {
-    mensaje = 'Todas las LECAPs del snapshot están más o menos empatadas con la inflación esperada. No hay opción que se destaque claramente — la decisión depende de plazo y liquidez, no de tasa real.';
-  } else if (ganadoras.length === 0) {
-    mensaje = `<strong>Ninguna LECAP le gana claramente a la inflación</strong> según la curva del mercado. Esto suele pasar cuando hay expectativa de que la inflación se acelere. Considerá <strong>CER</strong> para cobertura real, o si pensás que la inflación NO se va a acelerar tanto, la LECAP puede ser una apuesta contra el mercado.<br><br>${mensaje}`;
-  } else if (perdedoras.length === 0) {
-    mensaje = `<strong>Todas las LECAPs le ganan a la inflación esperada.</strong> Escenario poco común — el mercado está pagando tasas reales positivas en toda la curva. Momento propicio para <strong>fijar tasa</strong> si podés inmovilizar la plata.<br><br>${mensaje}`;
+      `<strong>Mejor punto de la curva fija:</strong> ${mejor.ticker} (vence ${mejor.vtoFmt}). Ofrece ${(mejor.tem*100).toFixed(2).replace('.',',')}% mensual versus una inflación esperada de ${(mejor.infl*100).toFixed(2).replace('.',',')}% para ese mes — un margen real de ${mejor.margen.toFixed(2).replace('.',',')} puntos mensuales. La condición de éxito es clara: que la inflación efectiva durante el plazo no supere ese breakeven. <br><br><strong>El reverso:</strong> la ${peor.ticker} (${peor.vtoFmt}) está pagando ${(peor.tem*100).toFixed(2).replace('.',',')}% nominal contra ${(peor.infl*100).toFixed(2).replace('.',',')}% de inflación implícita en ese plazo. Margen negativo de ${Math.abs(peor.margen).toFixed(2).replace('.',',')} puntos. Para alguien con horizonte similar, los CER del mismo vencimiento ofrecen mejor protección.`,
+
+      `<strong>Lo que más se destaca:</strong> ${mejor.ticker}, vencimiento ${mejor.vtoFmt}, con ${(mejor.tem*100).toFixed(2).replace('.',',')}% mensual. Esto se compara contra una inflación esperada de ${(mejor.infl*100).toFixed(2).replace('.',',')}% para el mes en que cobra — margen real de +${mejor.margen.toFixed(2).replace('.',',')} puntos. No es un margen abultado pero a 12 meses se compone. <br><br><strong>El otro extremo:</strong> ${peor.ticker} (${peor.vtoFmt}) paga ${(peor.tem*100).toFixed(2).replace('.',',')}% mensual cuando la inflación esperada para ese mes es ${(peor.infl*100).toFixed(2).replace('.',',')}%. Tasa real implícita negativa: ${peor.margen.toFixed(2).replace('.',',')} puntos. Conviene ese plazo solo si pensás que la inflación va a perforar el breakeven hacia abajo.`,
+    ];
+    mensaje = variantes[Math.floor(Math.random() * variantes.length)];
+  }
+  // === ESCENARIO B: Todas pierden (curva CER comprimida, tasa fija barata)
+  else if (ganadoras.length === 0 && perdedoras.length > 0) {
+    const peor = perdedoras[perdedoras.length - 1]; // la menos peor
+    const variantes = [
+      `<strong>Configuración con tasas reales negativas:</strong> ninguna LECAP de la curva le gana a la inflación esperada. La menos castigada es la ${peor.ticker} (vence ${peor.vtoFmt}) con un margen de ${peor.margen.toFixed(2).replace('.',',')} puntos mensuales. Esto suele pasar cuando hay expectativa fuerte de aceleración inflacionaria o cuando la curva CER está muy comprimida. Para preservar poder de compra en este contexto, los CER son la opción natural; la tasa fija solo conviene si pensás que la inflación va a quebrar a la baja por debajo del breakeven.`,
+
+      `<strong>Toda la curva fija está rindiendo por debajo de la inflación esperada.</strong> Es un escenario que aparece cuando el mercado descuenta presión inflacionaria adelante o cuando la baja de tasas del BCRA fue agresiva. La ${peor.ticker} es la que menos pierde (margen ${peor.margen.toFixed(2).replace('.',',')} puntos para ${peor.vtoFmt}), pero igualmente queda corta vs inflación. Quien priorice cobertura debería mirar CER cortos y medianos.`,
+
+      `<strong>Tasas reales negativas en toda la línea fija.</strong> El mercado está pagando una prima por previsibilidad: aceptar perder algo contra la inflación a cambio de saber el flujo exacto al vencimiento. Esto es típico cuando hay alta liquidez en pesos o expectativa de baja de tasas. Si necesitás visibilidad de flujo, la tasa fija paga ese seguro; si tu prioridad es preservar poder adquisitivo, los CER son el camino.`,
+    ];
+    mensaje = variantes[Math.floor(Math.random() * variantes.length)];
+  }
+  // === ESCENARIO C: Todas ganan (raro y favorable)
+  else if (ganadoras.length > 0 && perdedoras.length === 0) {
+    const mejor = ganadoras[0];
+    const peorGanadora = ganadoras[ganadoras.length - 1];
+    const variantes = [
+      `<strong>Escenario poco común — toda la curva fija paga tasas reales positivas.</strong> Desde la ${peorGanadora.ticker} (margen +${peorGanadora.margen.toFixed(2).replace('.',',')} pts mensuales) hasta la ${mejor.ticker} (margen +${mejor.margen.toFixed(2).replace('.',',')} pts), todas las LECAPs superan la inflación esperada. Esto suele pasar cuando el BCRA acaba de subir tasas o cuando la demanda de pesos es alta. Es un buen momento para fijar tasa si tenés un horizonte definido — pero el escenario tiende a no durar mucho.`,
+
+      `<strong>Configuración favorable para la tasa fija.</strong> Toda la curva está pagando por encima de la inflación esperada: el mejor punto es ${mejor.ticker} con +${mejor.margen.toFixed(2).replace('.',',')} pts mensuales para ${mejor.vtoFmt}. Aprovechar esto tiene sentido si tu objetivo de plazo coincide con el del bono. La elección entre LECAPs cortas y largas depende de la liquidez que necesites.`,
+
+      `<strong>Toda la curva fija renta real positiva.</strong> Margen máximo en ${mejor.ticker} (+${mejor.margen.toFixed(2).replace('.',',')} pts mensuales para ${mejor.vtoFmt}); margen mínimo en ${peorGanadora.ticker} (+${peorGanadora.margen.toFixed(2).replace('.',',')} pts). Los momentos así son cortos en Argentina, suelen comprimirse rápido cuando los flujos detectan la oportunidad. Para inversores con plazo claro, fijar tasa ahora protege contra el rally hacia abajo de los rendimientos.`,
+    ];
+    mensaje = variantes[Math.floor(Math.random() * variantes.length)];
+  }
+  // === ESCENARIO D: Todo neutro o muy cerca (poco común)
+  else {
+    mensaje = `<strong>La curva fija está alineada con la inflación esperada.</strong> Las LECAPs disponibles muestran márgenes reales cercanos a cero — ni claramente positivos ni negativos. En este escenario la decisión entre tasa fija y CER pasa más por liquidez y plazo que por una visión sobre inflación. Cualquiera de los dos instrumentos es razonable; conviene elegir según la fecha exacta en que vas a necesitar la plata.`;
   }
 
   el.innerHTML = `
-    <div class="experta-kicker">🎯 Conclusión del experto</div>
+    <div class="experta-kicker">Conclusión del experto</div>
     <div class="experta-body">${mensaje}</div>
   `;
 }
@@ -2686,7 +2983,6 @@ function generarConclusion(data) {
 
   if (!titleEl) return;
 
-  // Si no tenemos lo básico, mostrar placeholder
   if (temLecap === null || temInfl === null) {
     titleEl.textContent = 'Esperando datos del mercado...';
     textEl.textContent = 'En unos segundos vamos a poder decirte qué conviene hacer con tu plata hoy.';
@@ -2694,93 +2990,124 @@ function generarConclusion(data) {
     return;
   }
 
-  // Armar ranking por TEM
+  // Armar ranking por margen real (TEM - TEM_inflación)
   const opciones = [];
-  if (temLecap !== null) opciones.push({ nombre: 'LECAP', tem: temLecap, detalle: `${lecapBenchmark?.ticker || ''} a ${lecapBenchmark?.dias || ''} días` });
-  if (temPF !== null) opciones.push({ nombre: 'Plazo Fijo', tem: temPF, detalle: 'iliquidez total' });
-  if (temFCI !== null) opciones.push({ nombre: 'FCI Money Market', tem: temFCI, detalle: 'liquidez diaria' });
-  if (temCaucion !== null) opciones.push({ nombre: 'Caución', tem: temCaucion, detalle: '1-30 días' });
-  opciones.sort((a, b) => b.tem - a.tem);
+  if (temPF !== null) opciones.push({ nombre: 'Plazo Fijo', tem: temPF, margen: (temPF - temInfl) * 100, plazo: 'fijo de 30 días', liquidez: 'baja (30 días)' });
+  if (temFCI !== null) opciones.push({ nombre: 'FCI Money Market', tem: temFCI, margen: (temFCI - temInfl) * 100, plazo: 'liquidez diaria', liquidez: 'alta (diaria)' });
+  if (temCaucion !== null) opciones.push({ nombre: 'Caución', tem: temCaucion, margen: (temCaucion - temInfl) * 100, plazo: 'corta (1-30 días)', liquidez: 'alta' });
+  if (temLecap !== null && lecapBenchmark) opciones.push({ nombre: `LECAP (${lecapBenchmark.ticker})`, tem: temLecap, margen: (temLecap - temInfl) * 100, plazo: `${lecapBenchmark.dias} días`, liquidez: 'media' });
 
-  const mejor = opciones[0];
-  const margen = (mejor.tem - temInfl) * 100; // en puntos mensuales
-  const margenAbs = Math.abs(margen).toFixed(2).replace('.', ',');
-  const temMejor = (mejor.tem * 100).toFixed(2).replace('.', ',');
-  const temInflStr = (temInfl * 100).toFixed(2).replace('.', ',');
+  if (opciones.length === 0) return;
 
-  // Título dinámico
-  let title = '';
-  let text = '';
+  opciones.sort((a, b) => b.margen - a.margen);
+  const ganadora = opciones[0];
+  const segunda = opciones[1] || null;
+  const ganadorasReales = opciones.filter(o => o.margen > 0.05);
+  const todasNegativas = opciones.every(o => o.margen <= 0);
+  const todasPositivas = opciones.every(o => o.margen > 0.05);
+  const margenSpread = opciones[0].margen - opciones[opciones.length - 1].margen;
 
-  if (margen > 0.3) {
-    title = `Hoy conviene <em>${mejor.nombre}</em>`;
-    text = `Es lo que mejor rinde hoy: <strong>${temMejor}% mensual</strong>, contra una inflación esperada de ${temInflStr}% mensual. Ganás <strong>${margenAbs} puntos reales por mes</strong>. `;
-    if (mejor.nombre === 'Plazo Fijo') {
-      text += 'Atención: el plazo fijo te inmoviliza la plata hasta el vencimiento. Si pensás que vas a necesitarla antes, mejor FCI o caución.';
-    } else if (mejor.nombre === 'LECAP') {
-      text += `La LECAP te fija la tasa desde hoy. ${lecapBenchmark?.dias || ''} días.`;
-    } else if (mejor.nombre === 'FCI Money Market') {
-      text += 'Es líquido: retirás cuando querés. Ideal para plata que podés llegar a necesitar.';
+  // Stats compactos
+  statsEl.innerHTML = opciones.slice(0, 4).map(o => {
+    const sign = o.margen >= 0 ? '+' : '';
+    const cls = o.margen >= 0 ? 'good' : 'bad';
+    return `<div class="conc-stat ${cls}"><span class="conc-stat-label">${o.nombre}</span><span class="conc-stat-value">${sign}${o.margen.toFixed(2).replace('.',',')} pts</span></div>`;
+  }).join('');
+
+  // ===== Elegir narrativa según escenario =====
+  let titulo = '';
+  let texto = '';
+
+  // === ESCENARIO 1: Todas las opciones le ganan a la inflación
+  if (todasPositivas) {
+    const titulos = [
+      'Configuración favorable: tasas reales positivas en toda la línea',
+      'Momento poco común: todo paga arriba de la inflación',
+      'Toda la curva en pesos paga real positivo hoy',
+    ];
+    const textos = [
+      `Hoy todos los instrumentos en pesos están pagando por encima de la inflación esperada. Plazo Fijo, FCI, Caución y LECAPs superan la curva del mercado por márgenes razonables. Esto suele pasar cuando el BCRA acaba de subir tasas o cuando la demanda de pesos es alta. La elección pasa más por liquidez y horizonte que por rendimiento real: caución y FCI para plazos cortos con liquidez diaria; LECAPs para fijar tasa con horizonte definido. Aprovechar momentos así tiene sentido si tenés un objetivo de plazo claro — el escenario tiende a corregirse rápido.`,
+      `Configuración favorable: la mejor opción del día es <strong>${ganadora.nombre}</strong> con un margen real de +${ganadora.margen.toFixed(2).replace('.',',')} puntos mensuales sobre inflación, pero el segundo lugar (${segunda?.nombre}) también ofrece un margen positivo de +${segunda?.margen.toFixed(2).replace('.',',')} puntos. Cuando toda la curva en pesos paga real positivo, no hay una decisión "obvia" — depende del plazo en que necesites la plata. Para corto, FCI o caución; para mediano, fijar tasa con LECAP; para largo, evaluar CER si pensás que la inflación puede acelerar.`,
+    ];
+    titulo = titulos[Math.floor(Math.random() * titulos.length)];
+    texto = textos[Math.floor(Math.random() * textos.length)];
+  }
+  // === ESCENARIO 2: Todas pierden contra inflación
+  else if (todasNegativas) {
+    const peor = opciones[opciones.length - 1];
+    const menosMala = ganadora;
+    const titulos = [
+      'Tasas reales negativas: cubrirse contra inflación es prioridad',
+      'Toda la curva en pesos pierde contra inflación esperada',
+      'Sin opciones reales positivas en pesos hoy',
+    ];
+    const textos = [
+      `Ningún instrumento en pesos le gana a la inflación esperada hoy. La opción menos castigada es <strong>${menosMala.nombre}</strong> (margen ${menosMala.margen.toFixed(2).replace('.',',')} pts mensuales), pero igualmente queda corta. En este contexto la prioridad pasa de "ganar tasa" a "no perder poder de compra" — para eso la cobertura natural son los bonos CER, que ajustan al ritmo de la inflación efectiva. La tasa fija en pesos solo conviene si tenés una visión clara de que la inflación va a perforar el breakeven a la baja.`,
+      `Configuración con tasas reales negativas en toda la línea. Esto suele pasar cuando el mercado descuenta presión inflacionaria adelante o cuando la baja de tasas del BCRA fue agresiva. La menos golpeada es <strong>${menosMala.nombre}</strong> con ${menosMala.margen.toFixed(2).replace('.',',')} pts; la peor es ${peor.nombre} con ${peor.margen.toFixed(2).replace('.',',')} pts. Para preservar poder adquisitivo, los CER son la opción razonable; quedarse en tasa fija es válido solo si compartís la visión optimista del mercado sobre la inflación futura.`,
+    ];
+    titulo = titulos[Math.floor(Math.random() * titulos.length)];
+    texto = textos[Math.floor(Math.random() * textos.length)];
+  }
+  // === ESCENARIO 3: Mix — algunas ganan, otras pierden (lo más común)
+  else {
+    const margenG = ganadora.margen;
+    const idGanador = ganadora.nombre.toLowerCase();
+
+    // Distintos sub-escenarios según quién gana
+    if (idGanador.includes('lecap')) {
+      const titulos = [
+        `LECAP es la opción con mejor tasa real hoy`,
+        `Hoy la tasa fija sobresale: ${lecapBenchmark.ticker}`,
+        `Mejor punto del día: LECAP fijando tasa`,
+      ];
+      const textos = [
+        `<strong>${ganadora.nombre}</strong> es la mejor opción del día con un margen real de +${margenG.toFixed(2).replace('.',',')} puntos mensuales sobre inflación esperada. Para alguien con horizonte de ${ganadora.plazo}, fijar tasa con esta LECAP captura un rendimiento real positivo en un escenario donde no todas las opciones lo ofrecen. La condición de éxito es que la inflación efectiva cierre en línea o por debajo del breakeven implícito. Si pensás que va a ser más alta, conviene CER del mismo plazo.`,
+        `La tasa fija lidera hoy: <strong>${ganadora.nombre}</strong> ofrece +${margenG.toFixed(2).replace('.',',')} pts reales mensuales contra inflación. La segunda mejor (${segunda?.nombre}) está ${(margenG - (segunda?.margen||0)).toFixed(2).replace('.',',')} puntos atrás. Cuando la tasa fija paga prima sobre el resto, suele ser porque el mercado descuenta desinflación. Si compartís esa visión, esta LECAP captura el carry; si dudás, repartir con CER neutraliza el riesgo.`,
+      ];
+      titulo = titulos[Math.floor(Math.random() * titulos.length)];
+      texto = textos[Math.floor(Math.random() * textos.length)];
+    } else if (idGanador.includes('fci')) {
+      const titulos = [
+        `FCI Money Market es la opción más eficiente hoy`,
+        `Liquidez diaria con margen real positivo`,
+        `Hoy FCI lidera entre los instrumentos de pesos`,
+      ];
+      const textos = [
+        `<strong>FCI Money Market</strong> sobresale por una combinación poco común: liquidez diaria + margen real positivo (+${margenG.toFixed(2).replace('.',',')} pts mensuales sobre inflación). Para plata "transaccional" o que necesitás disponible, hoy es la opción con mejor relación costo-oportunidad. Para horizontes más largos, mirar la tasa fija o CER tiene sentido; pero para corto plazo y caja de uso, FCI cumple sin sacrificar tasa real.`,
+        `La liquidez gana hoy: el FCI Money Market paga +${margenG.toFixed(2).replace('.',',')} pts reales mensuales con disponibilidad diaria. Esto suele pasar cuando las tasas mayoristas de muy corto plazo están elevadas. Aprovechar mientras dure tiene sentido para parking de fondos; para inversiones con horizonte definido, conviene fijar tasa con LECAP o cobertura CER.`,
+      ];
+      titulo = titulos[Math.floor(Math.random() * titulos.length)];
+      texto = textos[Math.floor(Math.random() * textos.length)];
+    } else if (idGanador.includes('caución')) {
+      const titulos = [
+        `Caución bursátil paga la mejor tasa real del día`,
+        `Hoy lidera caución: oportunidad táctica de muy corto plazo`,
+      ];
+      const textos = [
+        `<strong>Caución bursátil</strong> es la opción con mejor margen real hoy: +${margenG.toFixed(2).replace('.',',')} pts mensuales sobre inflación. Es un instrumento de muy corto plazo (típicamente 1-30 días) operado en BYMA. Cuando lidera el ranking de tasa real, suele ser por una combinación de demanda de pesos institucionales y oferta limitada. Para inversores con cuenta comitente y horizonte corto, es la opción más eficiente. Para horizontes mayores, conviene migrar a LECAP o FCI.`,
+        `La caución paga el mejor real del día (+${margenG.toFixed(2).replace('.',',')} pts mensuales). Es un instrumento que requiere cuenta comitente y se renueva muy frecuentemente — no es para "dejar y olvidar". Si tenés operatoria en mercado de capitales activa, captura este rendimiento. Si no, FCI o LECAP siguen siendo razonables para los plazos en que la caución no se puede sostener.`,
+      ];
+      titulo = titulos[Math.floor(Math.random() * titulos.length)];
+      texto = textos[Math.floor(Math.random() * textos.length)];
+    } else if (idGanador.includes('plazo fijo')) {
+      const titulos = [
+        `Plazo Fijo paga arriba de inflación: opción simple gana hoy`,
+        `Hoy el PF tradicional supera a las alternativas`,
+      ];
+      const textos = [
+        `<strong>Plazo Fijo bancario</strong> lidera el ranking de tasa real (+${margenG.toFixed(2).replace('.',',')} pts mensuales). Esto pasa pocas veces — generalmente FCI o LECAP pagan más. Cuando el PF gana, suele ser porque las entidades están compitiendo por depósitos o porque las tasas mayoristas se ajustaron al alza. Para inversores que prefieren la simplicidad de banco vs operar en mercado, hoy no estás resignando demasiado.`,
+        `El Plazo Fijo tradicional supera a las alternativas con +${margenG.toFixed(2).replace('.',',')} pts reales mensuales. Es una configuración poco habitual en Argentina — generalmente la cuenta de inversión rinde más. Aprovechá la ventana si tu perfil prefiere banco; el escenario tiende a normalizarse rápido.`,
+      ];
+      titulo = titulos[Math.floor(Math.random() * titulos.length)];
+      texto = textos[Math.floor(Math.random() * textos.length)];
+    } else {
+      titulo = `${ganadora.nombre} es la opción con mejor tasa real hoy`;
+      texto = `Con un margen de +${margenG.toFixed(2).replace('.',',')} pts mensuales sobre inflación, ${ganadora.nombre} es la opción más eficiente del día. La elección entre alternativas depende de tu plazo y necesidad de liquidez.`;
     }
-  } else if (margen > 0) {
-    title = `<em>${mejor.nombre}</em> apenas le gana a la inflación`;
-    text = `El mejor instrumento rinde ${temMejor}% mensual, contra ${temInflStr}% de inflación esperada. Ganás solo ${margenAbs} puntos por mes. `;
-    text += 'Si pensás que la inflación va a ser más alta que la esperada, considerá un bono CER.';
-  } else {
-    title = `Hoy casi todo le <em>pierde</em> a la inflación`;
-    text = `La mejor opción (${mejor.nombre}) rinde ${temMejor}% mensual, y la inflación esperada es ${temInflStr}%. Estás perdiendo ${margenAbs} puntos reales por mes. `;
-    text += 'Esto suele pasar antes de momentos de ajuste de tasas. Considerá bonos CER para cubrirte.';
   }
 
-  titleEl.innerHTML = title;
-  textEl.innerHTML = text;
-
-  // Sincronizar con calculadora: actualizar el preset "mejor" en la tasa de inversión
-  if (mejor.nombre === 'LECAP' && lecapBenchmark) {
-    window._mercadoSugerencia = {
-      tasa: lecapBenchmark.tir * 100,
-      nombre: mejor.nombre,
-      tem: mejor.tem * 100
-    };
-  } else {
-    window._mercadoSugerencia = {
-      tasa: mejor.tem * 12 * 100, // aproximación anual
-      nombre: mejor.nombre,
-      tem: mejor.tem * 100
-    };
-  }
-
-  // Stats inline
-  statsEl.innerHTML = `
-    <div class="conclusion-stat">
-      <div class="conclusion-stat-label">Mejor opción</div>
-      <div class="conclusion-stat-value">${mejor.nombre}</div>
-    </div>
-    <div class="conclusion-stat">
-      <div class="conclusion-stat-label">Tasa mensual</div>
-      <div class="conclusion-stat-value">${temMejor}%</div>
-    </div>
-    <div class="conclusion-stat">
-      <div class="conclusion-stat-label">Inflación mensual esperada</div>
-      <div class="conclusion-stat-value">${temInflStr}%</div>
-    </div>
-  `;
-
-  // Actualizar sugerencia en el panel de cuotas
-  const sugEl = document.getElementById('sugerenciaMercado');
-  if (sugEl && window._mercadoSugerencia) {
-    const tasaAnual = window._mercadoSugerencia.tasa;
-    const nombre = window._mercadoSugerencia.nombre;
-    sugEl.innerHTML = `
-      <div>💡 Hoy lo mejor es <strong>${nombre}</strong> al <strong>${tasaAnual.toFixed(1).replace('.',',')}% anual</strong></div>
-      <button class="sugerencia-mercado-btn" type="button" id="usarSugerencia">Usar</button>
-    `;
-    sugEl.style.display = 'flex';
-    const btn = document.getElementById('usarSugerencia');
-    if (btn) btn.addEventListener('click', () => {
-      document.getElementById('tasa').value = tasaAnual.toFixed(1);
-    });
-  }
+  titleEl.innerHTML = titulo;
+  textEl.innerHTML = texto;
 }
 
 /* =========================================================
@@ -3064,7 +3391,11 @@ document.getElementById('adminSave').addEventListener('click', () => {
   renderPresets();
   // Re-render mercado si está visible
   if (marketData) renderMarketView();
-  document.getElementById('infl').value = CFG.infl;
+  // Para infl: priorizar el breakeven VL si existe, sino el del admin
+  const inflInput = document.getElementById('infl');
+  const breakeven = marketData?.inflBreakeven?.anual;
+  inflInput.value = breakeven ? (breakeven * 100).toFixed(1) : CFG.infl;
+  if (typeof updateInflHint === 'function') updateInflHint();
   document.getElementById('tasa').value = CFG.tasas.fci;
   closeAdmin();
   toast('Configuración guardada ✓');
@@ -3075,7 +3406,11 @@ document.getElementById('adminReset').addEventListener('click', () => {
     localStorage.removeItem(CFG_KEY);
     CFG = loadConfig();
     renderPresets();
-    document.getElementById('infl').value = CFG.infl;
+    // Repisar con breakeven si está disponible, sino dejar vacío
+    const inflEl = document.getElementById('infl');
+    inflEl.value = '';
+    inflEl.placeholder = 'Cargando inflación del mercado...';
+    if (typeof updateInflHint === 'function') updateInflHint();
     closeAdmin();
     toast('Valores restablecidos');
   }
@@ -3516,7 +3851,10 @@ try {
 window.VL_SHOW_INTRO = showIntro;
 
 /* INIT */
-document.getElementById('infl').value = CFG.infl;
+// NO seteamos infl con CFG.infl directamente. Esperamos al breakeven VL.
+// Mientras carga, dejamos placeholder para que se note que está esperando datos.
+const inflInputEl = document.getElementById('infl');
+inflInputEl.placeholder = 'Cargando inflación del mercado...';
 document.getElementById('tasa').value = CFG.tasas.fci;
 renderPresets();
 
