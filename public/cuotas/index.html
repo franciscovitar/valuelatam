@@ -2616,9 +2616,9 @@ async function refreshMarket() {
   }
   status.innerHTML = `<span style="width:6px;height:6px;border-radius:50%;background:${dotColor};display:inline-block"></span> Datos al ${snapFechaFmt} · Fuente: ${snapFuente}`;
 
-  renderMarketView();
-  renderPresets();
-  updateInflHint();
+  try { renderMarketView(); } catch(e){ console.error('[renderMarketView]', e); }
+  try { renderPresets(); } catch(e){ console.error('[renderPresets]', e); }
+  try { updateInflHint(); } catch(e){ console.error('[updateInflHint]', e); }
 }
 
 function updateInflHint() {
@@ -2710,39 +2710,43 @@ function renderMarketView() {
   marketData.curvaREM = curvaTEMInflacionREM(marketData.remCurva);
 
   // ===== TEMs de instrumentos =====
-  // Las tasas vienen del snapshot del admin (cargadas manualmente)
-  const tasasSnap = adminSnapshot?.tasas || VL_SNAPSHOT_DEFAULT.tasas || {};
-  const { lecapBenchmark } = marketData;
+  // Leer snapshot del admin desde localStorage (NO depender de scope externo)
+  const _localSnap = (function() {
+    try { return JSON.parse(localStorage.getItem('vl_snapshot_v1') || 'null'); } catch (e) { return null; }
+  })();
+  const tasasSnap = (_localSnap && _localSnap.tasas) || (VL_SNAPSHOT_DEFAULT && VL_SNAPSHOT_DEFAULT.tasas) || {};
+  const _lecapsArr = (marketData && Array.isArray(marketData.lecaps)) ? marketData.lecaps : [];
 
   // LECAP de referencia: el ticker definido en tasas.lecapRefTicker, o la más cercana a 30 días
-  let lecapRef = lecapBenchmark;
-  if (tasasSnap.lecapRefTicker) {
-    const refByTicker = lecaps.find(l => l.ticker === tasasSnap.lecapRefTicker);
+  let lecapRef = marketData ? marketData.lecapBenchmark : null;
+  if (tasasSnap.lecapRefTicker && _lecapsArr.length > 0) {
+    const refByTicker = _lecapsArr.find(l => l.ticker === tasasSnap.lecapRefTicker);
     if (refByTicker) lecapRef = refByTicker;
   }
-  if (!lecapRef && lecaps.length > 0) {
-    // Fallback: buscar la más cercana a 30 días
-    lecapRef = [...lecaps].sort((a, b) => Math.abs(a.dias - 30) - Math.abs(b.dias - 30))[0];
+  if (!lecapRef && _lecapsArr.length > 0) {
+    lecapRef = [..._lecapsArr].sort((a, b) => Math.abs(a.dias - 30) - Math.abs(b.dias - 30))[0];
   }
-  marketData.lecapBenchmark = lecapRef;
+  if (marketData) marketData.lecapBenchmark = lecapRef;
 
-  const temLecap = lecapRef ? lecapRef.tem : null;
+  const temLecap = (lecapRef && isFinite(lecapRef.tem)) ? lecapRef.tem : null;
   const pfPct = isFinite(tasasSnap.pf) ? tasasSnap.pf : 21.5;
   const cauPct = isFinite(tasasSnap.caucion) ? tasasSnap.caucion : 26;
   // FCI Money Market ≈ 92% de la caución 1 día (relación histórica de mercado)
   const fciPct = cauPct * 0.92;
 
   const pfAnual = pfPct / 100;
-  marketData.pfAnual = pfAnual;
+  if (marketData) marketData.pfAnual = pfAnual;
   const temPF = Math.pow(1 + pfAnual, 1/12) - 1;
   const temFCI = Math.pow(1 + fciPct/100, 1/12) - 1;
   const temCaucion = Math.pow(1 + cauPct/100, 1/12) - 1;
 
   // Actualizar tasasLive para que los presets muestren los valores correctos
-  marketData.tasasLive = {
-    pf: pfPct, fci: fciPct, caucion: cauPct,
-    lecap: lecapRef ? lecapRef.tea * 100 : null,
-  };
+  if (marketData) {
+    marketData.tasasLive = {
+      pf: pfPct, fci: fciPct, caucion: cauPct,
+      lecap: (lecapRef && isFinite(lecapRef.tea)) ? lecapRef.tea * 100 : null,
+    };
+  }
 
   // ===== CONCLUSIÓN =====
   generarConclusion({ temLecap, temInfl, temPF, temFCI, temCaucion, lecapBenchmark, rem: inflAnual });
@@ -3879,8 +3883,10 @@ document.querySelectorAll('.tab').forEach(t => {
     if (view === 'invest') renderPerfilBlock();
     if (view === 'learn') renderCasos();
     if (view === 'market') {
-      if (!marketData) refreshMarket();
-      else { renderMarketView(); }
+      try {
+        if (!marketData) refreshMarket();
+        else { renderMarketView(); }
+      } catch (err) { console.error('[Tab market] Error:', err); }
       // Re-render charts después de que el DOM sea visible
       setTimeout(() => { if (marketData) renderCharts(); }, 150);
     }
