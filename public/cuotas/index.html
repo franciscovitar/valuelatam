@@ -1,43 +1,6 @@
 <!DOCTYPE html>
 <html lang="es-AR">
 <head>
-<script>
-// ===========================================================
-// CLEANUP AGRESIVO — se ejecuta antes que todo lo demás
-// Desregistra cualquier SW viejo, limpia caches, fuerza fresh load
-// ===========================================================
-(function aggressiveCleanup() {
-  try {
-    var didCleanup = false;
-    
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function(regs) {
-        if (regs.length > 0) {
-          console.log('[CLEANUP] Desregistrando', regs.length, 'service workers viejos...');
-          var promises = regs.map(function(r) { return r.unregister(); });
-          Promise.all(promises).then(function() {
-            console.log('[CLEANUP] SWs desregistrados');
-            // Limpiar también caches del browser
-            if ('caches' in window) {
-              caches.keys().then(function(names) {
-                if (names.length > 0) {
-                  console.log('[CLEANUP] Borrando', names.length, 'caches...');
-                  return Promise.all(names.map(function(n) { return caches.delete(n); }));
-                }
-              }).then(function() {
-                // Solo recargar si había SW viejo (lo cual indica versión cacheada)
-                console.log('[CLEANUP] Recargando con cache limpio...');
-                window.location.reload(true);
-              });
-            }
-          });
-        }
-      }).catch(function(e) { console.warn('[CLEANUP] Error:', e); });
-    }
-  } catch(e) { console.error('[CLEANUP] FATAL:', e); }
-})();
-</script>
-
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <meta name="theme-color" content="#ffffff" />
@@ -881,26 +844,16 @@
 </style>
 
 <!-- PWA -->
-<!-- <link rel="manifest" href="manifest.json"> - DESHABILITADO temporalmente (404) -->
-<!-- <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"> - 404 -->
-<!-- <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"> - 404 -->
-<!-- <link rel="apple-touch-icon" href="apple-touch-icon.png"> - 404 -->
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Cuotas VL">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="application-name" content="Cuotas · Value Latam">
 <meta name="description" content="Calculadora que te dice si conviene cuotas o contado, con datos de mercado en vivo. Por Value Latam.">
-  <!-- PDF.js para parsear PDFs en el admin -->
-  <script>
-    // Global error handler — captura cualquier error no manejado para que no rompa la app
-    window.addEventListener('error', function(e) {
-      console.error('[GLOBAL ERROR]', e.message, 'en', e.filename, 'línea', e.lineno, e.error);
-    });
-    window.addEventListener('unhandledrejection', function(e) {
-      console.error('[UNHANDLED PROMISE]', e.reason);
-    });
-  </script>
 </head>
 <body>
 
@@ -1365,26 +1318,33 @@
       <div id="adminLastUpdate" style="margin-top:16px;font-size:11px;color:var(--muted);text-align:center;font-style:italic"></div>
 
       <div class="admin-section">
-        <div style="font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:6px">Tasas de mercado</div>
-        <p class="admin-sub" style="margin-bottom:14px">Cargá manualmente las tasas de mercado actuales. El FCI se calcula automáticamente como ~92% de la caución.</p>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-          <div>
-            <label style="font-size:12px;color:var(--muted);font-weight:600">Plazo Fijo BCRA (% anual)</label>
-            <input type="number" id="adm-tasa-pf" step="0.1" placeholder="21.5" style="width:100%;padding:10px;border:1px solid #d4cdb8;border-radius:8px;background:#fff;margin-top:4px;font-size:14px">
-          </div>
-          <div>
-            <label style="font-size:12px;color:var(--muted);font-weight:600">Caución 1 día (% anual)</label>
-            <input type="number" id="adm-tasa-caucion" step="0.1" placeholder="19.5" style="width:100%;padding:10px;border:1px solid #d4cdb8;border-radius:8px;background:#fff;margin-top:4px;font-size:14px">
-          </div>
+        <div style="font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:6px">Snapshot curva de bonos</div>
+        <p class="admin-sub" style="margin-bottom:10px">Editá los bonos Fija y CER que se usan para calcular la inflación breakeven. Copialos desde Docta Capital cada semana.</p>
+        <div class="admin-field" style="margin-bottom:10px"><label>Fecha del snapshot (YYYY-MM-DD)</label><input type="text" id="adm-snap-fecha" placeholder="2026-04-24"></div>
+        <div class="admin-field" style="margin-bottom:10px"><label>Fuente</label><input type="text" id="adm-snap-fuente" placeholder="Docta Capital"></div>
+        
+        <div class="snap-tabs">
+          <button class="snap-tab active" data-snap-tab="fija" type="button">Tasa Fija</button>
+          <button class="snap-tab" data-snap-tab="cer" type="button">CER</button>
         </div>
 
-        <div class="admin-field" style="margin-bottom:10px">
-          <label>Fecha del snapshot (DD/MM/AAAA)</label>
-          <input type="date" id="adm-snap-fecha" style="width:100%;padding:10px;border:1px solid #d4cdb8;border-radius:8px;background:#fff;font-size:14px">
+        <div class="snap-editor" id="snapEditorFija">
+          <div class="snap-editor-head with-rm">
+            <div>Ticker</div><div>Vto (YYYY-MM-DD)</div><div>TEA %</div><div>TEM %</div><div>DTM</div><div></div>
+          </div>
+          <div id="snapFijaRows"></div>
+          <button class="snap-add-btn" id="snapAddFija" type="button">+ Agregar bono Fija</button>
         </div>
 
-        <button id="adminResetSnap" class="admin-reset" type="button" style="margin-top:8px">Volver al snapshot de fábrica</button>
+        <div class="snap-editor" id="snapEditorCer" style="display:none">
+          <div class="snap-editor-head with-rm">
+            <div>Ticker</div><div>Vto (YYYY-MM-DD)</div><div>TIR real %</div><div>Precio</div><div>Duration</div><div></div>
+          </div>
+          <div id="snapCerRows"></div>
+          <button class="snap-add-btn" id="snapAddCer" type="button">+ Agregar bono CER</button>
+        </div>
+
+        <button class="admin-reset" id="snapReset" type="button" style="margin-top:8px">Volver al snapshot de fábrica</button>
       </div>
 
       <button class="admin-save" id="adminSave" type="button">Guardar cambios</button>
@@ -1460,49 +1420,47 @@ let marketData = null; // datos en vivo
    ========================================================= */
 const VL_SNAPSHOT_DEFAULT = {
   fecha: "2026-04-24",
-  fuente: "Docta Capital (carga inicial)",
-  fija: [
-    { ticker:"S30A6", precio:127.29, tem:0.0157, tea:0.2059, vto:"2026-04-30", dias:3   },
-    { ticker:"S15Y6", precio:104.10, tem:0.0176, tea:0.2325, vto:"2026-05-15", dias:18  },
-    { ticker:"S29Y6", precio:129.51, tem:0.0186, tea:0.2473, vto:"2026-05-29", dias:32  },
-    { ticker:"T30J6", precio:138.91, tem:0.0203, tea:0.2720, vto:"2026-06-30", dias:64  },
-    { ticker:"S17L6", precio:102.49, tem:0.0196, tea:0.2619, vto:"2026-07-17", dias:81  },
-    { ticker:"S31L6", precio:110.63, tem:0.0200, tea:0.2678, vto:"2026-07-31", dias:95  },
-    { ticker:"S14G6", precio:100.59, tem:0.0201, tea:0.2699, vto:"2026-08-14", dias:109 },
-    { ticker:"S31G6", precio:116.90, tem:0.0203, tea:0.2732, vto:"2026-08-31", dias:126 },
-    { ticker:"S30S6", precio:106.10, tem:0.0202, tea:0.2706, vto:"2026-09-30", dias:156 },
-    { ticker:"S30O6", precio:120.10, tem:0.0197, tea:0.2631, vto:"2026-10-30", dias:186 },
-    { ticker:"S30N6", precio:112.55, tem:0.0203, tea:0.2725, vto:"2026-11-30", dias:217 },
-    { ticker:"T15E7", precio:135.25, tem:0.0204, tea:0.2748, vto:"2027-01-15", dias:263 },
-    { ticker:"T30A7", precio:122.65, tem:0.0208, tea:0.2802, vto:"2027-04-30", dias:368 },
-    { ticker:"T31Y7", precio:115.50, tem:0.0212, tea:0.2870, vto:"2027-05-31", dias:399 },
-    { ticker:"T30J7", precio:116.55, tem:0.0209, tea:0.2818, vto:"2027-06-30", dias:429 },
-  ],
+  fuente: "Docta Capital",
   cer: [
-    { ticker:"X15Y6", precio:106.87, tirReal:0.2502, duration:0.05, vto:"2026-05-15", paridad:1.0076 },
-    { ticker:"X29Y6", precio:115.85, tirReal:0.2481, duration:0.09, vto:"2026-05-29", paridad:1.0148 },
-    { ticker:"TZX26", precio:378.80, tirReal:-0.1069, duration:0.18, vto:"2026-06-30", paridad:1.0200 },
-    { ticker:"X31L6", precio:110.70, tirReal:-0.0725, duration:0.26, vto:"2026-07-31", paridad:1.0198 },
-    { ticker:"TX26",  precio:1351.50,tirReal:-0.0288, duration:0.29, vto:"2026-11-09", paridad:1.0143 },
-    { ticker:"X30S6", precio:105.90, tirReal:-0.0397, duration:0.43, vto:"2026-09-30", paridad:1.0175 },
-    { ticker:"TZXO6", precio:157.45, tirReal:-0.0305, duration:0.51, vto:"2026-10-30", paridad:1.0159 },
-    { ticker:"X30N6", precio:114.10, tirReal:-0.0190, duration:0.60, vto:"2026-11-30", paridad:1.0114 },
-    { ticker:"TZXD6", precio:277.50, tirReal:-0.0166, duration:0.64, vto:"2026-12-15", paridad:1.0107 },
-    { ticker:"TZXM7", precio:207.75, tirReal:-0.0093, duration:0.93, vto:"2027-03-31", paridad:1.0087 },
-    { ticker:"TZXA7", precio:112.90, tirReal:0.0110,  duration:1.01, vto:"2027-04-30", paridad:0.9890 },
-    { ticker:"TZXY7", precio:111.25, tirReal:0.0128,  duration:1.10, vto:"2027-05-31", paridad:0.9862 },
-    { ticker:"TZX27", precio:363.95, tirReal:0.0173,  duration:1.18, vto:"2027-06-30", paridad:0.9800 },
-    { ticker:"TX28",  precio:1970.00,tirReal:0.0356,  duration:1.25, vto:"2028-11-09", paridad:0.9845 },
-    { ticker:"TZXS7", precio:98.51,  tirReal:0.0312,  duration:1.43, vto:"2027-09-30", paridad:0.9571 },
-    { ticker:"TZXD7", precio:256.75, tirReal:0.0418,  duration:1.64, vto:"2027-12-15", paridad:0.9351 },
-    { ticker:"TZX28", precio:321.90, tirReal:0.0678,  duration:2.18, vto:"2028-06-30", paridad:0.8668 },
+    { ticker:"X15Y6", precio:106.85, tirReal:0.255, duration:0.052, vto:"2026-05-15", paridad:1.0074 },
+    { ticker:"X29Y6", precio:115.7, tirReal:0.2666, duration:0.09, vto:"2026-05-29", paridad:1.0135 },
+    { ticker:"TZX26", precio:378.25, tirReal:-0.0994, duration:0.178, vto:"2026-06-30", paridad:1.0185 },
+    { ticker:"X31L6", precio:110.549, tirReal:-0.0677, duration:0.263, vto:"2026-07-31", paridad:1.0184 },
+    { ticker:"TX26", precio:1351.0, tirReal:-0.0275, duration:0.291, vto:"2026-11-09", paridad:1.0139 },
+    { ticker:"X30S6", precio:105.3, tirReal:-0.0268, duration:0.43, vto:"2026-09-30", paridad:1.0117 },
+    { ticker:"TZXO6", precio:156.75, tirReal:-0.0219, duration:0.512, vto:"2026-10-30", paridad:1.0114 },
+    { ticker:"X30N6", precio:114.15, tirReal:-0.0197, duration:0.597, vto:"2026-11-30", paridad:1.0119 },
+    { ticker:"TZXD6", precio:277.5, tirReal:-0.0166, duration:0.638, vto:"2026-12-15", paridad:1.0107 },
+    { ticker:"TZXM7", precio:207.6, tirReal:-0.0085, duration:0.929, vto:"2027-03-31", paridad:1.008 },
+    { ticker:"TZXA7", precio:113.7, tirReal:0.004, duration:1.011, vto:"2027-04-30", paridad:0.996 },
+    { ticker:"TZXY7", precio:112.0, tirReal:0.0066, duration:1.096, vto:"2027-05-31", paridad:0.9928 },
+    { ticker:"TZX27", precio:364.3, tirReal:0.0165, duration:1.178, vto:"2027-06-30", paridad:0.981 },
+    { ticker:"TX28", precio:1966.5, tirReal:0.037, duration:1.248, vto:"2028-11-09", paridad:0.9828 },
+    { ticker:"TZXS7", precio:99.0, tirReal:0.0276, duration:1.43, vto:"2027-09-30", paridad:0.9619 },
+    { ticker:"TZXD7", precio:256.95, tirReal:0.0413, duration:1.638, vto:"2027-12-15", paridad:0.9359 },
+    { ticker:"TZX28", precio:322.8, tirReal:0.0665, duration:2.181, vto:"2028-06-30", paridad:0.8692 },
+    { ticker:"TZXS8", precio:86.44, tirReal:0.0744, duration:2.433, vto:"2028-09-30", paridad:0.8399 },
+    { ticker:"TZXM9", precio:83.5, tirReal:0.0728, duration:2.923, vto:"2029-03-28", paridad:0.8145 },
+    { ticker:"TX31", precio:1369.0, tirReal:0.0782, duration:3.066, vto:"2031-12-01", paridad:0.8545 },
   ],
-  tasas: {
-    pf: 21.5,         // % anual
-    fci: null,        // se calcula desde caución como referencia
-    caucion: 19.5,    // % anual (caución 1 día)
-    lecapRefTicker: "S29Y6",  // LECAP de referencia (~30 días)
-  }
+  fija: [
+    { ticker:"S30A6", precio:127.23, tna:0.2448, tea:0.2771, tem:0.0206, dtm:3, vto:"2026-04-30" },
+    { ticker:"S15Y6", precio:104.039, tna:0.2219, tea:0.247, tem:0.0186, dtm:18, vto:"2026-05-15" },
+    { ticker:"S29Y6", precio:129.432, tna:0.2302, tea:0.2559, tem:0.0192, dtm:32, vto:"2026-05-29" },
+    { ticker:"T30J6", precio:138.96, tna:0.2436, tea:0.2694, tem:0.0201, dtm:64, vto:"2026-06-30" },
+    { ticker:"S17L6", precio:102.35, tna:0.2452, tea:0.2697, tem:0.0201, dtm:81, vto:"2026-07-17" },
+    { ticker:"S31L6", precio:110.738, tna:0.2407, tea:0.263, tem:0.0196, dtm:95, vto:"2026-07-31" },
+    { ticker:"S14G6", precio:100.501, tna:0.2508, tea:0.2736, tem:0.0204, dtm:109, vto:"2026-08-14" },
+    { ticker:"S31G6", precio:117.149, tna:0.2452, tea:0.2654, tem:0.0198, dtm:126, vto:"2026-08-31" },
+    { ticker:"S30S6", precio:106.02, tna:0.2541, tea:0.2729, tem:0.0203, dtm:156, vto:"2026-09-30" },
+    { ticker:"TO26", precio:95.89, tna:0.258, tea:0.2753, tem:0.0205, dtm:175, vto:"2026-10-19" },
+    { ticker:"S30O6", precio:119.85, tna:0.2526, tea:0.2682, tem:0.02, dtm:186, vto:"2026-10-30" },
+    { ticker:"S30N6", precio:112.55, tna:0.2591, tea:0.2725, tem:0.0203, dtm:217, vto:"2026-11-30" },
+    { ticker:"T15E7", precio:135.4, tna:0.2635, tea:0.2728, tem:0.0203, dtm:263, vto:"2027-01-15" },
+    { ticker:"T30A7", precio:122.45, tna:0.2826, tea:0.2823, tem:0.0209, dtm:368, vto:"2027-04-30" },
+    { ticker:"T31Y7", precio:116.0, tna:0.2854, tea:0.2819, tem:0.0209, dtm:399, vto:"2027-05-31" },
+    { ticker:"T30J7", precio:117.15, tna:0.2824, tea:0.2762, tem:0.0205, dtm:429, vto:"2027-06-30" },
+  ]
 };
 
 function getSnapshot() {
@@ -2480,14 +2438,9 @@ async function refreshMarket() {
 
   console.log('[Market] Iniciando carga...');
 
-  // IMPORTANTE: ya NO usamos APIs externas para precios de bonos.
-  // Vos cargás los datos manualmente desde el admin (subiendo PDFs de Docta Capital).
-  // Solo seguimos consultando REM porque es estable y oficial.
-  const remData = await fetchREM();
-  const notes = null;   // ya no se usan
-  const cer = null;
-  const pfRate = null;
-  const fciRate = null;
+  const [notes, cer, pfRate, remData, fciRate] = await Promise.all([
+    fetchArgNotes(), fetchBonosCER(), fetchPlazoFijo(), fetchREM(), fetchFCIMercado()
+  ]);
 
   // REM viene como objeto con curva mensual + dato "próx. 12 meses"
   const remCurva = remData?.puntos || null;
@@ -2506,55 +2459,108 @@ async function refreshMarket() {
   const lecaps = [];
   const boncer = [];
 
-  // FUENTE DE DATOS: snapshot manual cargado desde PDFs de Docta Capital
-  // (admin permite subir PDF, parsea con PDF.js, guarda en localStorage)
-  const adminSnapshot = (function() {
-    try {
-      const raw = localStorage.getItem('vl_snapshot_v1');
-      if (raw) return JSON.parse(raw);
-    } catch (e) {}
-    return null;
-  })();
+  // Procesar SOLO LECAPs reales (tickers que empiezan con "S")
+  // El endpoint arg_notes mezcla LECAPs, bonos CER cortos y DLKs — hay que filtrar
+  if (notes && Array.isArray(notes)) {
+    notes.forEach(n => {
+      const ticker = (n.symbol || n.ticker || n.especie || n.simbolo || n.c || '').toUpperCase();
+      const precio = parseFloat(n.c ?? n.close ?? n.px_bid ?? n.ultimo ?? n.precio ?? n.cierre);
+      if (!ticker || !isFinite(precio) || precio <= 0) return;
 
-  // Procesar LECAPs/BONCAPs del snapshot
-  const fijaRaw = adminSnapshot?.fija || VL_SNAPSHOT_DEFAULT.fija || [];
-  fijaRaw.forEach(item => {
-    if (!item.ticker || !isFinite(item.tem) || item.tem <= 0) return;
-    const venc = item.vto ? new Date(item.vto) : null;
-    if (!venc || !isFinite(venc.getTime())) return;
-    const dias = diasEntre(today, venc);
-    if (dias <= 0 || dias > 800) return;
-    const tea = item.tea || (Math.pow(1 + item.tem, 12) - 1);
-    lecaps.push({
-      ticker: item.ticker,
-      precio: item.precio || null,
-      venc, vto: item.vto, dias,
-      tir: tea,
-      tea, tem: item.tem,
-    });
-  });
-  lecaps.sort((a,b) => a.dias - b.dias);
+      // FILTRO 1: solo aceptamos LECAPs (S*) y BONCAPs (T* que no sean TZ*)
+      // - Excluimos bonos CER (X*, TZ*) que vienen acá mezclados
+      // - Excluimos DLKs (terminan en D)
+      const esLECAP = ticker.startsWith('S');
+      const esBONCAP = ticker.startsWith('T') && !ticker.startsWith('TZ');
+      if (!esLECAP && !esBONCAP) return;
+      if (ticker.endsWith('D')) return; // DLK
 
-  // Procesar BONCERs del snapshot
-  const cerRaw = adminSnapshot?.cer || VL_SNAPSHOT_DEFAULT.cer || [];
-  cerRaw.forEach(item => {
-    if (!item.ticker || !isFinite(item.tirReal)) return;
-    const venc = item.vto ? new Date(item.vto) : null;
-    if (!venc || !isFinite(venc.getTime())) return;
-    const dias = diasEntre(today, venc);
-    if (dias <= 0 || dias > 5000) return;
-    // FILTRO: bonos muy cortos (<30 días) generan ruido en TIR real
-    // FILTRO: TIR real > 15% es ruido matemático también
-    if (dias < 30 || Math.abs(item.tirReal) > 0.15) return;
-    boncer.push({
-      ticker: item.ticker,
-      precio: item.precio || null,
-      venc, vto: item.vto, dias,
-      tirReal: item.tirReal,
-      duration: item.duration || (dias / 365),
-      paridad: item.paridad || null,
+      // FILTRO 2: usar metadata hardcodeada si existe; sino parsear ticker
+      const meta = (typeof BONOS_FIJA_META !== 'undefined' && BONOS_FIJA_META[ticker]) || null;
+      let venc;
+      if (meta && meta.vto) {
+        venc = new Date(meta.vto);
+      } else {
+        venc = parseVencimientoTicker(ticker);
+      }
+      if (!venc || !isFinite(venc.getTime())) return;
+      const dias = diasEntre(today, venc);
+      // FILTRO 3: días razonables (no vencidos, no más de 2 años)
+      if (dias <= 0 || dias > 800) return;
+
+      const tir = tirLECAP(precio, dias);
+      if (!tir || tir <= 0 || tir > 5) return;
+      const tem = Math.pow(1 + tir, 1/12) - 1;
+      lecaps.push({
+        ticker, precio, venc, dias, tir,
+        tea: tir,
+        tem,
+        vto: meta?.vto || (venc instanceof Date ? venc.toISOString().slice(0,10) : null)
+      });
     });
-  });
+    lecaps.sort((a,b) => a.dias - b.dias);
+  }
+
+  // Procesar BONCER — fetchBonosCER ya devuelve estructura procesada
+  if (cer && Array.isArray(cer)) {
+    cer.forEach(b => {
+      if (!b.ticker || !isFinite(b.precio) || b.precio <= 0) return;
+      const venc = new Date(b.vto);
+      if (!isFinite(venc.getTime())) return;
+      const dias = diasEntre(today, venc);
+      if (dias <= 0 || dias > 3000) return;
+      boncer.push({
+        ticker: b.ticker,
+        precio: b.precio,
+        venc,
+        vto: b.vto,
+        dias,
+        tirReal: b.tirReal,
+        duration: b.duration,
+        paridad: b.paridad,
+      });
+    });
+  }
+
+  // ADICIONAL: data912/arg_notes mezcla bonos CER cortos (X*, TZ*) entre las "notes".
+  // Los rescatamos acá, calculamos su TIR real y los agregamos al array de boncer.
+  if (notes && Array.isArray(notes)) {
+    notes.forEach(n => {
+      const ticker = (n.symbol || n.ticker || n.especie || n.simbolo || '').toUpperCase();
+      if (!ticker) return;
+      // Solo CER cortos: empiezan con "X" o "TZ"
+      const esCER = ticker.startsWith('X') || ticker.startsWith('TZ');
+      if (!esCER) return;
+      // Si ya está en boncer, no duplicar
+      if (boncer.find(b => b.ticker === ticker)) return;
+
+      const precio = parseFloat(n.c ?? n.close ?? n.px_bid ?? n.ultimo ?? n.precio);
+      if (!isFinite(precio) || precio <= 0) return;
+
+      const meta = (typeof BONOS_CER_META !== 'undefined' && BONOS_CER_META[ticker]) || null;
+      if (!meta || !meta.vto) return; // Sin metadata, no podemos calcular TIR real
+      const venc = new Date(meta.vto);
+      if (!isFinite(venc.getTime())) return;
+      const dias = diasEntre(today, venc);
+      if (dias <= 0 || dias > 3000) return;
+
+      // Calcular TIR real con la fórmula del ZC (la mayoría de CER cortos son ZC)
+      let tirReal;
+      if (meta.tipo === 'ZC') {
+        tirReal = (typeof calcTIRRealZC === 'function') ? calcTIRRealZC(precio, dias) : null;
+      } else {
+        tirReal = (typeof calcTIRRealConCupon === 'function') ? calcTIRRealConCupon(precio, dias, meta.cupon) : null;
+      }
+      if (tirReal === null || !isFinite(tirReal)) return;
+
+      boncer.push({
+        ticker, precio, venc, vto: meta.vto, dias,
+        tirReal,
+        duration: dias / 365,
+        paridad: precio / 100,
+      });
+    });
+  }
   boncer.sort((a,b) => a.dias - b.dias);
 
   console.log(`[Market] LECAPs válidas: ${lecaps.length}, BONCER válidos: ${boncer.length}`);
@@ -2605,31 +2611,17 @@ async function refreshMarket() {
   btn.classList.remove('spinning');
 
   const ts = marketData.ts.toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'});
-  // Status pill: muestra la fecha del snapshot manual cargado desde PDFs
-  const snapData = (function() {
-    try { return JSON.parse(localStorage.getItem('vl_snapshot_v1') || 'null'); } catch { return null; }
-  })() || (typeof VL_SNAPSHOT_DEFAULT !== 'undefined' ? VL_SNAPSHOT_DEFAULT : null);
-  const snapFecha = snapData?.fecha || '—';
-  const snapFuente = snapData?.fuente || 'Docta Capital';
-  // Formatear fecha YYYY-MM-DD a DD/MM/YYYY
-  let snapFechaFmt = snapFecha;
-  if (/^\d{4}-\d{2}-\d{2}$/.test(snapFecha)) {
-    const [y, m, d] = snapFecha.split('-');
-    snapFechaFmt = `${d}/${m}/${y}`;
+  if (marketData.isSample) {
+    status.innerHTML = `<span style="width:6px;height:6px;border-radius:50%;background:var(--amber);display:inline-block"></span> Datos de ejemplo · APIs no disponibles`;
+  } else if (marketData.hasPartialFallback) {
+    status.innerHTML = `<span style="width:6px;height:6px;border-radius:50%;background:var(--amber);display:inline-block"></span> Datos parciales · Actualizado ${ts}`;
+  } else {
+    status.innerHTML = `<span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block"></span> En vivo · Actualizado ${ts}`;
   }
-  // Calcular antigüedad
-  let dotColor = 'var(--green)';
-  let dotLabel = 'Datos actuales';
-  if (snapData?.fecha) {
-    const diasViejo = Math.floor((new Date() - new Date(snapData.fecha)) / 86400000);
-    if (diasViejo > 14) { dotColor = 'var(--amber)'; dotLabel = 'Datos viejos'; }
-    if (diasViejo > 30) { dotColor = '#ff8a8a'; dotLabel = 'Datos muy viejos'; }
-  }
-  status.innerHTML = `<span style="width:6px;height:6px;border-radius:50%;background:${dotColor};display:inline-block"></span> Datos al ${snapFechaFmt} · Fuente: ${snapFuente}`;
 
-  try { renderMarketView(); } catch(e){ console.error('[renderMarketView]', e); }
-  try { renderPresets(); } catch(e){ console.error('[renderPresets]', e); }
-  try { updateInflHint(); } catch(e){ console.error('[updateInflHint]', e); }
+  renderMarketView();
+  renderPresets();
+  updateInflHint();
 }
 
 function updateInflHint() {
@@ -2721,43 +2713,11 @@ function renderMarketView() {
   marketData.curvaREM = curvaTEMInflacionREM(marketData.remCurva);
 
   // ===== TEMs de instrumentos =====
-  // Leer snapshot del admin desde localStorage (NO depender de scope externo)
-  const _localSnap = (function() {
-    try { return JSON.parse(localStorage.getItem('vl_snapshot_v1') || 'null'); } catch (e) { return null; }
-  })();
-  const tasasSnap = (_localSnap && _localSnap.tasas) || (VL_SNAPSHOT_DEFAULT && VL_SNAPSHOT_DEFAULT.tasas) || {};
-  const _lecapsArr = (marketData && Array.isArray(marketData.lecaps)) ? marketData.lecaps : [];
-
-  // LECAP de referencia: el ticker definido en tasas.lecapRefTicker, o la más cercana a 30 días
-  let lecapRef = marketData ? marketData.lecapBenchmark : null;
-  if (tasasSnap.lecapRefTicker && _lecapsArr.length > 0) {
-    const refByTicker = _lecapsArr.find(l => l.ticker === tasasSnap.lecapRefTicker);
-    if (refByTicker) lecapRef = refByTicker;
-  }
-  if (!lecapRef && _lecapsArr.length > 0) {
-    lecapRef = [..._lecapsArr].sort((a, b) => Math.abs(a.dias - 30) - Math.abs(b.dias - 30))[0];
-  }
-  if (marketData) marketData.lecapBenchmark = lecapRef;
-
-  const temLecap = (lecapRef && isFinite(lecapRef.tem)) ? lecapRef.tem : null;
-  const pfPct = isFinite(tasasSnap.pf) ? tasasSnap.pf : 21.5;
-  const cauPct = isFinite(tasasSnap.caucion) ? tasasSnap.caucion : 26;
-  // FCI Money Market ≈ 92% de la caución 1 día (relación histórica de mercado)
-  const fciPct = cauPct * 0.92;
-
-  const pfAnual = pfPct / 100;
-  if (marketData) marketData.pfAnual = pfAnual;
-  const temPF = Math.pow(1 + pfAnual, 1/12) - 1;
-  const temFCI = Math.pow(1 + fciPct/100, 1/12) - 1;
-  const temCaucion = Math.pow(1 + cauPct/100, 1/12) - 1;
-
-  // Actualizar tasasLive para que los presets muestren los valores correctos
-  if (marketData) {
-    marketData.tasasLive = {
-      pf: pfPct, fci: fciPct, caucion: cauPct,
-      lecap: (lecapRef && isFinite(lecapRef.tea)) ? lecapRef.tea * 100 : null,
-    };
-  }
+  const { pfAnual, lecapBenchmark } = marketData;
+  const temLecap = lecapBenchmark ? Math.pow(1 + lecapBenchmark.tir, 1/12) - 1 : null;
+  const temPF = pfAnual !== null ? Math.pow(1 + pfAnual, 1/12) - 1 : null;
+  const temFCI = CFG.tasas.fci ? Math.pow(1 + CFG.tasas.fci/100, 1/12) - 1 : null;
+  const temCaucion = CFG.tasas.caucion ? Math.pow(1 + CFG.tasas.caucion/100, 1/12) - 1 : null;
 
   // ===== CONCLUSIÓN =====
   generarConclusion({ temLecap, temInfl, temPF, temFCI, temCaucion, lecapBenchmark, rem: inflAnual });
@@ -3894,10 +3854,8 @@ document.querySelectorAll('.tab').forEach(t => {
     if (view === 'invest') renderPerfilBlock();
     if (view === 'learn') renderCasos();
     if (view === 'market') {
-      try {
-        if (!marketData) refreshMarket();
-        else { renderMarketView(); }
-      } catch (err) { console.error('[Tab market] Error:', err); }
+      if (!marketData) refreshMarket();
+      else { renderMarketView(); }
       // Re-render charts después de que el DOM sea visible
       setTimeout(() => { if (marketData) renderCharts(); }, 150);
     }
@@ -4100,91 +4058,37 @@ setTimeout(initMarket, 300);
 </script>
 
 <script>
-/* PWA/SW/PDF stuff DESACTIVADO completamente */
-
-
-/* === Admin handlers SIMPLES (sin PDF parser) === */
-(function setupAdminTasas() {
-  'use strict';
-  function init() {
-    try {
-      // Cargar valores actuales en los inputs
-      var snap = null;
-      try { snap = JSON.parse(localStorage.getItem('vl_snapshot_v1') || 'null'); } catch(e) {}
-      if (!snap && typeof VL_SNAPSHOT_DEFAULT !== 'undefined') snap = VL_SNAPSHOT_DEFAULT;
-      
-      if (snap && snap.tasas) {
-        var pf = document.getElementById('adm-tasa-pf');
-        var cau = document.getElementById('adm-tasa-caucion');
-        if (pf && snap.tasas.pf) pf.value = snap.tasas.pf;
-        if (cau && snap.tasas.caucion) cau.value = snap.tasas.caucion;
-      }
-      var fechaEl = document.getElementById('adm-snap-fecha');
-      if (fechaEl) {
-        fechaEl.value = (snap && snap.fecha) || new Date().toISOString().slice(0,10);
-      }
-      
-      // Reset snapshot
-      var resetBtn = document.getElementById('adminResetSnap');
-      if (resetBtn) {
-        resetBtn.addEventListener('click', function() {
-          if (!confirm('¿Volver al snapshot de fábrica? Vas a perder los datos cargados.')) return;
-          localStorage.removeItem('vl_snapshot_v1');
-          if (typeof toast === 'function') toast('Snapshot reseteado');
-          setTimeout(function(){ location.reload(); }, 500);
-        });
-      }
-    } catch(e) { console.error('[Admin tasas init]', e); }
-  }
-  
-  // Hook al guardar admin
-  function hookSave() {
-    try {
-      var originalSave = window.saveAdmin || function(){};
-      window.saveAdmin = function() {
-        try {
-          var pfEl = document.getElementById('adm-tasa-pf');
-          var cauEl = document.getElementById('adm-tasa-caucion');
-          var fechaEl = document.getElementById('adm-snap-fecha');
-          var pf = pfEl ? parseFloat(pfEl.value) : NaN;
-          var cau = cauEl ? parseFloat(cauEl.value) : NaN;
-          var fecha = (fechaEl && fechaEl.value) || new Date().toISOString().slice(0,10);
-          
-          var cur = null;
-          try { cur = JSON.parse(localStorage.getItem('vl_snapshot_v1') || 'null'); } catch(e){}
-          if (!cur && typeof VL_SNAPSHOT_DEFAULT !== 'undefined') {
-            cur = JSON.parse(JSON.stringify(VL_SNAPSHOT_DEFAULT));
+// Registro del service worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').then((reg) => {
+      console.log('[PWA] Service worker registrado', reg.scope);
+      // Escuchar cuando hay nueva versión lista
+      reg.addEventListener('updatefound', () => {
+        const newSW = reg.installing;
+        if (!newSW) return;
+        newSW.addEventListener('statechange', () => {
+          if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+            console.log('[PWA] Nueva versión disponible. Recargá para aplicarla.');
           }
-          if (!cur) cur = { fija: [], cer: [], tasas: {} };
-          
-          var newSnap = {
-            fecha: fecha,
-            fuente: 'Docta Capital',
-            fija: cur.fija || [],
-            cer: cur.cer || [],
-            tasas: {
-              pf: isFinite(pf) ? pf : (cur.tasas && cur.tasas.pf) || 21.5,
-              caucion: isFinite(cau) ? cau : (cur.tasas && cur.tasas.caucion) || 19.5,
-              fci: null,
-              lecapRefTicker: (cur.tasas && cur.tasas.lecapRefTicker) || 'S29Y6'
-            }
-          };
-          localStorage.setItem('vl_snapshot_v1', JSON.stringify(newSnap));
-        } catch(e) { console.error('[saveAdmin tasas]', e); }
-        try { originalSave.call(this); } catch(e) {}
-        if (typeof toast === 'function') toast('Snapshot actualizado · recargando');
-        setTimeout(function(){ location.reload(); }, 600);
-      };
-    } catch(e) { console.error('[hookSave]', e); }
-  }
-  
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function(){ init(); hookSave(); });
-  } else {
-    init(); hookSave();
-  }
-})();
+        });
+      });
+    }).catch((e) => console.warn('[PWA] SW fail:', e));
+  });
+}
 
+// Install prompt handler — cuando el navegador detecta que se puede instalar
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  console.log('[PWA] App instalable — prompt disponible');
+});
+
+window.addEventListener('appinstalled', () => {
+  console.log('[PWA] App instalada');
+  deferredInstallPrompt = null;
+});
 </script>
 
 </body>
