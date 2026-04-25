@@ -1318,7 +1318,7 @@
 
       <div class="admin-section">
         <div style="font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:10px">Configuración general</div>
-        <div class="admin-field"><label>Número WhatsApp (con código país, sin +)</label><input type="text" id="adm-wa" placeholder="5491100000000"></div>
+        <div class="admin-field"><label>Número WhatsApp (con código país, sin +)</label><input type="text" id="adm-wa" placeholder="5491130004720"></div>
         <div class="admin-field" style="margin-top:10px"><label>Link Balanz (referencia)</label><input type="text" id="adm-balanz"></div>
         <div class="admin-field" style="margin-top:10px"><label>Nueva contraseña (dejá vacío para no cambiar)</label><input type="password" id="adm-newpass"></div>
       </div>
@@ -1425,7 +1425,7 @@ const DEFAULTS = {
   tasas: { pf: 21.5, fci: 17.5, caucion: 19.5, lecap: 45 },
   infl: 40,
   rem_manual: 22.6,  // inflación REM anual estimada (cargá manualmente desde admin)
-  wa: '5491100000000',
+  wa: '5491130004720',
   balanz: 'https://www.balanz.com/abrir-cuenta-2.aspx?reference=mauricio@valuelatam.com',
   adminPass: 'VL2025',
   lastUpdate: null
@@ -2491,9 +2491,14 @@ function updateInflHint() {
   // o si todavía contiene el default
   const inflInput = document.getElementById('infl');
   const curr = parseNum(inflInput.value);
-  if (inflVL && (!curr || curr === CFG.infl)) {
+  // Solo autocompletamos cuando el usuario no escribió nada o cuando hay un default obsoleto (40)
+  if (inflVL && (!curr || curr === 40 || curr === CFG.infl)) {
     inflInput.value = (inflVL * 100).toFixed(1);
+  } else if (!curr && remAnual) {
+    // Sin breakeven pero con REM: usar REM (mejor que default)
+    inflInput.value = (remAnual * 100).toFixed(1);
   }
+  // Si no hay breakeven ni REM, dejar el placeholder (no setear nada)
 
   // Componer el hint con dos líneas: VL (principal) + REM (referencia)
   let html = '';
@@ -3408,14 +3413,20 @@ document.getElementById('adminSave').addEventListener('click', () => {
   renderPresets();
   // Re-render mercado si está visible
   if (marketData) renderMarketView();
-  // Para infl: priorizar el breakeven VL si existe, sino el del admin
+  // Para infl: priorizar el breakeven VL si existe; si no, dejar lo que el usuario haya cargado
   const inflInput = document.getElementById('infl');
   const breakeven = marketData?.inflBreakeven?.anual;
-  inflInput.value = breakeven ? (breakeven * 100).toFixed(1) : CFG.infl;
+  if (breakeven) {
+    inflInput.value = (breakeven * 100).toFixed(1);
+  } else if (!parseNum(inflInput.value)) {
+    // Si está vacío Y no hay breakeven, usar REM como mejor referencia (no el default 40)
+    inflInput.value = CFG.rem_manual ? CFG.rem_manual.toFixed(1) : '';
+  }
+  // Si el usuario ya escribió un valor manual, NO lo pisamos
   if (typeof updateInflHint === 'function') updateInflHint();
   document.getElementById('tasa').value = CFG.tasas.fci;
   closeAdmin();
-  toast('Configuración guardada ✓');
+  toast('✓ Configuración guardada (queda hasta que la cambies)');
 });
 
 document.getElementById('adminReset').addEventListener('click', () => {
@@ -4018,26 +4029,49 @@ try {
   function parseFija(text) {
     var results = [];
     var fullText = text.replace(/\n/g, ' ');
-    var tickerRe = /\b((?:S|T)(?!Z)[0-9A-Z]{4,5})\s*-\s*24hs\b/g;
+    // Tickers Tasa Fija: S* o T* con formato [ST]\d{1,2}[A-Z]\d (ej: S30A6, T30J6)
+    var tickerRe = /\b([ST]\d{1,2}[A-Z]\d)\b/g;
     var matches = [];
     var m;
     while ((m = tickerRe.exec(fullText)) !== null) {
       matches.push({ ticker: m[1], idx: m.index });
     }
+    var seen = {};
     matches.forEach(function(mtch, i) {
+      var ticker = mtch.ticker;
+      // Excluir DUALES (TT*) y BONTE TY30P
+      if (ticker.startsWith('TT') || ticker === 'TY30P') return;
+      // Evitar duplicados
+      if (seen[ticker]) return;
+      seen[ticker] = true;
+      
       var startIdx = mtch.idx;
       var endIdx = (i + 1 < matches.length) ? matches[i + 1].idx : fullText.length;
+      endIdx = Math.min(endIdx, startIdx + 600);
       var region = fullText.slice(startIdx, endIdx);
       
+      // VTO: primero buscar formato completo YYYY-MM-DD
+      var vto = null;
       var fechaM = region.match(/(\d{4}-\d{2}-\d{2})/);
-      var vto = fechaM ? fechaM[1] : null;
+      if (fechaM) {
+        vto = fechaM[1];
+      } else {
+        // Formato roto: "2026-0 ... 4-30" → reconstruir
+        var f2 = region.match(/(\d{4})-(\d).+?(\d)-(\d{1,2})\D/);
+        if (f2) {
+          var dia = f2[4].length === 1 ? '0' + f2[4] : f2[4];
+          vto = f2[1] + '-' + f2[2] + f2[3] + '-' + dia;
+        }
+      }
       
-      var afterTicker = region.replace(/^[A-Z0-9]+\s*-\s*24hs\s*/, '');
-      var precioM = afterTicker.match(/^\s*(\d{1,4}[.,]\d{1,4})/);
-      var precio = precioM ? parseArgNum(precioM[1]) : null;
+      // Precio: primer número decimal después del ticker
+      var precio = null;
+      var precioM = region.match(/^[ST]\d+[A-Z]\d\s+(\d+[\.,]\d+)/);
+      if (precioM) precio = parseArgNum(precioM[1]);
       
+      // Porcentajes: extraer todos
       var pcts = [];
-      var pctRe = /(-?\d+[.,]\d+)\s*%/g;
+      var pctRe = /(-?\d+,\d+)\s*%/g;
       var pm;
       while ((pm = pctRe.exec(region)) !== null) {
         var v = parseArgNum(pm[1]);
@@ -4045,18 +4079,18 @@ try {
       }
       
       // TEM: primer valor entre 0.5 y 5
-      var tem = null, tea = null;
+      var tem = null;
       var temC = pcts.filter(function(p) { return p > 0.5 && p < 5; });
       if (temC.length) tem = temC[0] / 100;
+      
+      // TEA: primer valor entre 15 y 80
+      var tea = null;
       var teaC = pcts.filter(function(p) { return p > 15 && p < 80; });
       if (teaC.length) tea = teaC[0] / 100;
       
-      // Excluir DUALES (TT*) y BONTE TY30P
-      if (mtch.ticker.startsWith('TT') || mtch.ticker === 'TY30P') return;
-      
       if (vto && tem && precio) {
         results.push({
-          ticker: mtch.ticker,
+          ticker: ticker,
           precio: precio,
           tem: tem,
           tea: tea || (Math.pow(1 + tem, 12) - 1),
@@ -4071,44 +4105,64 @@ try {
   function parseCER(text) {
     var results = [];
     var fullText = text.replace(/\n/g, ' ');
-    var tickerRe = /\b((?:X|TZX|TX|DICP|DIP0|PARP|PAP0|CUAP)[0-9A-Z]*)\s*-\s*24hs\b/g;
+    // Tickers CER: X*, TZ*, TX*, DICP, DIP0, PARP, PAP0, CUAP
+    var tickerRe = /\b((?:X|TZX?|TX|DIC[PA]|DIP0|PARP|PAP0|CUAP)[0-9A-Z]+)\b/g;
     var matches = [];
     var m;
     while ((m = tickerRe.exec(fullText)) !== null) {
       matches.push({ ticker: m[1], idx: m.index });
     }
+    var seen = {};
     matches.forEach(function(mtch, i) {
+      var ticker = mtch.ticker;
+      if (seen[ticker]) return;
+      seen[ticker] = true;
+      
       var startIdx = mtch.idx;
       var endIdx = (i + 1 < matches.length) ? matches[i + 1].idx : fullText.length;
+      endIdx = Math.min(endIdx, startIdx + 600);
       var region = fullText.slice(startIdx, endIdx);
       
+      // Precio
+      var precio = null;
+      var precioM = region.match(/^[A-Z0-9]+\s*-?\s*(?:24hs)?\s+(\d+(?:[\.,]\d+)?)/);
+      if (precioM) precio = parseArgNum(precioM[1]);
+      
+      // VTO
+      var vto = null;
       var fechaM = region.match(/(\d{4}-\d{2}-\d{2})/);
-      var vto = fechaM ? fechaM[1] : null;
+      if (fechaM) {
+        vto = fechaM[1];
+      } else {
+        var f2 = region.match(/(\d{4})-(\d{2}).+?-(\d{1,2})\D/);
+        if (f2) {
+          var dia = f2[3].length === 1 ? '0' + f2[3] : f2[3];
+          vto = f2[1] + '-' + f2[2] + '-' + dia;
+        }
+      }
       
-      var afterTicker = region.replace(/^[A-Z0-9]+\s*-\s*24hs\s*/, '');
-      var precioM = afterTicker.match(/^\s*(\d{1,6}[.,]\d{1,4})/);
-      var precio = precioM ? parseArgNum(precioM[1]) : null;
-      
-      // TIR real: salteamos la primera % (variación) y tomamos la siguiente
-      var pctList = [];
-      var pctRe = /(-?\d+[.,]\d+)\s*%/g;
+      // TIR Real: la primera % es variación intradiaria, la segunda es TIR
+      var pcts = [];
+      var pctRe = /(-?\d+,\d+)\s*%/g;
       var pm;
       while ((pm = pctRe.exec(region)) !== null) {
         var v = parseArgNum(pm[1]);
-        if (v !== null) pctList.push(v);
+        if (v !== null) pcts.push(v);
       }
-      
       var tirReal = null;
-      var skip = false;
-      for (var k = 0; k < pctList.length; k++) {
-        var v = pctList[k];
-        if (k === 0 && Math.abs(v) < 3) { skip = true; continue; }
-        if (Math.abs(v) <= 50) { tirReal = v / 100; break; }
+      if (pcts.length >= 2) {
+        if (Math.abs(pcts[0]) < 5) {
+          tirReal = pcts[1] / 100;
+        } else {
+          tirReal = pcts[0] / 100;
+        }
+      } else if (pcts.length === 1) {
+        tirReal = pcts[0] / 100;
       }
       
       // Duration
       var duration = null;
-      var durM = region.match(/(?:^|\s)(\d{1,2}\.\d{4,})/);
+      var durM = region.match(/(\d{1,2}\.\d{4,})/);
       if (durM) {
         var d = parseFloat(durM[1]);
         if (isFinite(d) && d > 0 && d < 30) duration = d;
@@ -4120,7 +4174,7 @@ try {
       
       if (vto && tirReal !== null && precio) {
         results.push({
-          ticker: mtch.ticker,
+          ticker: ticker,
           precio: precio,
           tirReal: tirReal,
           duration: duration,
@@ -4130,6 +4184,16 @@ try {
       }
     });
     return results;
+  }
+  
+  // Helper compartido por los parsers
+  function parseArgNum(s) {
+    if (!s) return null;
+    s = String(s).trim().replace(/[%\s]/g, '');
+    if (!s) return null;
+    if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+    var n = parseFloat(s);
+    return isFinite(n) ? n : null;
   }
   
   // Render del preview
