@@ -844,10 +844,10 @@
 </style>
 
 <!-- PWA -->
-<link rel="manifest" href="manifest.json">
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<!-- <link rel="manifest" href="manifest.json"> - DESHABILITADO temporalmente (404) -->
+<!-- <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"> - 404 -->
+<!-- <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"> - 404 -->
+<!-- <link rel="apple-touch-icon" href="apple-touch-icon.png"> - 404 -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Cuotas VL">
@@ -855,15 +855,7 @@
 <meta name="application-name" content="Cuotas · Value Latam">
 <meta name="description" content="Calculadora que te dice si conviene cuotas o contado, con datos de mercado en vivo. Por Value Latam.">
   <!-- PDF.js para parsear PDFs en el admin -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
-    // Configurar worker de PDF.js (defensivo)
-    try {
-      if (window.pdfjsLib) {
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-      }
-    } catch(e) { console.warn('[PDF.js worker config falló]:', e); }
-    
     // Global error handler — captura cualquier error no manejado para que no rompa la app
     window.addEventListener('error', function(e) {
       console.error('[GLOBAL ERROR]', e.message, 'en', e.filename, 'línea', e.lineno, e.error);
@@ -1336,52 +1328,23 @@
       <div id="adminLastUpdate" style="margin-top:16px;font-size:11px;color:var(--muted);text-align:center;font-style:italic"></div>
 
       <div class="admin-section">
-        <div style="font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:6px">Carga rápida desde PDF</div>
-        <p class="admin-sub" style="margin-bottom:14px">Subí los PDFs de Docta Capital. La app los lee, extrae los datos y actualiza la curva automáticamente. <strong>El PDF nunca sale de tu celular</strong> — todo se procesa local.</p>
+        <div style="font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:6px">Tasas de mercado</div>
+        <p class="admin-sub" style="margin-bottom:14px">Cargá manualmente las tasas de mercado actuales. El FCI se calcula automáticamente como ~92% de la caución.</p>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+          <div>
+            <label style="font-size:12px;color:var(--muted);font-weight:600">Plazo Fijo BCRA (% anual)</label>
+            <input type="number" id="adm-tasa-pf" step="0.1" placeholder="21.5" style="width:100%;padding:10px;border:1px solid #d4cdb8;border-radius:8px;background:#fff;margin-top:4px;font-size:14px">
+          </div>
+          <div>
+            <label style="font-size:12px;color:var(--muted);font-weight:600">Caución 1 día (% anual)</label>
+            <input type="number" id="adm-tasa-caucion" step="0.1" placeholder="19.5" style="width:100%;padding:10px;border:1px solid #d4cdb8;border-radius:8px;background:#fff;margin-top:4px;font-size:14px">
+          </div>
+        </div>
 
         <div class="admin-field" style="margin-bottom:10px">
-          <label style="display:block;font-weight:600;color:var(--gold);margin-bottom:6px">Fecha del snapshot</label>
+          <label>Fecha del snapshot (DD/MM/AAAA)</label>
           <input type="date" id="adm-snap-fecha" style="width:100%;padding:10px;border:1px solid #d4cdb8;border-radius:8px;background:#fff;font-size:14px">
-        </div>
-
-        <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">
-          <label class="pdf-upload-btn" id="lbl-upload-fija" style="display:flex;align-items:center;justify-content:space-between;padding:14px;background:linear-gradient(135deg,#1a1d40 0%,#252a55 100%);color:#fff;border-radius:10px;cursor:pointer;font-weight:600;font-size:14px">
-            <span><span style="opacity:.7">📄</span> &nbsp; Subir PDF: Tasa Fija (LECAPs/BONCAPs)</span>
-            <span id="status-fija" style="font-size:11px;opacity:.6">Sin cargar</span>
-            <input type="file" id="pdf-fija" accept="application/pdf" style="display:none">
-          </label>
-
-          <label class="pdf-upload-btn" id="lbl-upload-cer" style="display:flex;align-items:center;justify-content:space-between;padding:14px;background:linear-gradient(135deg,#1a1d40 0%,#252a55 100%);color:#fff;border-radius:10px;cursor:pointer;font-weight:600;font-size:14px">
-            <span><span style="opacity:.7">📄</span> &nbsp; Subir PDF: CER</span>
-            <span id="status-cer" style="font-size:11px;opacity:.6">Sin cargar</span>
-            <input type="file" id="pdf-cer" accept="application/pdf" style="display:none">
-          </label>
-        </div>
-
-        <div id="pdf-preview" style="display:none;background:#fffaf0;border:1px solid #e6dec0;border-radius:10px;padding:12px;margin-bottom:14px;max-height:300px;overflow-y:auto;font-size:12px">
-          <div style="font-weight:700;margin-bottom:8px;color:var(--gold)">Datos extraídos</div>
-          <div id="pdf-preview-content"></div>
-        </div>
-
-        <div class="admin-field" style="margin-top:14px;padding:12px;background:#f8f4e8;border-radius:8px">
-          <div style="font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:10px">Tasas manuales</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-            <div>
-              <label style="font-size:12px;color:var(--muted)">Plazo Fijo BCRA (% anual)</label>
-              <input type="number" id="adm-tasa-pf" step="0.1" style="width:100%;padding:8px;border:1px solid #d4cdb8;border-radius:6px;background:#fff;margin-top:4px">
-            </div>
-            <div>
-              <label style="font-size:12px;color:var(--muted)">Caución 1 día (% anual)</label>
-              <input type="number" id="adm-tasa-caucion" step="0.1" style="width:100%;padding:8px;border:1px solid #d4cdb8;border-radius:6px;background:#fff;margin-top:4px">
-            </div>
-          </div>
-          <div style="font-size:11px;color:var(--muted);margin-top:8px;font-style:italic">El FCI Money Market se calcula automáticamente como ~92% de la tasa de caución.</div>
-        </div>
-
-        <div style="display:flex;gap:8px;margin-top:14px">
-          <button id="btn-export-snap" type="button" class="admin-cancel" style="flex:1;font-size:12px">📥 Exportar JSON</button>
-          <button id="btn-import-snap" type="button" class="admin-cancel" style="flex:1;font-size:12px">📤 Importar JSON</button>
-          <input type="file" id="file-import-json" accept="application/json" style="display:none">
         </div>
 
         <button id="adminResetSnap" class="admin-reset" type="button" style="margin-top:8px">Volver al snapshot de fábrica</button>
@@ -4151,428 +4114,90 @@ window.addEventListener('appinstalled', () => {
    Lee PDFs de Docta Capital, extrae los datos y actualiza el snapshot.
    El PDF nunca sale del navegador — se procesa localmente con PDF.js
    =========================================================== */
-try {
-(function setupAdminPDFHandlers() {
+/* PDF parser DESACTIVADO temporalmente para diagnosticar bug */
+
+
+/* === Admin handlers SIMPLES (sin PDF parser) === */
+(function setupAdminTasas() {
   'use strict';
-
-  // === Estado temporal mientras el usuario carga PDFs ===
-  const pendingSnapshot = { fija: null, cer: null };
-
-  // === Helper: parsear número argentino ("1.234,56" → 1234.56) ===
-  function parseArgNumber(s) {
-    if (!s) return null;
-    s = String(s).trim().replace(/[%\s]/g, '');
-    if (!s) return null;
-    // Si tiene coma como decimal, convertir a punto
-    if (s.includes(',')) {
-      s = s.replace(/\./g, '').replace(',', '.');
-    }
-    const n = parseFloat(s);
-    return isFinite(n) ? n : null;
-  }
-
-  // === Helper: parsear fecha YYYY-MM-DD ===
-  function parseFecha(s) {
-    if (!s) return null;
-    const m = s.match(/(\d{4})[-/](\d{2})[-/](\d{2})/);
-    if (!m) return null;
-    return `${m[1]}-${m[2]}-${m[3]}`;
-  }
-
-  // === Extraer texto del PDF con PDF.js ===
-  async function extractTextFromPDF(file) {
-    if (!window.pdfjsLib) {
-      throw new Error('PDF.js no está disponible');
-    }
-    const buf = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
-    let allText = '';
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      // Reconstruir línea con coordenadas Y (cada línea distinta es un Y diferente)
-      // Agrupamos items por Y aproximada (con tolerancia de 2px)
-      const items = content.items;
-      const lineMap = new Map();
-      items.forEach(it => {
-        const y = Math.round(it.transform[5]);
-        // Tolerancia ±2px para agrupar
-        let key = y;
-        for (const k of lineMap.keys()) {
-          if (Math.abs(k - y) <= 2) { key = k; break; }
-        }
-        if (!lineMap.has(key)) lineMap.set(key, []);
-        lineMap.get(key).push({ x: it.transform[4], text: it.str });
-      });
-      // Ordenar líneas por Y descendente (top to bottom)
-      const lineKeys = [...lineMap.keys()].sort((a,b) => b - a);
-      for (const k of lineKeys) {
-        const line = lineMap.get(k).sort((a,b) => a.x - b.x).map(o => o.text).join(' ').trim();
-        if (line) allText += line + '\n';
+  function init() {
+    try {
+      // Cargar valores actuales en los inputs
+      var snap = null;
+      try { snap = JSON.parse(localStorage.getItem('vl_snapshot_v1') || 'null'); } catch(e) {}
+      if (!snap && typeof VL_SNAPSHOT_DEFAULT !== 'undefined') snap = VL_SNAPSHOT_DEFAULT;
+      
+      if (snap && snap.tasas) {
+        var pf = document.getElementById('adm-tasa-pf');
+        var cau = document.getElementById('adm-tasa-caucion');
+        if (pf && snap.tasas.pf) pf.value = snap.tasas.pf;
+        if (cau && snap.tasas.caucion) cau.value = snap.tasas.caucion;
       }
-      allText += '\n--- PAGE BREAK ---\n';
-    }
-    return allText;
-  }
-
-  // === Parser de Tasa Fija (LECAPs/BONCAPs) ===
-  // Estructura esperada por fila: TICKER PRECIO P.CIERRE VAR V.OPER V.EFEC TNA TEA TEM DTM VTO PARIDAD ...
-  // Como los PDFs vienen rotos, usamos regex flexibles
-  function parseTasaFija(text) {
-    const results = [];
-    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-    
-    // Pattern: ticker_pattern seguido de "- 24hs" en la misma línea o cercana
-    // Ejemplo: "S30A6 - 24hs 127.29 127.29 0,17% ... 18,73% 20,59% 1,57% 3 2026-04-30 100,19%"
-    
-    // Vamos línea por línea buscando patrones
-    // Una fila completa puede estar en una línea o partida entre varias
-    // Estrategia: re-armar el texto y buscar tickers conocidos
-    
-    const fullText = lines.join(' ');
-    // Tickers fijos válidos: empiezan con S o T (no TZ), formato estándar
-    const tickerPattern = /\b((?:S|T)(?!Z)[0-9A-Z]{4,5})\s*-\s*24hs\b/g;
-    let match;
-    const matches = [];
-    while ((match = tickerPattern.exec(fullText)) !== null) {
-      matches.push({ ticker: match[1], idx: match.index });
-    }
-
-    // Para cada ticker, capturar la región hasta el próximo ticker
-    matches.forEach((m, i) => {
-      const startIdx = m.idx;
-      const endIdx = (i + 1 < matches.length) ? matches[i+1].idx : fullText.length;
-      const region = fullText.slice(startIdx, endIdx);
-
-      // Buscar TEM (formato X,XX%) - típicamente entre 0,5% y 5%
-      // Y la fecha de vencimiento YYYY-MM-DD
-      // Y la TEA (suele estar antes de la TEM)
-
-      const fechaMatch = region.match(/(\d{4}-\d{2}-\d{2})/);
-      const vto = fechaMatch ? fechaMatch[1] : null;
-      
-      // Buscar todos los porcentajes tipo X,XX% en la región
-      // Estructura típica: TNA, TEA, TEM aparecen consecutivos
-      const percMatches = [...region.matchAll(/(-?\d+[.,]\d+)\s*%/g)].map(p => parseArgNumber(p[1]));
-      
-      // Buscar precio (número decimal sin %, suele ser el primer número grande después del ticker)
-      // Ejemplo: "S30A6 - 24hs 127.29 127.29 ..."
-      const afterTicker = region.replace(/^[A-Z0-9]+\s*-\s*24hs\s*/, '');
-      const precioMatch = afterTicker.match(/^\s*(\d{1,4}[.,]\d{1,4})/);
-      const precio = precioMatch ? parseArgNumber(precioMatch[1]) : null;
-
-      // Heurística para identificar TEM:
-      // - TEM suele estar entre 0.005 y 0.05 (0,5% a 5% mensual)
-      // - Si hay 3+ porcentajes consecutivos, el orden es TNA, TEA, TEM
-      let tem = null, tea = null;
-      // Filtrar % que sean razonables y descartar paridad (>50%)
-      const candidatos = percMatches.filter(p => p !== null);
-      
-      // TEM suele ser el primer % entre 0.5 y 5
-      const temCandidates = candidatos.filter(p => p > 0.5 && p < 5);
-      if (temCandidates.length > 0) {
-        tem = temCandidates[0] / 100;
-      }
-      // TEA suele ser el primer % entre 15 y 60
-      const teaCandidates = candidatos.filter(p => p > 15 && p < 60);
-      if (teaCandidates.length > 0) {
-        tea = teaCandidates[0] / 100;
-      }
-
-      if (vto && tem && precio) {
-        // Excluir DUALES (TTJ26, TTS26, TTD26, TTM26) — empiezan con TT
-        if (m.ticker.startsWith('TT')) return;
-        // Excluir BONTE TY30P
-        if (m.ticker === 'TY30P') return;
-        results.push({ ticker: m.ticker, precio, tem, tea: tea || (Math.pow(1+tem, 12) - 1), vto });
-      }
-    });
-
-    return results;
-  }
-
-  // === Parser de CER ===
-  function parseCER(text) {
-    const results = [];
-    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-    const fullText = lines.join(' ');
-
-    // Tickers CER: X*, TZ*, TX*, DICP, DIP0, PARP, PAP0, CUAP
-    // Vamos a usar un patrón amplio pero filtrar después
-    const tickerPattern = /\b((?:X|TZX|TX|DICP|DIP0|PARP|PAP0|CUAP)[0-9A-Z]*)\s*-\s*24hs\b/g;
-    let match;
-    const matches = [];
-    while ((match = tickerPattern.exec(fullText)) !== null) {
-      matches.push({ ticker: match[1], idx: match.index });
-    }
-
-    matches.forEach((m, i) => {
-      const startIdx = m.idx;
-      const endIdx = (i + 1 < matches.length) ? matches[i+1].idx : fullText.length;
-      const region = fullText.slice(startIdx, endIdx);
-
-      const fechaMatch = region.match(/(\d{4}-\d{2}-\d{2})/);
-      const vto = fechaMatch ? fechaMatch[1] : null;
-      
-      // Para CER: la TIR REAL puede ser negativa
-      // Buscar "X,XX%" o "-X,XX%" en la región
-      const percMatches = [...region.matchAll(/(-?\d+[.,]\d+)\s*%/g)].map(p => parseArgNumber(p[1]));
-
-      const afterTicker = region.replace(/^[A-Z0-9]+\s*-\s*24hs\s*/, '');
-      const precioMatch = afterTicker.match(/^\s*(\d{1,6}[.,]\d{1,4})/);
-      const precio = precioMatch ? parseArgNumber(precioMatch[1]) : null;
-
-      // TIR real: la primera ocurrencia razonable (entre -50% y 50%)
-      // En el orden del PDF: precio, p_cierre, variación, V.operado, V.efectivo, TIR, duration...
-      // La variación es la primer %, ahí salteamos. La TIR es la siguiente %.
-      // Filtramos: la variación suele ser pequeña (<5%), la TIR puede ser cualquier valor
-      
-      let tirReal = null;
-      // Heurística: salteamos la primera % (variación) y la siguiente es TIR
-      // Si la primera es muy chica (<3 abs), probablemente es variación
-      const sortedByOrder = [];
-      const re2 = /(-?\d+[.,]\d+)\s*%/g;
-      let m2;
-      while ((m2 = re2.exec(region)) !== null) {
-        sortedByOrder.push({ idx: m2.index, val: parseArgNumber(m2[1]) });
+      var fechaEl = document.getElementById('adm-snap-fecha');
+      if (fechaEl) {
+        fechaEl.value = (snap && snap.fecha) || new Date().toISOString().slice(0,10);
       }
       
-      // Primera % suele ser variación intradiaria (<3% abs), descartamos
-      // Segunda % suele ser TIR
-      let cnt = 0;
-      for (const p of sortedByOrder) {
-        if (p.val === null) continue;
-        if (cnt === 0 && Math.abs(p.val) < 3) {
-          // probablemente variación, salteamos
-          cnt++;
-          continue;
-        }
-        // Si valor está entre -50 y 50, es razonable como TIR real
-        if (Math.abs(p.val) <= 50) {
-          tirReal = p.val / 100;
-          break;
-        }
-        cnt++;
-      }
-
-      // Buscar duration (número decimal grande, suele ser entre 0 y 15)
-      let duration = null;
-      const durMatch = region.match(/(?:^|\s)(\d{1,2}\.\d{4,})/);
-      if (durMatch) {
-        const d = parseFloat(durMatch[1]);
-        if (isFinite(d) && d > 0 && d < 30) duration = d;
-      }
-      // Fallback: calcular duration desde días al vto
-      if (!duration && vto) {
-        const dias = Math.ceil((new Date(vto) - new Date()) / 86400000);
-        if (dias > 0) duration = dias / 365;
-      }
-
-      if (vto && tirReal !== null && precio) {
-        results.push({
-          ticker: m.ticker, precio, tirReal,
-          duration: duration || null,
-          vto,
-          paridad: precio / 100
+      // Reset snapshot
+      var resetBtn = document.getElementById('adminResetSnap');
+      if (resetBtn) {
+        resetBtn.addEventListener('click', function() {
+          if (!confirm('¿Volver al snapshot de fábrica? Vas a perder los datos cargados.')) return;
+          localStorage.removeItem('vl_snapshot_v1');
+          if (typeof toast === 'function') toast('Snapshot reseteado');
+          setTimeout(function(){ location.reload(); }, 500);
         });
       }
-    });
-
-    return results;
+    } catch(e) { console.error('[Admin tasas init]', e); }
   }
-
-  // === Render del preview con datos extraídos ===
-  function renderPreview() {
-    const div = document.getElementById('pdf-preview');
-    const content = document.getElementById('pdf-preview-content');
-    if (!div || !content) return;
-    
-    if (!pendingSnapshot.fija && !pendingSnapshot.cer) {
-      div.style.display = 'none';
-      return;
-    }
-    div.style.display = 'block';
-    let html = '';
-    if (pendingSnapshot.fija) {
-      html += `<div style="font-weight:600;color:var(--gold);margin:8px 0 4px">Tasa Fija (${pendingSnapshot.fija.length} bonos)</div>`;
-      html += '<div style="display:grid;grid-template-columns:80px 90px 70px 70px;gap:4px;font-family:monospace;font-size:11px">';
-      html += '<div style="font-weight:700;color:var(--muted)">Ticker</div><div style="font-weight:700;color:var(--muted)">Vto</div><div style="font-weight:700;color:var(--muted)">TEM</div><div style="font-weight:700;color:var(--muted)">TEA</div>';
-      pendingSnapshot.fija.slice(0, 30).forEach(b => {
-        html += `<div>${b.ticker}</div><div>${b.vto}</div><div>${(b.tem*100).toFixed(2)}%</div><div>${(b.tea*100).toFixed(1)}%</div>`;
-      });
-      html += '</div>';
-    }
-    if (pendingSnapshot.cer) {
-      html += `<div style="font-weight:600;color:var(--gold);margin:12px 0 4px">CER (${pendingSnapshot.cer.length} bonos)</div>`;
-      html += '<div style="display:grid;grid-template-columns:80px 90px 80px 60px;gap:4px;font-family:monospace;font-size:11px">';
-      html += '<div style="font-weight:700;color:var(--muted)">Ticker</div><div style="font-weight:700;color:var(--muted)">Vto</div><div style="font-weight:700;color:var(--muted)">TIR Real</div><div style="font-weight:700;color:var(--muted)">Dur</div>';
-      pendingSnapshot.cer.slice(0, 30).forEach(b => {
-        const tirColor = b.tirReal < 0 ? 'var(--red)' : 'var(--gold)';
-        html += `<div>${b.ticker}</div><div>${b.vto}</div><div style="color:${tirColor}">${(b.tirReal*100).toFixed(2)}%</div><div>${b.duration ? b.duration.toFixed(2) : '—'}</div>`;
-      });
-      html += '</div>';
-    }
-    content.innerHTML = html;
-  }
-
-  // === Handlers de upload ===
-  function setupUploadHandler(inputId, statusId, parserFn, snapKey, label) {
-    const input = document.getElementById(inputId);
-    const status = document.getElementById(statusId);
-    if (!input || !status) return;
-    
-    input.addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      status.textContent = 'Procesando...';
-      status.style.color = '#ffd76b';
-      try {
-        const text = await extractTextFromPDF(file);
-        const parsed = parserFn(text);
-        if (!parsed || parsed.length === 0) {
-          status.textContent = '❌ No pude leer el PDF';
-          status.style.color = '#ff8a8a';
-          alert(`No pude extraer datos del PDF de ${label}. Verificá que sea el PDF correcto de Docta Capital.`);
-          return;
-        }
-        pendingSnapshot[snapKey] = parsed;
-        status.textContent = `✓ ${parsed.length} bonos`;
-        status.style.color = '#7be8a8';
-        renderPreview();
-      } catch (err) {
-        console.error('Error parseando PDF:', err);
-        status.textContent = '❌ Error';
-        status.style.color = '#ff8a8a';
-        alert(`Error al procesar el PDF: ${err.message}`);
-      }
-    });
-  }
-
-  // Init handlers cuando el DOM esté listo
-  function initHandlers() {
-    setupUploadHandler('pdf-fija', 'status-fija', parseTasaFija, 'fija', 'Tasa Fija');
-    setupUploadHandler('pdf-cer', 'status-cer', parseCER, 'cer', 'CER');
-
-    // Cargar valores actuales en los inputs de tasas
+  
+  // Hook al guardar admin
+  function hookSave() {
     try {
-      const cur = JSON.parse(localStorage.getItem('vl_snapshot_v1') || 'null') || (typeof VL_SNAPSHOT_DEFAULT !== 'undefined' ? VL_SNAPSHOT_DEFAULT : null);
-      if (cur && cur.tasas) {
-        const pf = document.getElementById('adm-tasa-pf');
-        const cau = document.getElementById('adm-tasa-caucion');
-        if (pf && cur.tasas.pf) pf.value = cur.tasas.pf;
-        if (cau && cur.tasas.caucion) cau.value = cur.tasas.caucion;
-      }
-      // Fecha
-      const fechaEl = document.getElementById('adm-snap-fecha');
-      if (fechaEl) {
-        fechaEl.value = cur?.fecha || new Date().toISOString().slice(0,10);
-      }
-    } catch (e) {}
-
-    // Botón resetear snapshot
-    const resetBtn = document.getElementById('adminResetSnap');
-    if (resetBtn) {
-      resetBtn.addEventListener('click', () => {
-        if (!confirm('¿Volver al snapshot de fábrica? Vas a perder los datos cargados.')) return;
-        localStorage.removeItem('vl_snapshot_v1');
-        pendingSnapshot.fija = null;
-        pendingSnapshot.cer = null;
-        document.getElementById('status-fija').textContent = 'Sin cargar';
-        document.getElementById('status-fija').style.color = '';
-        document.getElementById('status-cer').textContent = 'Sin cargar';
-        document.getElementById('status-cer').style.color = '';
-        renderPreview();
-        if (typeof toast === 'function') toast('Snapshot reseteado');
-      });
-    }
-
-    // Export JSON
-    const expBtn = document.getElementById('btn-export-snap');
-    if (expBtn) {
-      expBtn.addEventListener('click', () => {
-        const cur = localStorage.getItem('vl_snapshot_v1') || JSON.stringify(typeof VL_SNAPSHOT_DEFAULT !== 'undefined' ? VL_SNAPSHOT_DEFAULT : {});
-        const blob = new Blob([cur], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `snapshot-${new Date().toISOString().slice(0,10)}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-      });
-    }
-
-    // Import JSON
-    const impBtn = document.getElementById('btn-import-snap');
-    const impInput = document.getElementById('file-import-json');
-    if (impBtn && impInput) {
-      impBtn.addEventListener('click', () => impInput.click());
-      impInput.addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+      var originalSave = window.saveAdmin || function(){};
+      window.saveAdmin = function() {
         try {
-          const text = await file.text();
-          const parsed = JSON.parse(text);
-          if (!parsed.fija && !parsed.cer) throw new Error('JSON inválido');
-          localStorage.setItem('vl_snapshot_v1', JSON.stringify(parsed));
-          if (typeof toast === 'function') toast('Snapshot importado correctamente');
-          setTimeout(() => location.reload(), 500);
-        } catch (err) {
-          alert('Error al importar: ' + err.message);
-        }
-      });
-    }
-  }
-
-  // Hook al guardar admin: persistir lo cargado
-  // Esperamos a que la función saveAdmin original exista, y la wrappeamos
-  function hookSaveAdmin() {
-    const originalSave = window.saveAdmin || (() => {});
-    window.saveAdmin = function() {
-      // 1) Guardar tasas manuales
-      const pf = parseFloat(document.getElementById('adm-tasa-pf')?.value);
-      const cau = parseFloat(document.getElementById('adm-tasa-caucion')?.value);
-      const fecha = document.getElementById('adm-snap-fecha')?.value || new Date().toISOString().slice(0,10);
-
-      // 2) Construir nuevo snapshot
-      const cur = JSON.parse(localStorage.getItem('vl_snapshot_v1') || 'null') || (typeof VL_SNAPSHOT_DEFAULT !== 'undefined' ? JSON.parse(JSON.stringify(VL_SNAPSHOT_DEFAULT)) : { fija: [], cer: [], tasas: {} });
-      
-      const newSnap = {
-        fecha,
-        fuente: 'Docta Capital (carga manual)',
-        fija: pendingSnapshot.fija || cur.fija || [],
-        cer: pendingSnapshot.cer || cur.cer || [],
-        tasas: {
-          pf: isFinite(pf) ? pf : (cur.tasas?.pf ?? 21.5),
-          caucion: isFinite(cau) ? cau : (cur.tasas?.caucion ?? 26),
-          fci: null, // se calcula como ~92% de caución
-          lecapRefTicker: cur.tasas?.lecapRefTicker || 'S29Y6',
-        }
+          var pfEl = document.getElementById('adm-tasa-pf');
+          var cauEl = document.getElementById('adm-tasa-caucion');
+          var fechaEl = document.getElementById('adm-snap-fecha');
+          var pf = pfEl ? parseFloat(pfEl.value) : NaN;
+          var cau = cauEl ? parseFloat(cauEl.value) : NaN;
+          var fecha = (fechaEl && fechaEl.value) || new Date().toISOString().slice(0,10);
+          
+          var cur = null;
+          try { cur = JSON.parse(localStorage.getItem('vl_snapshot_v1') || 'null'); } catch(e){}
+          if (!cur && typeof VL_SNAPSHOT_DEFAULT !== 'undefined') {
+            cur = JSON.parse(JSON.stringify(VL_SNAPSHOT_DEFAULT));
+          }
+          if (!cur) cur = { fija: [], cer: [], tasas: {} };
+          
+          var newSnap = {
+            fecha: fecha,
+            fuente: 'Docta Capital',
+            fija: cur.fija || [],
+            cer: cur.cer || [],
+            tasas: {
+              pf: isFinite(pf) ? pf : (cur.tasas && cur.tasas.pf) || 21.5,
+              caucion: isFinite(cau) ? cau : (cur.tasas && cur.tasas.caucion) || 19.5,
+              fci: null,
+              lecapRefTicker: (cur.tasas && cur.tasas.lecapRefTicker) || 'S29Y6'
+            }
+          };
+          localStorage.setItem('vl_snapshot_v1', JSON.stringify(newSnap));
+        } catch(e) { console.error('[saveAdmin tasas]', e); }
+        try { originalSave.call(this); } catch(e) {}
+        if (typeof toast === 'function') toast('Snapshot actualizado · recargando');
+        setTimeout(function(){ location.reload(); }, 600);
       };
-
-      localStorage.setItem('vl_snapshot_v1', JSON.stringify(newSnap));
-      
-      // 3) Limpiar pendings
-      pendingSnapshot.fija = null;
-      pendingSnapshot.cer = null;
-
-      // 4) Llamar al original (por si guarda otras cosas)
-      try { originalSave.call(this); } catch(e) {}
-
-      // 5) Refrescar UI
-      if (typeof toast === 'function') toast('Snapshot actualizado · recargando');
-      setTimeout(() => location.reload(), 600);
-    };
+    } catch(e) { console.error('[hookSave]', e); }
   }
-
-  // Iniciar después de DOMContentLoaded
+  
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => { initHandlers(); hookSaveAdmin(); });
+    document.addEventListener('DOMContentLoaded', function(){ init(); hookSave(); });
   } else {
-    initHandlers();
-    hookSaveAdmin();
+    init(); hookSave();
   }
 })();
-} catch (___pdfParserErr) { console.error("[PDF Parser Init Error]:", ___pdfParserErr); }
 
 </script>
 
