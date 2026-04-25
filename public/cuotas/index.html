@@ -1133,7 +1133,7 @@
       </div>
       <div class="chart-wrap"><canvas id="chartBreakeven"></canvas></div>
       <div id="curvaSnapshotInfo" class="chart-footnote">
-        <strong>Cómo leerlo:</strong> si las dos líneas se separan mucho, es que el mercado y las consultoras esperan cosas distintas — y ahí hay oportunidad. Si VL va por encima del REM, el mercado cree que la inflación va a ser más alta que lo que dicen las consultoras (tendencia: comprar CER). Si va por debajo, el mercado cree que va a ser más baja (tendencia: comprar tasa fija).
+        <strong>Cómo leerlo:</strong> la <strong style="color:var(--gold)">línea sólida dorada</strong> es la inflación que el mercado argentino está descontando con plata real, mes a mes. La <strong style="color:var(--red)">línea punteada roja</strong> es el dato oficial del REM BCRA "próximos 12 meses" — fijo, único valor para todo el año. <br><br>Si la curva VL queda por <strong>encima</strong> de la línea REM, el mercado cree que la inflación va a ser más alta que lo que estiman las consultoras (tendencia: <strong>comprar CER</strong>). Si queda por <strong>debajo</strong>, el mercado cree que va a ser más baja (tendencia: <strong>comprar tasa fija</strong>).
       </div>
       <div id="conclusionInflacionExperta" class="conclusion-experta"></div>
     </div>
@@ -2309,21 +2309,17 @@ async function fetchFCIMercado() {
 
 async function fetchREM() {
   // API pública que scrappea el Excel del REM del BCRA
-  // IMPORTANTE: devuelve 12 filas pero SOLO las primeras ~7 son mensuales.
-  // El resto son proyecciones anuales interanuales (ej: "próx. 12 meses", "2026", "2027").
-  // Hay que filtrar SOLO por referencia = "var. % mensual"
+  // Devuelve mezcla de datos mensuales y proyecciones interanuales/anuales
   try {
     const data = await safeFetch('https://bcra-rem-api.facujallia.workers.dev/api/ipc_general', 'REM_facujallia');
     const raw = data?.datos;
     if (!Array.isArray(raw) || raw.length === 0) return null;
 
-    // Filtrar SOLO los mensuales (no los anuales interanuales)
+    // 1) Datos mensuales (var. % mensual)
     const mensuales = raw
       .filter(d => {
         const ref = (d.referencia || '').toLowerCase();
-        // Solo aceptamos los que explícitamente son "var. % mensual"
         if (!ref.includes('mensual')) return false;
-        // Doble chequeo: mediana razonable (<10% mensual)
         if (!isFinite(d.mediana) || d.mediana < 0 || d.mediana > 10) return false;
         return true;
       })
@@ -2331,13 +2327,36 @@ async function fetchREM() {
         periodo: d['período'] || d.periodo,
         mensual: d.mediana / 100
       }))
-      // Ordenar por fecha ascendente (por si vienen desordenados)
       .sort((a, b) => new Date(a.periodo) - new Date(b.periodo));
 
-    if (mensuales.length === 0) return null;
+    // 2) Buscar "próx. 12 meses" (interanual) — es el dato OFICIAL principal
+    let proximos12mAnual = null;
+    const candidato12m = raw.find(d => {
+      const periodo = String(d['período'] || d.periodo || '').toLowerCase();
+      const ref = String(d.referencia || '').toLowerCase();
+      return (periodo.includes('próx') && periodo.includes('12 meses')) ||
+             (periodo.includes('prox') && periodo.includes('12 meses')) ||
+             (ref.includes('i.a.') && periodo.includes('12 meses'));
+    });
+    if (candidato12m && isFinite(candidato12m.mediana) && candidato12m.mediana > 0 && candidato12m.mediana < 200) {
+      proximos12mAnual = candidato12m.mediana / 100;
+      console.log(`[REM] próx. 12 meses i.a.: ${(proximos12mAnual*100).toFixed(2)}% (oficial)`);
+    }
 
-    console.log(`[REM] ${mensuales.length} períodos mensuales válidos`);
-    return { puntos: mensuales, ultimaActualizacion: data.ultima_actualizacion };
+    // 3) Si no hay "próx. 12 meses", calcular promedio anualizado de los mensuales
+    if (proximos12mAnual === null && mensuales.length > 0) {
+      const mensualPromedio = mensuales.reduce((s, p) => s + p.mensual, 0) / mensuales.length;
+      proximos12mAnual = Math.pow(1 + mensualPromedio, 12) - 1;
+      console.log(`[REM] anualizado promedio (fallback): ${(proximos12mAnual*100).toFixed(2)}%`);
+    }
+
+    if (mensuales.length === 0 && proximos12mAnual === null) return null;
+
+    return {
+      puntos: mensuales,
+      proximos12mAnual,
+      ultimaActualizacion: data.ultima_actualizacion
+    };
   } catch (e) { console.warn('[REM facujallia falla]', e); }
   return null;
 }
@@ -2423,11 +2442,11 @@ async function refreshMarket() {
     fetchArgNotes(), fetchBonosCER(), fetchPlazoFijo(), fetchREM(), fetchFCIMercado()
   ]);
 
-  // REM viene como objeto con curva completa (puntos mensuales)
-  // Lo guardamos para el gráfico de comparación, pero ya NO lo usamos como input
+  // REM viene como objeto con curva mensual + dato "próx. 12 meses"
   const remCurva = remData?.puntos || null;
   const remUpdated = remData?.ultimaActualizacion || null;
-  const rem = null; // ya no usamos REM como input de cálculos
+  const rem12mAnual = remData?.proximos12mAnual ?? null;
+  const rem = null;
 
   console.log('[Market] Respuestas:', { notes: !!notes, cer: !!cer, pfRate, rem, fciRate });
 
@@ -2440,13 +2459,23 @@ async function refreshMarket() {
   const lecaps = [];
   const boncer = [];
 
-  // Procesar LECAPs / BONCAPs — preferimos metadata hardcodeada de BONOS_FIJA_META
+  // Procesar SOLO LECAPs reales (tickers que empiezan con "S")
+  // El endpoint arg_notes mezcla LECAPs, bonos CER cortos y DLKs — hay que filtrar
   if (notes && Array.isArray(notes)) {
     notes.forEach(n => {
       const ticker = (n.symbol || n.ticker || n.especie || n.simbolo || n.c || '').toUpperCase();
       const precio = parseFloat(n.c ?? n.close ?? n.px_bid ?? n.ultimo ?? n.precio ?? n.cierre);
       if (!ticker || !isFinite(precio) || precio <= 0) return;
-      // Preferir metadata hardcodeada (más precisa). Fallback a parseVencimientoTicker.
+
+      // FILTRO 1: solo aceptamos LECAPs (S*) y BONCAPs (T* que no sean TZ*)
+      // - Excluimos bonos CER (X*, TZ*) que vienen acá mezclados
+      // - Excluimos DLKs (terminan en D)
+      const esLECAP = ticker.startsWith('S');
+      const esBONCAP = ticker.startsWith('T') && !ticker.startsWith('TZ');
+      if (!esLECAP && !esBONCAP) return;
+      if (ticker.endsWith('D')) return; // DLK
+
+      // FILTRO 2: usar metadata hardcodeada si existe; sino parsear ticker
       const meta = (typeof BONOS_FIJA_META !== 'undefined' && BONOS_FIJA_META[ticker]) || null;
       let venc;
       if (meta && meta.vto) {
@@ -2456,7 +2485,9 @@ async function refreshMarket() {
       }
       if (!venc || !isFinite(venc.getTime())) return;
       const dias = diasEntre(today, venc);
-      if (dias <= 0 || dias > 2000) return;
+      // FILTRO 3: días razonables (no vencidos, no más de 2 años)
+      if (dias <= 0 || dias > 800) return;
+
       const tir = tirLECAP(precio, dias);
       if (!tir || tir <= 0 || tir > 5) return;
       const tem = Math.pow(1 + tir, 1/12) - 1;
@@ -2470,10 +2501,9 @@ async function refreshMarket() {
     lecaps.sort((a,b) => a.dias - b.dias);
   }
 
-  // Procesar BONCER — fetchBonosCER ya devuelve estructura procesada con tirReal calculada
+  // Procesar BONCER — fetchBonosCER ya devuelve estructura procesada
   if (cer && Array.isArray(cer)) {
     cer.forEach(b => {
-      // b ya viene del nuevo fetchBonosCER con: { ticker, precio, tirReal, duration, vto, paridad }
       if (!b.ticker || !isFinite(b.precio) || b.precio <= 0) return;
       const venc = new Date(b.vto);
       if (!isFinite(venc.getTime())) return;
@@ -2490,8 +2520,48 @@ async function refreshMarket() {
         paridad: b.paridad,
       });
     });
-    boncer.sort((a,b) => a.dias - b.dias);
   }
+
+  // ADICIONAL: data912/arg_notes mezcla bonos CER cortos (X*, TZ*) entre las "notes".
+  // Los rescatamos acá, calculamos su TIR real y los agregamos al array de boncer.
+  if (notes && Array.isArray(notes)) {
+    notes.forEach(n => {
+      const ticker = (n.symbol || n.ticker || n.especie || n.simbolo || '').toUpperCase();
+      if (!ticker) return;
+      // Solo CER cortos: empiezan con "X" o "TZ"
+      const esCER = ticker.startsWith('X') || ticker.startsWith('TZ');
+      if (!esCER) return;
+      // Si ya está en boncer, no duplicar
+      if (boncer.find(b => b.ticker === ticker)) return;
+
+      const precio = parseFloat(n.c ?? n.close ?? n.px_bid ?? n.ultimo ?? n.precio);
+      if (!isFinite(precio) || precio <= 0) return;
+
+      const meta = (typeof BONOS_CER_META !== 'undefined' && BONOS_CER_META[ticker]) || null;
+      if (!meta || !meta.vto) return; // Sin metadata, no podemos calcular TIR real
+      const venc = new Date(meta.vto);
+      if (!isFinite(venc.getTime())) return;
+      const dias = diasEntre(today, venc);
+      if (dias <= 0 || dias > 3000) return;
+
+      // Calcular TIR real con la fórmula del ZC (la mayoría de CER cortos son ZC)
+      let tirReal;
+      if (meta.tipo === 'ZC') {
+        tirReal = (typeof calcTIRRealZC === 'function') ? calcTIRRealZC(precio, dias) : null;
+      } else {
+        tirReal = (typeof calcTIRRealConCupon === 'function') ? calcTIRRealConCupon(precio, dias, meta.cupon) : null;
+      }
+      if (tirReal === null || !isFinite(tirReal)) return;
+
+      boncer.push({
+        ticker, precio, venc, vto: meta.vto, dias,
+        tirReal,
+        duration: dias / 365,
+        paridad: precio / 100,
+      });
+    });
+  }
+  boncer.sort((a,b) => a.dias - b.dias);
 
   console.log(`[Market] LECAPs válidas: ${lecaps.length}, BONCER válidos: ${boncer.length}`);
 
@@ -2525,7 +2595,8 @@ async function refreshMarket() {
       rem: null,
       remCurva: remCurva,
       remUpdated: remUpdated,
-      lecapBenchmark: lecapMedia || SAMPLE_DATA.lecaps[4],
+      rem12mAnual: rem12mAnual,
+      lecapBenchmark: lecapMedia || SAMPLE_DATA.lecaps[0],
       isSample: false,
       hasPartialFallback: !lecaps.length || !boncer.length || pfRate === null,
       tasasLive: {
@@ -2622,9 +2693,20 @@ function renderMarketView() {
     marketData.inflBreakeven = { anual: anualInflVL, tem: temInflVL };
   }
 
-  // USAMOS SOLO breakeven como inflación de cálculo (no REM)
-  const inflAnual = anualInflVL;
-  const temInfl = temInflVL;
+  // Inflación de cálculo: prioridad breakeven VL > input del cliente > fallback CFG
+  let inflAnual = anualInflVL;
+  let temInfl = temInflVL;
+  if (inflAnual === null || !isFinite(inflAnual)) {
+    // Fallback: tomar valor del input si el cliente lo cargó
+    const inputVal = parseFloat(document.getElementById('infl')?.value);
+    if (isFinite(inputVal) && inputVal > 0) {
+      inflAnual = inputVal / 100;
+      temInfl = Math.pow(1 + inflAnual, 1/12) - 1;
+    } else if (CFG?.infl && CFG.infl > 0) {
+      inflAnual = CFG.infl / 100;
+      temInfl = Math.pow(1 + inflAnual, 1/12) - 1;
+    }
+  }
 
   // Curvas para el gráfico de comparación
   marketData.curvaVL = curvaTEMInflacionVL(breakevens);
@@ -2738,32 +2820,30 @@ function renderComparacionVLvsREM() {
     };
   });
 
-  // Calcular diferencia promedio VL - REM
+  // Calcular diferencia promedio VL - REM (REM ahora es valor fijo "próx. 12 meses")
+  const remAnual = marketData.rem12mAnual;
+  const remTEM = (remAnual && remAnual > 0) ? (Math.pow(1 + remAnual, 1/12) - 1) : null;
   let diffPromedio = null;
   let diffStr = '';
-  if (curvaREM) {
-    const diffs = [];
-    curvaVL.forEach((v, i) => {
-      const r = curvaREM[i];
-      if (v.tem !== null && r && r.tem !== null) {
-        diffs.push((v.tem - r.tem) * 100);
-      }
-    });
+  if (remTEM !== null) {
+    const diffs = curvaVL
+      .filter(v => v.tem !== null)
+      .map(v => (v.tem - remTEM) * 100);
     if (diffs.length > 0) {
       diffPromedio = diffs.reduce((a,b) => a+b, 0) / diffs.length;
       const signo = diffPromedio >= 0 ? '+' : '';
-      diffStr = `${signo}${diffPromedio.toFixed(2).replace('.',',')} puntos mensuales`;
+      diffStr = `${signo}${diffPromedio.toFixed(2).replace('.',',')} puntos mensuales en promedio`;
     }
   }
 
   let headerTxt = '';
   if (diffPromedio !== null) {
     if (diffPromedio > 0.15) {
-      headerTxt = `El mercado espera <strong>${diffStr}</strong> MÁS de inflación mensual que el REM. Las consultoras son más optimistas que la plata.`;
+      headerTxt = `El mercado espera <strong>${diffStr}</strong> MÁS de inflación que el REM oficial (${(remAnual*100).toFixed(1).replace('.',',')}% i.a.). Las consultoras son más optimistas que la plata.`;
     } else if (diffPromedio < -0.15) {
-      headerTxt = `El mercado espera <strong>${diffStr}</strong> inflación mensual que el REM. Las consultoras son más pesimistas que la plata.`;
+      headerTxt = `El mercado espera <strong>${diffStr}</strong> MENOS de inflación que el REM oficial (${(remAnual*100).toFixed(1).replace('.',',')}% i.a.). Las consultoras son más pesimistas que la plata.`;
     } else {
-      headerTxt = `El mercado y el REM están casi en línea (diferencia: <strong>${diffStr}</strong>).`;
+      headerTxt = `El mercado y el REM oficial (${(remAnual*100).toFixed(1).replace('.',',')}% i.a.) están casi en línea — diferencia: <strong>${diffStr}</strong>.`;
     }
   }
 
@@ -2775,13 +2855,16 @@ function renderComparacionVLvsREM() {
       <div>REM BCRA</div>
       <div>Diferencia</div>
     </div>`;
+  // REM ahora es valor fijo "próx. 12 meses" oficial — convertido a TEM
+  const rem12m = marketData.rem12mAnual;
+  const remTEMFijo = (rem12m && rem12m > 0) ? (Math.pow(1 + rem12m, 1/12) - 1) : null;
+
   curvaVL.forEach((v, i) => {
-    const r = curvaREM ? curvaREM[i] : null;
     const vStr = v.tem !== null ? (v.tem * 100).toFixed(2).replace('.',',') + '%' : '—';
-    const rStr = r && r.tem !== null ? (r.tem * 100).toFixed(2).replace('.',',') + '%' : '—';
+    const rStr = remTEMFijo !== null ? (remTEMFijo * 100).toFixed(2).replace('.',',') + '%' : '—';
     let diffInline = '—';
-    if (v.tem !== null && r && r.tem !== null) {
-      const d = (v.tem - r.tem) * 100;
+    if (v.tem !== null && remTEMFijo !== null) {
+      const d = (v.tem - remTEMFijo) * 100;
       const signo = d >= 0 ? '+' : '';
       const color = d > 0.1 ? 'var(--gold)' : d < -0.1 ? 'var(--red)' : 'var(--muted)';
       diffInline = `<span style="color:${color};font-weight:600">${signo}${d.toFixed(2).replace('.',',')}</span>`;
@@ -2808,7 +2891,7 @@ function renderComparacionVLvsREM() {
         <div class="vl-rem-badge">Value Latam × REM</div>
         <h3 class="vl-rem-title">Nuestra inflación <em>vs</em> la del REM · 12 meses</h3>
         <p class="vl-rem-sub">
-          ${curvaREM ? headerTxt : 'Esta es nuestra curva de inflación mensual calculada con bonos. No pudimos traer el REM en este momento — cuando esté disponible vas a ver acá la comparación.'}
+          ${curvaREM ? headerTxt : 'Esta es nuestra curva de inflación mensual calculada con bonos del Tesoro. El dato del REM oficial no está disponible en este momento — cuando se publique, vas a ver acá la comparación.'}
         </p>
       </div>
       ${tablaHTML}
@@ -3191,7 +3274,18 @@ function renderCharts() {
     const cvs1 = document.getElementById('chartBreakeven');
     const curvaVL = marketData.curvaVL;
     const curvaREM = marketData.curvaREM;
-    if (cvs1 && curvaVL && curvaVL.length > 0) {
+    if (!cvs1) {
+      // No hay canvas, salimos
+    } else if (!curvaVL || curvaVL.length === 0 || !curvaVL.some(p => p.tem !== null)) {
+      // Sin datos, mostrar mensaje en el canvas
+      const ctx = cvs1.getContext('2d');
+      ctx.canvas.width = cvs1.offsetWidth;
+      ctx.canvas.height = cvs1.offsetHeight || 240;
+      ctx.fillStyle = '#5B6675';
+      ctx.font = '14px system-ui, -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Esperando datos del mercado…', ctx.canvas.width / 2, ctx.canvas.height / 2);
+    } else {
       const hoy = new Date();
       const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
       const labels = curvaVL.map((_, i) => {
@@ -3199,7 +3293,15 @@ function renderCharts() {
         return MESES[m.getMonth()] + " '" + String(m.getFullYear()).slice(-2);
       });
       const dataVL = curvaVL.map(p => p.tem !== null ? (p.tem * 100) : null);
-      const dataREM = curvaREM ? curvaREM.map(p => p.tem !== null ? (p.tem * 100) : null) : null;
+
+      // REM: línea HORIZONTAL FIJA al valor "próx. 12 meses i.a." convertido a TEM
+      // Esta es la métrica oficial que publica el BCRA (~23,8% i.a. → ~1,80% TEM)
+      let dataREM = null;
+      let remTEMConstante = null;
+      if (marketData.rem12mAnual && marketData.rem12mAnual > 0) {
+        remTEMConstante = (Math.pow(1 + marketData.rem12mAnual, 1/12) - 1) * 100;
+        dataREM = curvaVL.map(() => remTEMConstante);
+      }
 
       const datasets = [{
         label: 'Value Latam (mercado)',
@@ -3219,7 +3321,7 @@ function renderCharts() {
       }];
       if (dataREM) {
         datasets.unshift({
-          label: 'REM BCRA (consultoras)',
+          label: 'REM BCRA (próx. 12 meses)',
           data: dataREM,
           borderColor: '#B23A2E',
           backgroundColor: 'transparent',
@@ -3250,6 +3352,10 @@ function renderCharts() {
                   const v = item.parsed.y;
                   if (v === null) return `${item.dataset.label}: sin dato`;
                   const anual = (Math.pow(1 + v/100, 12) - 1) * 100;
+                  const isREM = item.dataset.label && item.dataset.label.includes('REM');
+                  if (isREM) {
+                    return `${item.dataset.label}: ${anual.toFixed(1).replace('.',',')}% i.a. oficial (≈ ${v.toFixed(2).replace('.',',')}% TEM)`;
+                  }
                   return `${item.dataset.label}: ${v.toFixed(2).replace('.',',')}% mensual (${anual.toFixed(1).replace('.',',')}% anual)`;
                 }
               }
@@ -3271,7 +3377,17 @@ function renderCharts() {
     const snap = getSnapshot();
     const lecapsSnap = snap.fija || [];
     const curvaVL = marketData.curvaVL || [];
-    if (cvs2 && lecapsSnap.length > 0 && curvaVL.length > 0) {
+    if (!cvs2) {
+      // sin canvas
+    } else if (!lecapsSnap.length || !curvaVL.length) {
+      const ctx = cvs2.getContext('2d');
+      ctx.canvas.width = cvs2.offsetWidth;
+      ctx.canvas.height = cvs2.offsetHeight || 240;
+      ctx.fillStyle = '#5B6675';
+      ctx.font = '14px system-ui, -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Esperando datos del mercado…', ctx.canvas.width / 2, ctx.canvas.height / 2);
+    } else if (cvs2 && lecapsSnap.length > 0 && curvaVL.length > 0) {
       // Cada LECAP se ubica en el mes correspondiente a su vencimiento
       // Recorremos los 12 meses y para cada uno buscamos la LECAP que vence ahí (o null)
       const hoy = new Date();
