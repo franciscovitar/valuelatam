@@ -1464,43 +1464,75 @@ const VL_SNAPSHOT_DEFAULT = {
 };
 
 function getSnapshot() {
-  // Prioridad: 1) Datos LIVE de marketData, 2) Override del admin, 3) Default hardcoded
-  // 1) LIVE — si tenemos datos del mercado procesados, los usamos
+  // Prioridad: 1) Datos LIVE (siempre que tengamos los 2 lados, sino mergeamos), 
+  //            2) Override del admin, 
+  //            3) Default hardcoded
+  const fallbackOverride = (() => {
+    try {
+      const o = localStorage.getItem('vl_snapshot_v1');
+      if (o) return JSON.parse(o);
+    } catch {}
+    return null;
+  })();
+  const fallback = fallbackOverride || VL_SNAPSHOT_DEFAULT;
+
+  // 1) LIVE
   if (typeof marketData !== 'undefined' && marketData && !marketData.isSample) {
-    const cerLive = marketData.boncer || [];
-    const fijaLive = marketData.lecaps || [];
-    if (cerLive.length > 0 || fijaLive.length > 0) {
+    const cerLive = (marketData.boncer || []).map(b => ({
+      ticker: b.ticker,
+      precio: b.precio,
+      tirReal: b.tirReal,
+      duration: b.duration,
+      vto: b.vto,
+      paridad: b.paridad,
+    })).filter(b => b.ticker && isFinite(b.tirReal));
+
+    const fijaLive = (marketData.lecaps || []).map(l => {
+      // Asegurar que tem/tea estén calculados
+      const tea = l.tea || l.tir;
+      const tem = l.tem || (tea ? Math.pow(1 + tea, 1/12) - 1 : null);
+      const vto = l.vto || (l.venc instanceof Date ? l.venc.toISOString().slice(0,10) : null);
+      return {
+        ticker: l.ticker,
+        precio: l.precio,
+        tem,
+        tea,
+        dtm: l.dias,
+        vto,
+        dias: l.dias,
+      };
+    }).filter(l => l.ticker && isFinite(l.tem) && l.vto);
+
+    // Si tenemos AMBOS lados con suficientes datos, usar live puro
+    const tieneCer = cerLive.length >= 2;
+    const tieneFija = fijaLive.length >= 2;
+
+    if (tieneCer && tieneFija) {
       const hoy = new Date();
       return {
         fecha: hoy.toISOString().slice(0, 10),
         fuente: "data912 (live)",
-        cer: cerLive.map(b => ({
-          ticker: b.ticker,
-          precio: b.precio,
-          tirReal: b.tirReal,
-          duration: b.duration,
-          vto: b.vto,
-          paridad: b.paridad,
-        })),
-        fija: fijaLive.map(l => ({
-          ticker: l.ticker,
-          precio: l.precio,
-          tem: l.tem,
-          tea: l.tea,
-          dtm: l.dias,
-          vto: l.vto,
-          dias: l.dias,
-        })),
+        cer: cerLive,
+        fija: fijaLive,
+      };
+    }
+
+    // Si tenemos UNO de los dos, mergear con fallback
+    if (tieneCer || tieneFija) {
+      const hoy = new Date();
+      return {
+        fecha: hoy.toISOString().slice(0, 10),
+        fuente: tieneCer && !tieneFija ? "data912 (CER live, fija fallback)" :
+                !tieneCer && tieneFija ? "data912 (fija live, CER fallback)" :
+                "data912 (live)",
+        cer: tieneCer ? cerLive : (fallback.cer || []),
+        fija: tieneFija ? fijaLive : (fallback.fija || []),
       };
     }
   }
-  // 2) Override del admin
-  try {
-    const override = localStorage.getItem('vl_snapshot_v1');
-    if (override) return JSON.parse(override);
-  } catch {}
-  // 3) Default hardcoded
-  return VL_SNAPSHOT_DEFAULT;
+
+  // 2 + 3) Fallback
+  return fallback;
 }
 
 function saveSnapshot(snap) {
@@ -1513,6 +1545,7 @@ function resetSnapshot() {
 
 /* Cruzar bonos Fija vs CER por vencimiento cercano, calcular breakeven */
 function calcularBreakevens(snap) {
+  console.log('[calcularBreakevens] snap fuente:', snap?.fuente, 'cer:', snap?.cer?.length, 'fija:', snap?.fija?.length);
   const fija = snap.fija || [];
   const cer = snap.cer || [];
   const hoy = new Date();
@@ -2073,23 +2106,30 @@ function getPlanesExtras() {
 // Datos de ejemplo para mostrar gráficos si falla TODO
 const SAMPLE_DATA = {
   lecaps: [
-    { ticker: 'S15G5', dias: 60,  tir: 0.38, precio: 95.2 },
-    { ticker: 'S29G5', dias: 90,  tir: 0.40, precio: 92.5 },
-    { ticker: 'S12S5', dias: 120, tir: 0.42, precio: 89.8 },
-    { ticker: 'S30S5', dias: 150, tir: 0.44, precio: 87.1 },
-    { ticker: 'S31O5', dias: 180, tir: 0.45, precio: 84.6 },
-    { ticker: 'S10N5', dias: 210, tir: 0.46, precio: 82.3 },
-    { ticker: 'S28N5', dias: 240, tir: 0.47, precio: 80.1 },
-    { ticker: 'S15D5', dias: 270, tir: 0.48, precio: 77.9 },
+    { ticker: 'S15Y6', dias: 21,  tir: 0.30, tea: 0.30, tem: 0.0221, precio: 99.40, vto: '2026-05-15' },
+    { ticker: 'S29Y6', dias: 35,  tir: 0.31, tea: 0.31, tem: 0.0228, precio: 98.90, vto: '2026-05-29' },
+    { ticker: 'T13F6', dias: 50,  tir: 0.315, tea: 0.315, tem: 0.0231, precio: 98.20, vto: '2026-06-13' },
+    { ticker: 'T30J6', dias: 67,  tir: 0.32, tea: 0.32, tem: 0.0234, precio: 97.30, vto: '2026-06-30' },
+    { ticker: 'T31L6', dias: 98,  tir: 0.325, tea: 0.325, tem: 0.0238, precio: 95.80, vto: '2026-07-31' },
+    { ticker: 'T30S6', dias: 159, tir: 0.33, tea: 0.33, tem: 0.0241, precio: 92.50, vto: '2026-09-30' },
+    { ticker: 'T30N6', dias: 220, tir: 0.34, tea: 0.34, tem: 0.0247, precio: 89.10, vto: '2026-11-30' },
+    { ticker: 'T15E7', dias: 266, tir: 0.345, tea: 0.345, tem: 0.0251, precio: 87.30, vto: '2027-01-15' },
+    { ticker: 'T30A7', dias: 371, tir: 0.35, tea: 0.35, tem: 0.0254, precio: 81.20, vto: '2027-04-30' },
+    { ticker: 'T30J7', dias: 432, tir: 0.355, tea: 0.355, tem: 0.0258, precio: 78.40, vto: '2027-06-30' },
   ],
   boncer: [
-    { ticker: 'TZX26', dias: 180, tir: -0.05, precio: 105.2 },
-    { ticker: 'TZXD6', dias: 360, tir: -0.02, precio: 108.5 },
-    { ticker: 'TZX27', dias: 540, tir: 0.01, precio: 112.3 },
-    { ticker: 'TZX28', dias: 900, tir: 0.04, precio: 118.7 },
+    { ticker: 'X15Y6', dias: 21,  tirReal: 0.05,  precio: 105.2, vto: '2026-05-15', duration: 0.058, paridad: 1.052 },
+    { ticker: 'X31L6', dias: 98,  tirReal: -0.02, precio: 110.5, vto: '2026-07-31', duration: 0.27, paridad: 1.105 },
+    { ticker: 'TZX26', dias: 67,  tirReal: -0.05, precio: 380.2, vto: '2026-06-30', duration: 0.18, paridad: 1.02 },
+    { ticker: 'X30S6', dias: 159, tirReal: -0.025, precio: 105.4, vto: '2026-09-30', duration: 0.43, paridad: 1.012 },
+    { ticker: 'TZXO6', dias: 189, tirReal: -0.02, precio: 156.8, vto: '2026-10-30', duration: 0.51, paridad: 1.018 },
+    { ticker: 'TZXD6', dias: 235, tirReal: 0.005, precio: 162.3, vto: '2026-12-15', duration: 0.64, paridad: 1.022 },
+    { ticker: 'TZX27', dias: 432, tirReal: 0.04,  precio: 175.6, vto: '2027-06-30', duration: 1.18, paridad: 1.04 },
+    { ticker: 'TZXD7', dias: 600, tirReal: 0.07,  precio: 185.9, vto: '2027-12-15', duration: 1.64, paridad: 1.07 },
+    { ticker: 'TZX28', dias: 797, tirReal: 0.085, precio: 198.4, vto: '2028-06-30', duration: 2.18, paridad: 1.085 },
   ],
-  pfAnual: 0.32,
-  rem: 0.28,
+  pfAnual: 0.30,
+  rem: 0.235,
   isSample: true
 };
 
@@ -2311,15 +2351,29 @@ const MONTHS = { E:0, F:1, M:2, A:3, Y:4, J:5, L:6, G:7, S:8, O:9, N:10, D:11 };
 function parseVencimientoTicker(ticker) {
   if (!ticker || typeof ticker !== 'string') return null;
   const t = ticker.toUpperCase().trim();
-  // Formatos: S15G5, T15G5, TX26, TZX26, TZXD6, TZXM7, etc.
   let m;
-  // Formato corto: [S|T]DDLY  (ej: S15G5)
+  const today = new Date();
+  // Helper: dado un año de 1 dígito (ej "5"), elegir 2025 o 2035 según cuál esté en el futuro
+  // Lo correcto es asumir el más cercano al hoy: si "5" es 2025 y eso ya pasó hace mucho, asumir 2035
+  function resolveYear1(d) {
+    const candidates = [2020 + d, 2030 + d];
+    const validCandidates = candidates.filter(y => {
+      // Aceptar si está en el futuro o si pasó hace menos de 30 días
+      const yearDate = new Date(y, 11, 31);
+      return yearDate >= today || (today - yearDate) < 30 * 86400000;
+    });
+    if (validCandidates.length === 0) return null;
+    // El más cercano al futuro
+    return Math.min(...validCandidates);
+  }
+  // Formato corto: [S|T]DDLY  (ej: S15G5, S31O6)
   m = t.match(/^[ST](\d{1,2})([A-Z])(\d)$/);
   if (m) {
     const day = parseInt(m[1], 10);
     const month = MONTHS[m[2]];
-    const year = 2020 + parseInt(m[3], 10);
-    if (month !== undefined && day >= 1 && day <= 31) {
+    const yearShort = parseInt(m[3], 10);
+    const year = resolveYear1(yearShort);
+    if (year !== null && month !== undefined && day >= 1 && day <= 31) {
       return new Date(year, month, day);
     }
   }
@@ -2454,9 +2508,9 @@ async function refreshMarket() {
       rem: null,
       remCurva: null,
       remUpdated: null,
-      lecapBenchmark: SAMPLE_DATA.lecaps[4],
+      lecapBenchmark: SAMPLE_DATA.lecaps[0],
       isSample: true,
-      tasasLive: { pf: SAMPLE_DATA.pfAnual * 100, lecap: SAMPLE_DATA.lecaps[4].tir * 100, fci: null, caucion: null }
+      tasasLive: { pf: SAMPLE_DATA.pfAnual * 100, lecap: SAMPLE_DATA.lecaps[0].tir * 100, fci: null, caucion: null }
     };
   } else {
     // LECAP benchmark: preferimos la MÁS CORTA disponible para reflejar la tasa de mercado actual
@@ -2553,6 +2607,7 @@ function renderMarketView() {
   // ===== Calcular breakevens de Value Latam =====
   const snap = getSnapshot();
   const breakevens = calcularBreakevens(snap);
+  console.log('[renderMarketView] breakevens calculados:', breakevens.length, breakevens);
   marketData.breakevens = breakevens;
 
   // Inflación de referencia: mediana de TEM breakevens de corto plazo
@@ -3871,9 +3926,9 @@ function initMarket() {
         boncer: SAMPLE_DATA.boncer.slice(),
         pfAnual: SAMPLE_DATA.pfAnual,
         rem: SAMPLE_DATA.rem,
-        lecapBenchmark: SAMPLE_DATA.lecaps[4],
+        lecapBenchmark: SAMPLE_DATA.lecaps[0],
         isSample: true,
-        tasasLive: { pf: SAMPLE_DATA.pfAnual * 100, lecap: SAMPLE_DATA.lecaps[4].tir * 100, fci: null, caucion: null }
+        tasasLive: { pf: SAMPLE_DATA.pfAnual * 100, lecap: SAMPLE_DATA.lecaps[0].tir * 100, fci: null, caucion: null }
       };
       renderMarketView();
       renderPresets();
