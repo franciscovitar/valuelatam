@@ -854,6 +854,14 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="application-name" content="Cuotas · Value Latam">
 <meta name="description" content="Calculadora que te dice si conviene cuotas o contado, con datos de mercado en vivo. Por Value Latam.">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+  try {
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+  } catch(e) { console.warn('[PDF.js worker config]:', e); }
+</script>
 </head>
 <body>
 
@@ -1289,7 +1297,7 @@
     <div id="adminStep2" style="display:none">
       <div class="admin-kicker">Panel admin</div>
       <h2 class="admin-title">Configuración</h2>
-      <p class="admin-sub">Plazo Fijo, LECAP y FCI se traen automáticamente del mercado. <strong style="color:var(--navy-ink)">Solo Caución se carga a mano</strong>. La inflación ahora se calcula con el breakeven de bonos (snapshot abajo).</p>
+      <p class="admin-sub">Cargá manualmente las tasas de mercado y la inflación REM. Después subí los PDFs de Docta Capital para actualizar la curva de bonos.</p>
 
       <div style="font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:10px">Tasas anuales (%)</div>
       <div class="admin-grid">
@@ -1300,12 +1308,12 @@
       </div>
 
       <div class="admin-section">
-        <div style="font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:10px">Inflación (fallback)</div>
+        <div style="font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:10px">Inflación REM (anual)</div>
         <div class="admin-grid">
+          <div class="admin-field"><label>REM BCRA próx. 12 meses (%)</label><input type="number" step="0.1" id="adm-rem"></div>
           <div class="admin-field"><label>Inflación anual default (%)</label><input type="number" step="0.1" id="adm-infl"></div>
         </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.4">Solo se usa si no hay bonos cargados. Normalmente la app calcula la inflación real desde el snapshot de bonos abajo.</div>
-        <input type="hidden" id="adm-rem" value="40">
+        <div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.4">REM: dato oficial del BCRA. Default: solo se usa si no hay bonos cargados.</div>
       </div>
 
       <div class="admin-section">
@@ -1316,6 +1324,31 @@
       </div>
 
       <div id="adminLastUpdate" style="margin-top:16px;font-size:11px;color:var(--muted);text-align:center;font-style:italic"></div>
+
+      <div class="admin-section">
+        <div style="font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:6px">📄 Carga rápida desde PDF</div>
+        <p class="admin-sub" style="margin-bottom:14px">Subí los PDFs de Docta Capital. La app los lee, extrae los datos y actualiza la curva de bonos automáticamente. <strong>Todo se procesa local en tu celular.</strong></p>
+
+        <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">
+          <label style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px;background:linear-gradient(135deg,#1a1d40 0%,#252a55 100%);color:#fff;border-radius:10px;cursor:pointer;font-weight:600;font-size:13px">
+            <span>📄 Subir PDF: Tasa Fija</span>
+            <span id="status-pdf-fija" style="font-size:11px;opacity:.7">Sin cargar</span>
+            <input type="file" id="pdf-upload-fija" accept="application/pdf" style="display:none">
+          </label>
+          <label style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px;background:linear-gradient(135deg,#1a1d40 0%,#252a55 100%);color:#fff;border-radius:10px;cursor:pointer;font-weight:600;font-size:13px">
+            <span>📄 Subir PDF: CER</span>
+            <span id="status-pdf-cer" style="font-size:11px;opacity:.7">Sin cargar</span>
+            <input type="file" id="pdf-upload-cer" accept="application/pdf" style="display:none">
+          </label>
+        </div>
+
+        <div id="pdf-preview-area" style="display:none;background:#fffaf0;border:1px solid #e6dec0;border-radius:10px;padding:12px;margin-bottom:14px;max-height:280px;overflow-y:auto;font-size:12px">
+          <div style="font-weight:700;margin-bottom:8px;color:var(--gold)">Datos extraídos (sin guardar todavía)</div>
+          <div id="pdf-preview-content"></div>
+        </div>
+
+        <div style="font-size:11px;color:var(--muted);font-style:italic">Después de subir los PDFs, tocá "Guardar cambios" abajo para que se apliquen.</div>
+      </div>
 
       <div class="admin-section">
         <div style="font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:6px">Snapshot curva de bonos</div>
@@ -1389,9 +1422,9 @@
    CONFIG / STATE
    ========================================================= */
 const DEFAULTS = {
-  tasas: { pf: 32, fci: 30, caucion: 38, lecap: 45 },
+  tasas: { pf: 21.5, fci: 17.5, caucion: 19.5, lecap: 45 },
   infl: 40,
-  rem_manual: 40,
+  rem_manual: 22.6,  // inflación REM anual estimada (cargá manualmente desde admin)
   wa: '5491100000000',
   balanz: 'https://www.balanz.com/abrir-cuenta-2.aspx?reference=mauricio@valuelatam.com',
   adminPass: 'VL2025',
@@ -1460,7 +1493,14 @@ const VL_SNAPSHOT_DEFAULT = {
     { ticker:"T30A7", precio:122.45, tna:0.2826, tea:0.2823, tem:0.0209, dtm:368, vto:"2027-04-30" },
     { ticker:"T31Y7", precio:116.0, tna:0.2854, tea:0.2819, tem:0.0209, dtm:399, vto:"2027-05-31" },
     { ticker:"T30J7", precio:117.15, tna:0.2824, tea:0.2762, tem:0.0205, dtm:429, vto:"2027-06-30" },
-  ]
+  ],
+  tasas: {
+    pf: 21.5,        // % anual (Plazo Fijo BCRA)
+    fci: 17.5,       // % anual (FCI Money Market)
+    caucion: 19.5,   // % anual (Caución 1 día)
+    lecapRefTicker: "S29Y6",  // ticker LECAP de referencia
+  },
+  remAnual: 22.6,    // % anual (inflación esperada REM BCRA)
 };
 
 function getSnapshot() {
@@ -2149,7 +2189,7 @@ async function safeFetch(url, label) {
   }
 }
 
-async function fetchArgNotes() { return safeFetch('https://data912.com/live/arg_notes', 'arg_notes'); }
+async function fetchArgNotes() { return null; /* API desactivada — datos manuales desde admin */ }
 /* ===========================================================
    Bonos CER — metadata + precios en vivo
    =========================================================== */
@@ -2204,48 +2244,7 @@ function calcTIRRealConCupon(precioDirty, dias, cuponAnual) {
 }
 
 /* Fetch principal: precios en vivo + cálculo de TIR real */
-async function fetchBonosCER() {
-  const data = await safeFetch('https://data912.com/live/arg_cer', 'arg_cer');
-  if (!Array.isArray(data) || data.length === 0) return null;
-
-  const hoy = new Date();
-  const bonos = [];
-
-  data.forEach(item => {
-    const ticker = (item.symbol || item.ticker || '').toUpperCase();
-    const precio = item.c || item.close || item.price;
-    if (!ticker || !isFinite(precio) || precio <= 0) return;
-
-    const meta = BONOS_CER_META[ticker];
-    if (!meta) return; // Solo procesamos bonos con metadata conocida
-
-    const vto = new Date(meta.vto);
-    if (!isFinite(vto.getTime())) return;
-    const dias = Math.ceil((vto - hoy) / 86400000);
-    if (dias <= 0) return; // bono ya venció
-
-    let tirReal;
-    if (meta.tipo === 'ZC') {
-      tirReal = calcTIRRealZC(precio, dias);
-    } else {
-      tirReal = calcTIRRealConCupon(precio, dias, meta.cupon);
-    }
-    if (tirReal === null || !isFinite(tirReal)) return;
-
-    bonos.push({
-      ticker,
-      precio,
-      tirReal,
-      duration: dias / 365,
-      vto: meta.vto,
-      paridad: precio / 100,
-    });
-  });
-
-  bonos.sort((a, b) => new Date(a.vto) - new Date(b.vto));
-  console.log(`[CER] ${bonos.length} bonos procesados con TIR real calculada`);
-  return bonos;
-}
+async function fetchBonosCER() { return null; /* API desactivada — datos manuales desde admin */ }
 
 /* Igual para LECAPs/BONCAPs: traemos precios + metadata fija */
 const BONOS_FIJA_META = {
@@ -2277,89 +2276,12 @@ function calcTIRLecap(precio, dias, vnFinal = 100) {
   return Math.pow(vnFinal / precio, 365 / dias) - 1;
 }
 
-async function fetchPlazoFijo() {
-  const data = await safeFetch('https://api.argentinadatos.com/v1/finanzas/tasas/plazoFijo', 'plazoFijo');
-  if (!Array.isArray(data) || !data.length) return null;
-  const values = data.map(d => d.tnaClientes || d.tna).filter(v => isFinite(v) && v > 0);
-  if (!values.length) return null;
-  const avg = values.reduce((a,b) => a+b, 0) / values.length;
-  // Si viene en decimal (0.30) o en % (30) — normalizar
-  return avg > 2 ? avg / 100 : avg;
-}
+async function fetchPlazoFijo() { return null; /* API desactivada — datos manuales desde admin */ }
 
 // --- FCI Money Market promedio de mercado (ArgentinaDatos) ---
-async function fetchFCIMercado() {
-  try {
-    const data = await safeFetch('https://api.argentinadatos.com/v1/finanzas/fci/mercadoDinero/ultimo', 'fci_mm');
-    if (!Array.isArray(data) || !data.length) return null;
-    // Cada item tiene valorMesAnterior, ultimoValor, variacionMensual (% decimal)
-    // Calculamos TNA: variacion mensual elevada a 12
-    const variaciones = data.map(d => d.variacionMensual || d.variacion).filter(v => isFinite(v) && v > 0 && v < 0.2);
-    if (!variaciones.length) return null;
-    // Tomar el top 30% (los mejores FCIs MM)
-    variaciones.sort((a, b) => b - a);
-    const top = variaciones.slice(0, Math.max(3, Math.floor(variaciones.length * 0.3)));
-    const promMensual = top.reduce((a,b) => a+b, 0) / top.length;
-    // Anualizar (capitalización mensual)
-    const anual = Math.pow(1 + promMensual, 12) - 1;
-    if (anual > 0.05 && anual < 3) return anual;
-    return null;
-  } catch (e) { console.warn('[fci_mm] err:', e); return null; }
-}
+async function fetchFCIMercado() { return null; /* API desactivada — datos manuales desde admin */ }
 
-async function fetchREM() {
-  // API pública que scrappea el Excel del REM del BCRA
-  // Devuelve mezcla de datos mensuales y proyecciones interanuales/anuales
-  try {
-    const data = await safeFetch('https://bcra-rem-api.facujallia.workers.dev/api/ipc_general', 'REM_facujallia');
-    const raw = data?.datos;
-    if (!Array.isArray(raw) || raw.length === 0) return null;
-
-    // 1) Datos mensuales (var. % mensual)
-    const mensuales = raw
-      .filter(d => {
-        const ref = (d.referencia || '').toLowerCase();
-        if (!ref.includes('mensual')) return false;
-        if (!isFinite(d.mediana) || d.mediana < 0 || d.mediana > 10) return false;
-        return true;
-      })
-      .map(d => ({
-        periodo: d['período'] || d.periodo,
-        mensual: d.mediana / 100
-      }))
-      .sort((a, b) => new Date(a.periodo) - new Date(b.periodo));
-
-    // 2) Buscar "próx. 12 meses" (interanual) — es el dato OFICIAL principal
-    let proximos12mAnual = null;
-    const candidato12m = raw.find(d => {
-      const periodo = String(d['período'] || d.periodo || '').toLowerCase();
-      const ref = String(d.referencia || '').toLowerCase();
-      return (periodo.includes('próx') && periodo.includes('12 meses')) ||
-             (periodo.includes('prox') && periodo.includes('12 meses')) ||
-             (ref.includes('i.a.') && periodo.includes('12 meses'));
-    });
-    if (candidato12m && isFinite(candidato12m.mediana) && candidato12m.mediana > 0 && candidato12m.mediana < 200) {
-      proximos12mAnual = candidato12m.mediana / 100;
-      console.log(`[REM] próx. 12 meses i.a.: ${(proximos12mAnual*100).toFixed(2)}% (oficial)`);
-    }
-
-    // 3) Si no hay "próx. 12 meses", calcular promedio anualizado de los mensuales
-    if (proximos12mAnual === null && mensuales.length > 0) {
-      const mensualPromedio = mensuales.reduce((s, p) => s + p.mensual, 0) / mensuales.length;
-      proximos12mAnual = Math.pow(1 + mensualPromedio, 12) - 1;
-      console.log(`[REM] anualizado promedio (fallback): ${(proximos12mAnual*100).toFixed(2)}%`);
-    }
-
-    if (mensuales.length === 0 && proximos12mAnual === null) return null;
-
-    return {
-      puntos: mensuales,
-      proximos12mAnual,
-      ultimaActualizacion: data.ultima_actualizacion
-    };
-  } catch (e) { console.warn('[REM facujallia falla]', e); }
-  return null;
-}
+async function fetchREM() { return null; /* API desactivada — datos manuales desde admin */ }
 
 /* =========================================================
    PARSEO DE TICKERS — mejorado con más tolerancia
@@ -2433,195 +2355,119 @@ function tirLECAP(precio, dias) {
 async function refreshMarket() {
   const btn = document.getElementById('marketRefresh');
   const status = document.getElementById('marketStatus');
-  btn.classList.add('spinning');
-  status.textContent = 'Consultando APIs...';
-
-  console.log('[Market] Iniciando carga...');
-
-  const [notes, cer, pfRate, remData, fciRate] = await Promise.all([
-    fetchArgNotes(), fetchBonosCER(), fetchPlazoFijo(), fetchREM(), fetchFCIMercado()
-  ]);
-
-  // REM viene como objeto con curva mensual + dato "próx. 12 meses"
-  const remCurva = remData?.puntos || null;
-  const remUpdated = remData?.ultimaActualizacion || null;
-  const rem12mAnual = remData?.proximos12mAnual ?? null;
-  const rem = null;
-
-  console.log('[Market] Respuestas:', { notes: !!notes, cer: !!cer, pfRate, rem, fciRate });
-
-  // Si hay FCI de mercado, override el valor admin
-  if (fciRate !== null) {
-    CFG.tasas.fci = parseFloat((fciRate * 100).toFixed(1));
-  }
-
+  if (btn) btn.classList.add('spinning');
+  if (status) status.textContent = 'Cargando snapshot...';
+  
+  console.log('[Market] Cargando datos desde snapshot manual...');
+  
+  // FUENTE DE DATOS: snapshot guardado en localStorage (cargado desde PDFs de Docta)
+  // o el VL_SNAPSHOT_DEFAULT hardcodeado como fallback
+  let snap = null;
+  try {
+    const raw = localStorage.getItem('vl_snapshot_v1');
+    if (raw) snap = JSON.parse(raw);
+  } catch(e) { console.warn('[Market] localStorage parse error:', e); }
+  if (!snap) snap = (typeof VL_SNAPSHOT_DEFAULT !== 'undefined') ? VL_SNAPSHOT_DEFAULT : { fija: [], cer: [], tasas: {} };
+  
   const today = new Date();
   const lecaps = [];
   const boncer = [];
-
-  // Procesar SOLO LECAPs reales (tickers que empiezan con "S")
-  // El endpoint arg_notes mezcla LECAPs, bonos CER cortos y DLKs — hay que filtrar
-  if (notes && Array.isArray(notes)) {
-    notes.forEach(n => {
-      const ticker = (n.symbol || n.ticker || n.especie || n.simbolo || n.c || '').toUpperCase();
-      const precio = parseFloat(n.c ?? n.close ?? n.px_bid ?? n.ultimo ?? n.precio ?? n.cierre);
-      if (!ticker || !isFinite(precio) || precio <= 0) return;
-
-      // FILTRO 1: solo aceptamos LECAPs (S*) y BONCAPs (T* que no sean TZ*)
-      // - Excluimos bonos CER (X*, TZ*) que vienen acá mezclados
-      // - Excluimos DLKs (terminan en D)
-      const esLECAP = ticker.startsWith('S');
-      const esBONCAP = ticker.startsWith('T') && !ticker.startsWith('TZ');
-      if (!esLECAP && !esBONCAP) return;
-      if (ticker.endsWith('D')) return; // DLK
-
-      // FILTRO 2: usar metadata hardcodeada si existe; sino parsear ticker
-      const meta = (typeof BONOS_FIJA_META !== 'undefined' && BONOS_FIJA_META[ticker]) || null;
-      let venc;
-      if (meta && meta.vto) {
-        venc = new Date(meta.vto);
-      } else {
-        venc = parseVencimientoTicker(ticker);
-      }
-      if (!venc || !isFinite(venc.getTime())) return;
-      const dias = diasEntre(today, venc);
-      // FILTRO 3: días razonables (no vencidos, no más de 2 años)
-      if (dias <= 0 || dias > 800) return;
-
-      const tir = tirLECAP(precio, dias);
-      if (!tir || tir <= 0 || tir > 5) return;
-      const tem = Math.pow(1 + tir, 1/12) - 1;
-      lecaps.push({
-        ticker, precio, venc, dias, tir,
-        tea: tir,
-        tem,
-        vto: meta?.vto || (venc instanceof Date ? venc.toISOString().slice(0,10) : null)
-      });
+  
+  // Procesar bonos Tasa Fija (LECAPs/BONCAPs) del snapshot
+  (snap.fija || []).forEach(item => {
+    if (!item.ticker || !isFinite(item.tem) || item.tem <= 0) return;
+    const venc = item.vto ? new Date(item.vto) : null;
+    if (!venc || !isFinite(venc.getTime())) return;
+    const dias = diasEntre(today, venc);
+    if (dias <= 0 || dias > 800) return;
+    const tea = item.tea || (Math.pow(1 + item.tem, 12) - 1);
+    lecaps.push({
+      ticker: item.ticker,
+      precio: item.precio || null,
+      venc, vto: item.vto, dias,
+      tir: tea, tea, tem: item.tem,
     });
-    lecaps.sort((a,b) => a.dias - b.dias);
-  }
-
-  // Procesar BONCER — fetchBonosCER ya devuelve estructura procesada
-  if (cer && Array.isArray(cer)) {
-    cer.forEach(b => {
-      if (!b.ticker || !isFinite(b.precio) || b.precio <= 0) return;
-      const venc = new Date(b.vto);
-      if (!isFinite(venc.getTime())) return;
-      const dias = diasEntre(today, venc);
-      if (dias <= 0 || dias > 3000) return;
-      boncer.push({
-        ticker: b.ticker,
-        precio: b.precio,
-        venc,
-        vto: b.vto,
-        dias,
-        tirReal: b.tirReal,
-        duration: b.duration,
-        paridad: b.paridad,
-      });
+  });
+  lecaps.sort((a,b) => a.dias - b.dias);
+  
+  // Procesar bonos CER del snapshot
+  (snap.cer || []).forEach(item => {
+    if (!item.ticker || !isFinite(item.tirReal)) return;
+    const venc = item.vto ? new Date(item.vto) : null;
+    if (!venc || !isFinite(venc.getTime())) return;
+    const dias = diasEntre(today, venc);
+    if (dias <= 0 || dias > 5000) return;
+    // Filtros: bonos muy cortos (<30 días) generan ruido en TIR real
+    if (dias < 30 || Math.abs(item.tirReal) > 0.5) return;
+    boncer.push({
+      ticker: item.ticker,
+      precio: item.precio || null,
+      venc, vto: item.vto, dias,
+      tirReal: item.tirReal,
+      duration: item.duration || (dias / 365),
+      paridad: item.paridad || null,
     });
-  }
-
-  // ADICIONAL: data912/arg_notes mezcla bonos CER cortos (X*, TZ*) entre las "notes".
-  // Los rescatamos acá, calculamos su TIR real y los agregamos al array de boncer.
-  if (notes && Array.isArray(notes)) {
-    notes.forEach(n => {
-      const ticker = (n.symbol || n.ticker || n.especie || n.simbolo || '').toUpperCase();
-      if (!ticker) return;
-      // Solo CER cortos: empiezan con "X" o "TZ"
-      const esCER = ticker.startsWith('X') || ticker.startsWith('TZ');
-      if (!esCER) return;
-      // Si ya está en boncer, no duplicar
-      if (boncer.find(b => b.ticker === ticker)) return;
-
-      const precio = parseFloat(n.c ?? n.close ?? n.px_bid ?? n.ultimo ?? n.precio);
-      if (!isFinite(precio) || precio <= 0) return;
-
-      const meta = (typeof BONOS_CER_META !== 'undefined' && BONOS_CER_META[ticker]) || null;
-      if (!meta || !meta.vto) return; // Sin metadata, no podemos calcular TIR real
-      const venc = new Date(meta.vto);
-      if (!isFinite(venc.getTime())) return;
-      const dias = diasEntre(today, venc);
-      if (dias <= 0 || dias > 3000) return;
-
-      // Calcular TIR real con la fórmula del ZC (la mayoría de CER cortos son ZC)
-      let tirReal;
-      if (meta.tipo === 'ZC') {
-        tirReal = (typeof calcTIRRealZC === 'function') ? calcTIRRealZC(precio, dias) : null;
-      } else {
-        tirReal = (typeof calcTIRRealConCupon === 'function') ? calcTIRRealConCupon(precio, dias, meta.cupon) : null;
-      }
-      if (tirReal === null || !isFinite(tirReal)) return;
-
-      boncer.push({
-        ticker, precio, venc, vto: meta.vto, dias,
-        tirReal,
-        duration: dias / 365,
-        paridad: precio / 100,
-      });
-    });
-  }
+  });
   boncer.sort((a,b) => a.dias - b.dias);
-
-  console.log(`[Market] LECAPs válidas: ${lecaps.length}, BONCER válidos: ${boncer.length}`);
-
-  // Si no tenemos NADA usable, usar datos de ejemplo
-  const hayDatosReales = lecaps.length > 0 || boncer.length > 0 || pfRate !== null || rem !== null;
-
-  if (!hayDatosReales) {
-    console.warn('[Market] Sin datos reales — usando sample data');
-    marketData = {
-      ts: new Date(),
-      lecaps: SAMPLE_DATA.lecaps.slice(),
-      boncer: SAMPLE_DATA.boncer.slice(),
-      pfAnual: SAMPLE_DATA.pfAnual,
-      rem: null,
-      remCurva: null,
-      remUpdated: null,
-      lecapBenchmark: SAMPLE_DATA.lecaps[0],
-      isSample: true,
-      tasasLive: { pf: SAMPLE_DATA.pfAnual * 100, lecap: SAMPLE_DATA.lecaps[0].tir * 100, fci: null, caucion: null }
-    };
-  } else {
-    // LECAP benchmark: preferimos la MÁS CORTA disponible para reflejar la tasa de mercado actual
-    // Idealmente <30 días, pero si no hay tan corta tomamos la más cercana al presente
-    const lecapsOrdenadas = [...lecaps].sort((a, b) => a.dias - b.dias);
-    const lecapMedia = lecapsOrdenadas.find(l => l.dias > 0) || null;
-    marketData = {
-      ts: new Date(),
-      lecaps: lecaps.length ? lecaps : SAMPLE_DATA.lecaps.slice(),
-      boncer: boncer.length ? boncer : SAMPLE_DATA.boncer.slice(),
-      pfAnual: pfRate ?? SAMPLE_DATA.pfAnual,
-      rem: null,
-      remCurva: remCurva,
-      remUpdated: remUpdated,
-      rem12mAnual: rem12mAnual,
-      lecapBenchmark: lecapMedia || SAMPLE_DATA.lecaps[0],
-      isSample: false,
-      hasPartialFallback: !lecaps.length || !boncer.length || pfRate === null,
-      tasasLive: {
-        pf: (pfRate ?? null) !== null ? (pfRate ?? 0) * 100 : null,
-        lecap: lecapMedia ? lecapMedia.tir * 100 : null,
-        fci: null,
-        caucion: null,
-      }
-    };
+  
+  // Tasas manuales (vienen del CFG.tasas, editables desde admin)
+  const pfPct = isFinite(CFG.tasas.pf) ? CFG.tasas.pf : 21.5;
+  const cauPct = isFinite(CFG.tasas.caucion) ? CFG.tasas.caucion : 19.5;
+  const fciPct = isFinite(CFG.tasas.fci) ? CFG.tasas.fci : 17.5;
+  const remPct = isFinite(CFG.rem_manual) ? CFG.rem_manual : 22.6;
+  const pfAnual = pfPct / 100;
+  const remAnual = remPct / 100;
+  
+  // LECAP benchmark: la más corta del snapshot (refleja tasa de mercado actual)
+  const lecapBenchmark = lecaps.length > 0 ? lecaps[0] : null;
+  
+  // Construir REM curva como recta horizontal (no tenemos curva mensual)
+  const remCurva = null;
+  const rem12mAnual = remAnual;
+  
+  marketData = {
+    ts: new Date(),
+    lecaps: lecaps.length ? lecaps : ((typeof SAMPLE_DATA !== 'undefined') ? SAMPLE_DATA.lecaps.slice() : []),
+    boncer: boncer.length ? boncer : ((typeof SAMPLE_DATA !== 'undefined') ? SAMPLE_DATA.boncer.slice() : []),
+    pfAnual,
+    rem: null,
+    remCurva,
+    remUpdated: snap.fecha || null,
+    rem12mAnual,
+    lecapBenchmark,
+    isSample: lecaps.length === 0 && boncer.length === 0,
+    hasPartialFallback: !lecaps.length || !boncer.length,
+    tasasLive: {
+      pf: pfPct,
+      fci: fciPct,
+      caucion: cauPct,
+      lecap: lecapBenchmark ? lecapBenchmark.tea * 100 : null,
+    }
+  };
+  
+  if (btn) btn.classList.remove('spinning');
+  
+  // Status pill: muestra fecha del snapshot + fuente
+  if (status) {
+    const snapFecha = snap.fecha || '—';
+    const snapFuente = snap.fuente || 'Docta Capital';
+    let fechaFmt = snapFecha;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(snapFecha)) {
+      const [y, mo, d] = snapFecha.split('-');
+      fechaFmt = `${d}/${mo}/${y}`;
+    }
+    let dotColor = 'var(--green)';
+    if (snap.fecha) {
+      const diasViejo = Math.floor((new Date() - new Date(snap.fecha)) / 86400000);
+      if (diasViejo > 14) dotColor = 'var(--amber)';
+      if (diasViejo > 30) dotColor = 'var(--red)';
+    }
+    status.innerHTML = `<span style="width:6px;height:6px;border-radius:50%;background:${dotColor};display:inline-block"></span> Datos al ${fechaFmt} · Fuente: ${snapFuente}`;
   }
-
-  btn.classList.remove('spinning');
-
-  const ts = marketData.ts.toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'});
-  if (marketData.isSample) {
-    status.innerHTML = `<span style="width:6px;height:6px;border-radius:50%;background:var(--amber);display:inline-block"></span> Datos de ejemplo · APIs no disponibles`;
-  } else if (marketData.hasPartialFallback) {
-    status.innerHTML = `<span style="width:6px;height:6px;border-radius:50%;background:var(--amber);display:inline-block"></span> Datos parciales · Actualizado ${ts}`;
-  } else {
-    status.innerHTML = `<span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block"></span> En vivo · Actualizado ${ts}`;
-  }
-
-  renderMarketView();
-  renderPresets();
-  updateInflHint();
+  
+  try { renderMarketView(); } catch(e) { console.error('[renderMarketView]:', e); }
+  try { renderPresets(); } catch(e) { console.error('[renderPresets]:', e); }
+  try { updateInflHint(); } catch(e) { console.error('[updateInflHint]:', e); }
 }
 
 function updateInflHint() {
@@ -3637,12 +3483,23 @@ function renderSnapEditor() {
 }
 
 function collectSnapshotFromEditor() {
-  const fechaV = document.getElementById('adm-snap-fecha').value.trim();
-  const fuenteV = document.getElementById('adm-snap-fuente').value.trim();
-  const out = { fecha: fechaV || new Date().toISOString().slice(0,10), fuente: fuenteV || 'Manual', fija: [], cer: [] };
+  // Leer lo que ya está en localStorage (puede tener datos del PDF parser)
+  let existing = null;
+  try { existing = JSON.parse(localStorage.getItem('vl_snapshot_v1') || 'null'); } catch(e){}
+  
+  const fechaV = (document.getElementById('adm-snap-fecha')||{}).value || '';
+  const fuenteV = (document.getElementById('adm-snap-fuente')||{}).value || '';
+  const out = { 
+    fecha: fechaV.trim() || (existing && existing.fecha) || new Date().toISOString().slice(0,10), 
+    fuente: fuenteV.trim() || (existing && existing.fuente) || 'Docta Capital',
+    fija: [], 
+    cer: [],
+    tasas: existing && existing.tasas ? existing.tasas : {}
+  };
 
+  // Recolectar filas del editor (si existen)
   document.querySelectorAll('#snapFijaRows .snap-editor-row').forEach(row => {
-    const get = (k) => row.querySelector(`[data-k="${k}"]`).value;
+    const get = (k) => { const el = row.querySelector(`[data-k="${k}"]`); return el ? el.value : ''; };
     const ticker = get('ticker').trim().toUpperCase();
     const vto = get('vto').trim();
     const tea = parseFloat(get('tea')) / 100;
@@ -3654,7 +3511,7 @@ function collectSnapshotFromEditor() {
   });
 
   document.querySelectorAll('#snapCerRows .snap-editor-row').forEach(row => {
-    const get = (k) => row.querySelector(`[data-k="${k}"]`).value;
+    const get = (k) => { const el = row.querySelector(`[data-k="${k}"]`); return el ? el.value : ''; };
     const ticker = get('ticker').trim().toUpperCase();
     const vto = get('vto').trim();
     const tirReal = parseFloat(get('tirReal')) / 100;
@@ -3664,6 +3521,15 @@ function collectSnapshotFromEditor() {
       out.cer.push({ ticker, precio, tirReal, duration, vto, paridad: 1 });
     }
   });
+
+  // CRÍTICO: si las filas del editor están vacías pero hay datos previos
+  // (p.ej. acabamos de subir un PDF), NO sobreescribir con array vacío
+  if (out.fija.length === 0 && existing && existing.fija && existing.fija.length > 0) {
+    out.fija = existing.fija;
+  }
+  if (out.cer.length === 0 && existing && existing.cer && existing.cer.length > 0) {
+    out.cer = existing.cer;
+  }
 
   return out;
 }
@@ -4089,6 +3955,293 @@ window.addEventListener('appinstalled', () => {
   console.log('[PWA] App instalada');
   deferredInstallPrompt = null;
 });
+
+
+/* =============================================================
+   PDF PARSER + ADMIN UPLOAD HANDLERS
+   Defensivo: todo envuelto en try/catch, no rompe la app si falla.
+   ============================================================= */
+try {
+(function setupPDFAdmin() {
+  'use strict';
+  
+  // Estado temporal: PDFs cargados pero todavía no guardados
+  var pendingPDF = { fija: null, cer: null };
+  
+  function parseArgNum(s) {
+    if (!s) return null;
+    s = String(s).trim().replace(/[%\s]/g, '');
+    if (!s) return null;
+    if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+    var n = parseFloat(s);
+    return isFinite(n) ? n : null;
+  }
+  
+  // Extraer texto del PDF reconstruyendo líneas por coordenadas Y
+  function extractPDFText(file) {
+    if (!window.pdfjsLib) return Promise.reject(new Error('PDF.js no disponible'));
+    return file.arrayBuffer().then(function(buf) {
+      return pdfjsLib.getDocument({ data: buf }).promise;
+    }).then(function(pdf) {
+      var pagePromises = [];
+      for (var p = 1; p <= pdf.numPages; p++) {
+        pagePromises.push(pdf.getPage(p).then(function(page) {
+          return page.getTextContent();
+        }));
+      }
+      return Promise.all(pagePromises);
+    }).then(function(pages) {
+      var allText = '';
+      pages.forEach(function(content) {
+        // Agrupar items por coordenada Y (con tolerancia 2px)
+        var lineMap = new Map();
+        content.items.forEach(function(it) {
+          var y = Math.round(it.transform[5]);
+          var key = y;
+          for (var k of lineMap.keys()) {
+            if (Math.abs(k - y) <= 2) { key = k; break; }
+          }
+          if (!lineMap.has(key)) lineMap.set(key, []);
+          lineMap.get(key).push({ x: it.transform[4], text: it.str });
+        });
+        var keys = [...lineMap.keys()].sort(function(a, b) { return b - a; });
+        keys.forEach(function(k) {
+          var line = lineMap.get(k).sort(function(a, b) { return a.x - b.x; }).map(function(o) { return o.text; }).join(' ').trim();
+          if (line) allText += line + '\n';
+        });
+      });
+      return allText;
+    });
+  }
+  
+  // Parser de Tasa Fija (LECAPs / BONCAPs)
+  function parseFija(text) {
+    var results = [];
+    var fullText = text.replace(/\n/g, ' ');
+    var tickerRe = /\b((?:S|T)(?!Z)[0-9A-Z]{4,5})\s*-\s*24hs\b/g;
+    var matches = [];
+    var m;
+    while ((m = tickerRe.exec(fullText)) !== null) {
+      matches.push({ ticker: m[1], idx: m.index });
+    }
+    matches.forEach(function(mtch, i) {
+      var startIdx = mtch.idx;
+      var endIdx = (i + 1 < matches.length) ? matches[i + 1].idx : fullText.length;
+      var region = fullText.slice(startIdx, endIdx);
+      
+      var fechaM = region.match(/(\d{4}-\d{2}-\d{2})/);
+      var vto = fechaM ? fechaM[1] : null;
+      
+      var afterTicker = region.replace(/^[A-Z0-9]+\s*-\s*24hs\s*/, '');
+      var precioM = afterTicker.match(/^\s*(\d{1,4}[.,]\d{1,4})/);
+      var precio = precioM ? parseArgNum(precioM[1]) : null;
+      
+      var pcts = [];
+      var pctRe = /(-?\d+[.,]\d+)\s*%/g;
+      var pm;
+      while ((pm = pctRe.exec(region)) !== null) {
+        var v = parseArgNum(pm[1]);
+        if (v !== null) pcts.push(v);
+      }
+      
+      // TEM: primer valor entre 0.5 y 5
+      var tem = null, tea = null;
+      var temC = pcts.filter(function(p) { return p > 0.5 && p < 5; });
+      if (temC.length) tem = temC[0] / 100;
+      var teaC = pcts.filter(function(p) { return p > 15 && p < 80; });
+      if (teaC.length) tea = teaC[0] / 100;
+      
+      // Excluir DUALES (TT*) y BONTE TY30P
+      if (mtch.ticker.startsWith('TT') || mtch.ticker === 'TY30P') return;
+      
+      if (vto && tem && precio) {
+        results.push({
+          ticker: mtch.ticker,
+          precio: precio,
+          tem: tem,
+          tea: tea || (Math.pow(1 + tem, 12) - 1),
+          vto: vto
+        });
+      }
+    });
+    return results;
+  }
+  
+  // Parser de CER
+  function parseCER(text) {
+    var results = [];
+    var fullText = text.replace(/\n/g, ' ');
+    var tickerRe = /\b((?:X|TZX|TX|DICP|DIP0|PARP|PAP0|CUAP)[0-9A-Z]*)\s*-\s*24hs\b/g;
+    var matches = [];
+    var m;
+    while ((m = tickerRe.exec(fullText)) !== null) {
+      matches.push({ ticker: m[1], idx: m.index });
+    }
+    matches.forEach(function(mtch, i) {
+      var startIdx = mtch.idx;
+      var endIdx = (i + 1 < matches.length) ? matches[i + 1].idx : fullText.length;
+      var region = fullText.slice(startIdx, endIdx);
+      
+      var fechaM = region.match(/(\d{4}-\d{2}-\d{2})/);
+      var vto = fechaM ? fechaM[1] : null;
+      
+      var afterTicker = region.replace(/^[A-Z0-9]+\s*-\s*24hs\s*/, '');
+      var precioM = afterTicker.match(/^\s*(\d{1,6}[.,]\d{1,4})/);
+      var precio = precioM ? parseArgNum(precioM[1]) : null;
+      
+      // TIR real: salteamos la primera % (variación) y tomamos la siguiente
+      var pctList = [];
+      var pctRe = /(-?\d+[.,]\d+)\s*%/g;
+      var pm;
+      while ((pm = pctRe.exec(region)) !== null) {
+        var v = parseArgNum(pm[1]);
+        if (v !== null) pctList.push(v);
+      }
+      
+      var tirReal = null;
+      var skip = false;
+      for (var k = 0; k < pctList.length; k++) {
+        var v = pctList[k];
+        if (k === 0 && Math.abs(v) < 3) { skip = true; continue; }
+        if (Math.abs(v) <= 50) { tirReal = v / 100; break; }
+      }
+      
+      // Duration
+      var duration = null;
+      var durM = region.match(/(?:^|\s)(\d{1,2}\.\d{4,})/);
+      if (durM) {
+        var d = parseFloat(durM[1]);
+        if (isFinite(d) && d > 0 && d < 30) duration = d;
+      }
+      if (!duration && vto) {
+        var dias = Math.ceil((new Date(vto) - new Date()) / 86400000);
+        if (dias > 0) duration = dias / 365;
+      }
+      
+      if (vto && tirReal !== null && precio) {
+        results.push({
+          ticker: mtch.ticker,
+          precio: precio,
+          tirReal: tirReal,
+          duration: duration,
+          vto: vto,
+          paridad: precio / 100
+        });
+      }
+    });
+    return results;
+  }
+  
+  // Render del preview
+  function renderPreview() {
+    var div = document.getElementById('pdf-preview-area');
+    var content = document.getElementById('pdf-preview-content');
+    if (!div || !content) return;
+    if (!pendingPDF.fija && !pendingPDF.cer) {
+      div.style.display = 'none';
+      return;
+    }
+    div.style.display = 'block';
+    var html = '';
+    if (pendingPDF.fija) {
+      html += '<div style="font-weight:600;color:var(--gold);margin:8px 0 4px">Tasa Fija (' + pendingPDF.fija.length + ' bonos)</div>';
+      html += '<div style="display:grid;grid-template-columns:80px 90px 65px 70px;gap:4px;font-family:monospace;font-size:11px">';
+      html += '<div style="font-weight:700;color:var(--muted)">Ticker</div><div style="font-weight:700;color:var(--muted)">Vto</div><div style="font-weight:700;color:var(--muted)">TEM</div><div style="font-weight:700;color:var(--muted)">TEA</div>';
+      pendingPDF.fija.slice(0, 30).forEach(function(b) {
+        html += '<div>' + b.ticker + '</div><div>' + b.vto + '</div><div>' + (b.tem * 100).toFixed(2) + '%</div><div>' + (b.tea * 100).toFixed(1) + '%</div>';
+      });
+      html += '</div>';
+    }
+    if (pendingPDF.cer) {
+      html += '<div style="font-weight:600;color:var(--gold);margin:12px 0 4px">CER (' + pendingPDF.cer.length + ' bonos)</div>';
+      html += '<div style="display:grid;grid-template-columns:80px 90px 80px 60px;gap:4px;font-family:monospace;font-size:11px">';
+      html += '<div style="font-weight:700;color:var(--muted)">Ticker</div><div style="font-weight:700;color:var(--muted)">Vto</div><div style="font-weight:700;color:var(--muted)">TIR Real</div><div style="font-weight:700;color:var(--muted)">Dur</div>';
+      pendingPDF.cer.slice(0, 30).forEach(function(b) {
+        var color = b.tirReal < 0 ? 'var(--red)' : 'var(--gold)';
+        html += '<div>' + b.ticker + '</div><div>' + b.vto + '</div><div style="color:' + color + '">' + (b.tirReal * 100).toFixed(2) + '%</div><div>' + (b.duration ? b.duration.toFixed(2) : '—') + '</div>';
+      });
+      html += '</div>';
+    }
+    content.innerHTML = html;
+  }
+  
+  function setupUpload(inputId, statusId, parserFn, key, label) {
+    var input = document.getElementById(inputId);
+    var status = document.getElementById(statusId);
+    if (!input || !status) return;
+    input.addEventListener('change', function(e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      status.textContent = 'Procesando...';
+      status.style.color = '#ffd76b';
+      extractPDFText(file).then(function(text) {
+        var parsed = parserFn(text);
+        if (!parsed || parsed.length === 0) {
+          status.textContent = '❌ No pude leer';
+          status.style.color = '#ff8a8a';
+          alert('No pude extraer datos del PDF de ' + label + '. ¿Es el PDF correcto de Docta Capital?');
+          return;
+        }
+        pendingPDF[key] = parsed;
+        status.textContent = '✓ ' + parsed.length + ' bonos';
+        status.style.color = '#7be8a8';
+        renderPreview();
+      }).catch(function(err) {
+        console.error('[PDF parse error]', err);
+        status.textContent = '❌ Error';
+        status.style.color = '#ff8a8a';
+        alert('Error procesando PDF: ' + err.message);
+      });
+    });
+  }
+  
+  // Init: buscar y conectar inputs cuando esté listo el DOM
+  function init() {
+    setupUpload('pdf-upload-fija', 'status-pdf-fija', parseFija, 'fija', 'Tasa Fija');
+    setupUpload('pdf-upload-cer', 'status-pdf-cer', parseCER, 'cer', 'CER');
+    
+    // Hook al guardar admin para persistir los datos parseados
+    // Esperamos a que adminSave exista. Nos enganchamos al click.
+    var adminSaveBtn = document.getElementById('adminSave');
+    if (adminSaveBtn) {
+      adminSaveBtn.addEventListener('click', function() {
+        // Si tenemos datos parseados, guardarlos en el snapshot
+        if (pendingPDF.fija || pendingPDF.cer) {
+          try {
+            var cur = null;
+            try { cur = JSON.parse(localStorage.getItem('vl_snapshot_v1') || 'null'); } catch(e){}
+            if (!cur && typeof VL_SNAPSHOT_DEFAULT !== 'undefined') {
+              cur = JSON.parse(JSON.stringify(VL_SNAPSHOT_DEFAULT));
+            }
+            if (!cur) cur = { fija: [], cer: [], tasas: {} };
+            
+            var fechaInput = document.getElementById('adm-snap-fecha');
+            var fuenteInput = document.getElementById('adm-snap-fuente');
+            var newSnap = {
+              fecha: (fechaInput && fechaInput.value) || new Date().toISOString().slice(0, 10),
+              fuente: (fuenteInput && fuenteInput.value) || 'Docta Capital',
+              fija: pendingPDF.fija || cur.fija || [],
+              cer: pendingPDF.cer || cur.cer || [],
+              tasas: cur.tasas || {}
+            };
+            localStorage.setItem('vl_snapshot_v1', JSON.stringify(newSnap));
+            console.log('[PDF] Snapshot actualizado desde PDFs');
+            pendingPDF.fija = null;
+            pendingPDF.cer = null;
+          } catch(e) { console.error('[PDF save]', e); }
+        }
+      }, true);  // capture phase: corre antes que el handler original
+    }
+  }
+  
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+} catch(__pdfErr) { console.error('[PDF Module Init]:', __pdfErr); }
+
 </script>
 
 </body>
