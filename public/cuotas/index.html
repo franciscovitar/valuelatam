@@ -1,6 +1,43 @@
 <!DOCTYPE html>
 <html lang="es-AR">
 <head>
+<script>
+// ===========================================================
+// CLEANUP AGRESIVO — se ejecuta antes que todo lo demás
+// Desregistra cualquier SW viejo, limpia caches, fuerza fresh load
+// ===========================================================
+(function aggressiveCleanup() {
+  try {
+    var didCleanup = false;
+    
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(regs) {
+        if (regs.length > 0) {
+          console.log('[CLEANUP] Desregistrando', regs.length, 'service workers viejos...');
+          var promises = regs.map(function(r) { return r.unregister(); });
+          Promise.all(promises).then(function() {
+            console.log('[CLEANUP] SWs desregistrados');
+            // Limpiar también caches del browser
+            if ('caches' in window) {
+              caches.keys().then(function(names) {
+                if (names.length > 0) {
+                  console.log('[CLEANUP] Borrando', names.length, 'caches...');
+                  return Promise.all(names.map(function(n) { return caches.delete(n); }));
+                }
+              }).then(function() {
+                // Solo recargar si había SW viejo (lo cual indica versión cacheada)
+                console.log('[CLEANUP] Recargando con cache limpio...');
+                window.location.reload(true);
+              });
+            }
+          });
+        }
+      }).catch(function(e) { console.warn('[CLEANUP] Error:', e); });
+    }
+  } catch(e) { console.error('[CLEANUP] FATAL:', e); }
+})();
+</script>
+
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <meta name="theme-color" content="#ffffff" />
@@ -4063,58 +4100,7 @@ setTimeout(initMarket, 300);
 </script>
 
 <script>
-// SI URL tiene ?reset=1, limpiar todo y recargar
-if (window.location.search.includes('reset=1')) {
-  console.log('[PWA] RESET solicitado por URL...');
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then(regs => {
-      Promise.all(regs.map(r => r.unregister())).then(() => {
-        if ('caches' in window) {
-          caches.keys().then(names => Promise.all(names.map(n => caches.delete(n)))).then(() => {
-            try { localStorage.clear(); } catch(e) {}
-            window.location.href = window.location.pathname;
-          });
-        } else {
-          try { localStorage.clear(); } catch(e) {}
-          window.location.href = window.location.pathname;
-        }
-      });
-    });
-  } else {
-    try { localStorage.clear(); } catch(e) {}
-    window.location.href = window.location.pathname;
-  }
-}
-
-// Registro del service worker — DESACTIVADO temporalmente
-// El sw.js no existe en /cuotas/ y estaba causando errores 404 que rompían la inicialización
-// Desregistramos cualquier SW previo y limpiamos cache
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(regs => {
-    regs.forEach(reg => reg.unregister().then(() => console.log('[PWA] SW desregistrado')));
-  }).catch(() => {});
-}
-
-// Install prompt handler — cuando el navegador detecta que se puede instalar
-let deferredInstallPrompt = null;
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredInstallPrompt = e;
-  console.log('[PWA] App instalable — prompt disponible');
-});
-
-window.addEventListener('appinstalled', () => {
-  console.log('[PWA] App instalada');
-  deferredInstallPrompt = null;
-});
-
-
-/* ===========================================================
-   PDF PARSER + ADMIN UPLOADERS
-   Lee PDFs de Docta Capital, extrae los datos y actualiza el snapshot.
-   El PDF nunca sale del navegador — se procesa localmente con PDF.js
-   =========================================================== */
-/* PDF parser DESACTIVADO temporalmente para diagnosticar bug */
+/* PWA/SW/PDF stuff DESACTIVADO completamente */
 
 
 /* === Admin handlers SIMPLES (sin PDF parser) === */
