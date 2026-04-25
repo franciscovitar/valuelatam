@@ -857,9 +857,20 @@
   <!-- PDF.js para parsear PDFs en el admin -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
-    if (window.pdfjsLib) {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    }
+    // Configurar worker de PDF.js (defensivo)
+    try {
+      if (window.pdfjsLib) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      }
+    } catch(e) { console.warn('[PDF.js worker config falló]:', e); }
+    
+    // Global error handler — captura cualquier error no manejado para que no rompa la app
+    window.addEventListener('error', function(e) {
+      console.error('[GLOBAL ERROR]', e.message, 'en', e.filename, 'línea', e.lineno, e.error);
+    });
+    window.addEventListener('unhandledrejection', function(e) {
+      console.error('[UNHANDLED PROMISE]', e.reason);
+    });
   </script>
 </head>
 <body>
@@ -1489,7 +1500,7 @@ const VL_SNAPSHOT_DEFAULT = {
   tasas: {
     pf: 21.5,         // % anual
     fci: null,        // se calcula desde caución como referencia
-    caucion: 26.0,    // % anual (caución 1 día)
+    caucion: 19.5,    // % anual (caución 1 día)
     lecapRefTicker: "S29Y6",  // LECAP de referencia (~30 días)
   }
 };
@@ -4089,6 +4100,29 @@ setTimeout(initMarket, 300);
 </script>
 
 <script>
+// SI URL tiene ?reset=1, limpiar todo y recargar
+if (window.location.search.includes('reset=1')) {
+  console.log('[PWA] RESET solicitado por URL...');
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      Promise.all(regs.map(r => r.unregister())).then(() => {
+        if ('caches' in window) {
+          caches.keys().then(names => Promise.all(names.map(n => caches.delete(n)))).then(() => {
+            try { localStorage.clear(); } catch(e) {}
+            window.location.href = window.location.pathname;
+          });
+        } else {
+          try { localStorage.clear(); } catch(e) {}
+          window.location.href = window.location.pathname;
+        }
+      });
+    });
+  } else {
+    try { localStorage.clear(); } catch(e) {}
+    window.location.href = window.location.pathname;
+  }
+}
+
 // Registro del service worker
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -4127,6 +4161,7 @@ window.addEventListener('appinstalled', () => {
    Lee PDFs de Docta Capital, extrae los datos y actualiza el snapshot.
    El PDF nunca sale del navegador — se procesa localmente con PDF.js
    =========================================================== */
+try {
 (function setupAdminPDFHandlers() {
   'use strict';
 
@@ -4547,6 +4582,7 @@ window.addEventListener('appinstalled', () => {
     hookSaveAdmin();
   }
 })();
+} catch (___pdfParserErr) { console.error("[PDF Parser Init Error]:", ___pdfParserErr); }
 
 </script>
 
