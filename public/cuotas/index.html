@@ -864,6 +864,90 @@
 </script>
 </head>
 <body>
+<!-- PORTADA DE BIENVENIDA -->
+<div class="intro-overlay" id="introOverlay" style="position:fixed;inset:0;background:linear-gradient(135deg,#0f1235 0%,#1a1d40 50%,#252a55 100%);z-index:9999;display:none;flex-direction:column;color:#fff;overflow:hidden">
+  
+  <div class="intro-slides" id="introSlides" style="flex:1;display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;-webkit-overflow-scrolling:touch">
+    
+    <!-- Slide 1: Bienvenida -->
+    <section class="intro-slide" data-slide="0" style="min-width:100%;height:100%;scroll-snap-align:start;display:flex;flex-direction:column;justify-content:center;padding:48px 32px;box-sizing:border-box">
+      <div style="max-width:520px;margin:0 auto;text-align:left">
+        <div style="display:inline-block;font-size:11px;letter-spacing:.25em;text-transform:uppercase;color:#d4b884;font-weight:700;margin-bottom:16px;padding:6px 12px;border:1px solid rgba(212,184,132,.3);border-radius:4px">Value Latam</div>
+        <h2 style="font-family:Georgia,serif;font-size:36px;font-weight:400;line-height:1.2;margin:0 0 16px;letter-spacing:-.02em">¿Cuotas <em style="color:#d4b884">o</em> contado?</h2>
+        <p style="font-size:16px;line-height:1.6;opacity:.85;margin:0 0 24px">Una herramienta para tomar mejores decisiones con tu plata. Comparamos compras en cuotas contra inversiones reales del mercado argentino.</p>
+        <div style="font-size:13px;color:#d4b884;font-weight:600">Deslizá para empezar &nbsp;→</div>
+      </div>
+    </section>
+
+    <!-- Slide 2: Qué hace la app -->
+    <section class="intro-slide" data-slide="1" style="min-width:100%;height:100%;scroll-snap-align:start;display:flex;flex-direction:column;justify-content:center;padding:48px 32px;box-sizing:border-box">
+      <div style="max-width:520px;margin:0 auto">
+        <div style="font-size:11px;letter-spacing:.25em;text-transform:uppercase;color:#d4b884;font-weight:700;margin-bottom:14px">Qué resuelve</div>
+        <h2 style="font-family:Georgia,serif;font-size:30px;font-weight:400;line-height:1.25;margin:0 0 28px;letter-spacing:-.01em">Decisiones financieras que la mayoría toma <em style="color:#d4b884">a ojo</em>.</h2>
+        
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;gap:14px;align-items:flex-start">
+            <div style="width:28px;height:28px;flex-shrink:0;border-radius:50%;background:rgba(212,184,132,.15);border:1px solid rgba(212,184,132,.4);display:flex;align-items:center;justify-content:center;font-size:13px;color:#d4b884;font-weight:700">1</div>
+            <div>
+              <div style="font-weight:600;margin-bottom:4px">¿Pago contado o aprovecho las cuotas?</div>
+              <div style="font-size:14px;opacity:.7;line-height:1.5">Comparamos contra inversiones reales: LECAP, FCI, plazo fijo, caución.</div>
+            </div>
+          </div>
+          
+          <div style="display:flex;gap:14px;align-items:flex-start">
+            <div style="width:28px;height:28px;flex-shrink:0;border-radius:50%;background:rgba(212,184,132,.15);border:1px solid rgba(212,184,132,.4);display:flex;align-items:center;justify-content:center;font-size:13px;color:#d4b884;font-weight:700">2</div>
+            <div>
+              <div style="font-weight:600;margin-bottom:4px">¿Dónde poner la plata que tengo parada?</div>
+              <div style="font-size:14px;opacity:.7;line-height:1.5">Te mostramos cuánto estás dejando de ganar y dónde rinde mejor.</div>
+            </div>
+          </div>
+          
+          <div style="display:flex;gap:14px;align-items:flex-start">
+            <div style="width:28px;height:28px;flex-shrink:0;border-radius:50%;background:rgba(212,184,132,.15);border:1px solid rgba(212,184,132,.4);display:flex;align-items:center;justify-content:center;font-size:13px;color:#d4b884;font-weight:700">3</div>
+            <div>
+              <div style="font-weight:600;margin-bottom:4px">¿Cancelo la tarjeta o pago el mínimo?</div>
+              <div style="font-size:14px;opacity:.7;line-height:1.5">El cálculo más caro que casi nadie hace bien.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 3: Empezar -->
+    <section class="intro-slide" data-slide="2" style="min-width:100%;height:100%;scroll-snap-align:start;display:flex;flex-direction:column;justify-content:center;padding:48px 32px;box-sizing:border-box">
+      <div style="max-width:520px;margin:0 auto;text-align:left">
+        <div style="font-size:11px;letter-spacing:.25em;text-transform:uppercase;color:#d4b884;font-weight:700;margin-bottom:14px">Listo para empezar</div>
+        <h2 style="font-family:Georgia,serif;font-size:30px;font-weight:400;line-height:1.25;margin:0 0 16px;letter-spacing:-.01em">Datos del mercado argentino, <em style="color:#d4b884">en tiempo real</em>.</h2>
+        <p style="font-size:15px;line-height:1.6;opacity:.85;margin:0 0 28px">Trabajamos con datos del Tesoro, BCRA y Docta Capital. La curva de bonos se actualiza semanalmente. La inflación esperada se calcula con el breakeven implícito de los bonos CER.</p>
+        
+        <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-left:3px solid #d4b884;border-radius:8px;padding:16px;margin-bottom:28px">
+          <div style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#d4b884;font-weight:700;margin-bottom:6px">Aviso</div>
+          <div style="font-size:13px;line-height:1.5;opacity:.85">Esta app es una herramienta orientativa. No constituye asesoramiento financiero personalizado. Para decisiones importantes, hablá con un asesor de Value Latam.</div>
+        </div>
+        
+        <button id="introStart" type="button" style="background:#d4b884;color:#0f1235;border:none;padding:14px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:.02em;display:inline-flex;align-items:center;gap:8px">
+          Empezar
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+    </section>
+    
+  </div>
+
+  <!-- Nav inferior: dots + skip -->
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 32px;border-top:1px solid rgba(255,255,255,.08)">
+    <button id="introSkip" type="button" style="background:none;border:none;color:rgba(255,255,255,.5);font-size:13px;cursor:pointer;padding:8px 0">Saltar</button>
+    <div id="introDots" style="display:flex;gap:6px">
+      <span class="intro-dot active" data-dot="0" style="width:8px;height:8px;border-radius:50%;background:#d4b884;cursor:pointer;transition:all .2s"></span>
+      <span class="intro-dot" data-dot="1" style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.25);cursor:pointer;transition:all .2s"></span>
+      <span class="intro-dot" data-dot="2" style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.25);cursor:pointer;transition:all .2s"></span>
+    </div>
+    <button id="introNext" type="button" style="background:none;border:none;color:#d4b884;font-size:13px;font-weight:600;cursor:pointer;padding:8px 0">Siguiente →</button>
+  </div>
+  
+</div>
+
+
 
 <div class="wrap">
   <header class="brand">
@@ -873,7 +957,7 @@
   </header>
 
   <!-- VIEW HOME (nueva entrada principal) -->
-  <section class="view active" id="view-home">
+  <section class="view" id="view-home">
     <div class="hero">
       <h1>¿Qué tenés <em>en mente</em>?</h1>
       <p>Elegí qué resolver. Te respondemos en segundos, sin vueltas.</p>
@@ -882,8 +966,8 @@
     <!-- 3 caminos principales -->
     <div style="display:flex;flex-direction:column;gap:12px;max-width:680px;margin:0 auto 28px">
       
-      <button class="home-card" data-action="goto-plata-parada" type="button" style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;text-align:left;cursor:pointer;display:flex;align-items:center;gap:14px;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.04)">
-        <div style="font-size:32px;flex-shrink:0">💰</div>
+      <button class="home-card" data-action="goto-plata-parada" type="button" style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px 22px;text-align:left;cursor:pointer;display:flex;align-items:center;gap:14px;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.04);border-left:3px solid var(--gold)">
+        
         <div style="flex:1">
           <div style="font-weight:700;font-size:16px;color:var(--ink);margin-bottom:3px">Tengo plata parada</div>
           <div style="font-size:13px;color:var(--muted);line-height:1.4">Calculá cuánto estás dejando de ganar y dónde meterla</div>
@@ -891,8 +975,8 @@
         <div style="color:var(--gold);font-size:18px">→</div>
       </button>
 
-      <button class="home-card" data-action="goto-calc" type="button" style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;text-align:left;cursor:pointer;display:flex;align-items:center;gap:14px;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.04)">
-        <div style="font-size:32px;flex-shrink:0">🛒</div>
+      <button class="home-card" data-action="goto-calc" type="button" style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px 22px;text-align:left;cursor:pointer;display:flex;align-items:center;gap:14px;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.04);border-left:3px solid var(--gold)">
+        
         <div style="flex:1">
           <div style="font-weight:700;font-size:16px;color:var(--ink);margin-bottom:3px">Voy a comprar algo</div>
           <div style="font-size:13px;color:var(--muted);line-height:1.4">¿Cuotas o contado? Sabé cuál te conviene</div>
@@ -900,8 +984,8 @@
         <div style="color:var(--gold);font-size:18px">→</div>
       </button>
 
-      <button class="home-card" data-action="goto-tarjeta" type="button" style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;text-align:left;cursor:pointer;display:flex;align-items:center;gap:14px;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.04)">
-        <div style="font-size:32px;flex-shrink:0">💳</div>
+      <button class="home-card" data-action="goto-tarjeta" type="button" style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px 22px;text-align:left;cursor:pointer;display:flex;align-items:center;gap:14px;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.04);border-left:3px solid var(--gold)">
+        
         <div style="flex:1">
           <div style="font-weight:700;font-size:16px;color:var(--ink);margin-bottom:3px">Tengo deuda de tarjeta</div>
           <div style="font-size:13px;color:var(--muted);line-height:1.4">¿Pago el mínimo o cancelo todo? Te decimos</div>
@@ -917,25 +1001,25 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         
         <button class="home-mini" data-action="goto-meta" type="button" style="background:rgba(184,151,90,.08);border:1px solid rgba(184,151,90,.2);border-radius:12px;padding:14px;text-align:left;cursor:pointer;transition:all .2s">
-          <div style="font-size:22px;margin-bottom:4px">🎯</div>
+          
           <div style="font-weight:600;font-size:13px;color:var(--ink);margin-bottom:2px">Meta de ahorro</div>
           <div style="font-size:11px;color:var(--muted);line-height:1.3">Vacaciones, auto, depto…</div>
         </button>
 
         <button class="home-mini" data-action="goto-inflacion" type="button" style="background:rgba(184,151,90,.08);border:1px solid rgba(184,151,90,.2);border-radius:12px;padding:14px;text-align:left;cursor:pointer;transition:all .2s">
-          <div style="font-size:22px;margin-bottom:4px">📉</div>
+          
           <div style="font-weight:600;font-size:13px;color:var(--ink);margin-bottom:2px">¿Cuánto perdí?</div>
           <div style="font-size:11px;color:var(--muted);line-height:1.3">Plata sin invertir vs inflación</div>
         </button>
 
         <button class="home-mini" data-action="goto-market" type="button" style="background:rgba(184,151,90,.08);border:1px solid rgba(184,151,90,.2);border-radius:12px;padding:14px;text-align:left;cursor:pointer;transition:all .2s">
-          <div style="font-size:22px;margin-bottom:4px">📊</div>
+          
           <div style="font-weight:600;font-size:13px;color:var(--ink);margin-bottom:2px">Tasas hoy</div>
           <div style="font-size:11px;color:var(--muted);line-height:1.3">PF, FCI, LECAP, bonos</div>
         </button>
 
         <button class="home-mini" data-action="goto-invest" type="button" style="background:rgba(184,151,90,.08);border:1px solid rgba(184,151,90,.2);border-radius:12px;padding:14px;text-align:left;cursor:pointer;transition:all .2s">
-          <div style="font-size:22px;margin-bottom:4px">📈</div>
+          
           <div style="font-weight:600;font-size:13px;color:var(--ink);margin-bottom:2px">Cómo invertir</div>
           <div style="font-size:11px;color:var(--muted);line-height:1.3">Guía rápida</div>
         </button>
@@ -956,7 +1040,7 @@
   </section>
 
   <!-- VIEW CALCULAR -->
-  <section class="view" id="view-calc">
+  <section class="view active" id="view-calc">
     <div class="hero">
       <h1>¿Cuotas <em>o</em> contado?</h1>
       <p>Descubrí en segundos qué te conviene. Comparamos el costo real de las cuotas contra lo que podés ganar invirtiendo tu plata.</p>
@@ -989,7 +1073,7 @@
       </div>
       <div class="card-section">
         <button type="button" id="advancedToggle" style="background:none;border:none;width:100%;text-align:left;cursor:pointer;padding:8px 0;color:var(--muted);font-size:13px;display:flex;align-items:center;justify-content:space-between;font-weight:600;letter-spacing:.05em">
-          <span>⚙ Supuestos avanzados (opcional)</span>
+          <span>Supuestos avanzados (opcional)</span>
           <span id="advancedToggleArrow" style="font-size:11px">▼</span>
         </button>
         <div id="advancedContent" style="display:none;padding-top:12px">
@@ -1077,7 +1161,7 @@
     <!-- CONCLUSIÓN DINÁMICA: qué hacer hoy -->
     <div style="padding:0 24px 16px">
       <div class="conclusion-card" id="conclusionCard">
-        <div class="conclusion-kicker">🎯 Conclusión del mercado · hoy</div>
+        <div class="conclusion-kicker">Conclusión del mercado · hoy</div>
         <h3 class="conclusion-title" id="conclusionTitle">Analizando datos...</h3>
         <p class="conclusion-text" id="conclusionText"></p>
         <div class="conclusion-stats" id="conclusionStats"></div>
@@ -1092,7 +1176,7 @@
 
     <!-- CARD VL: ANÁLISIS PROPIO (Value Latam) -->
     <div class="vl-analysis-card">
-      <div class="vl-analysis-badge">🧠 Análisis Value Latam</div>
+      <div class="vl-analysis-badge">Análisis Value Latam</div>
       <h3 class="vl-analysis-title">No usamos <em>estimaciones estatales</em></h3>
       <p class="vl-analysis-text">
         La inflación que ves acá no es la del REM ni la de ningún analista. Es la que <strong>el mercado está apostando con plata real</strong>. La calculamos cruzando bonos a tasa fija con bonos que ajustan por inflación — y te mostramos el número que sale de ese cruce.
@@ -1101,7 +1185,7 @@
 
     <!-- EXPLAINER APTO BOLUDOS -->
     <div class="explainer-card">
-      <div class="explainer-icon">💡</div>
+      <div class="explainer-icon"></div>
       <div class="explainer-body">
         <div class="explainer-title">¿Cómo se lee esto?</div>
         <div class="explainer-text">
@@ -1153,7 +1237,7 @@
 
         <div class="glosario-item">
           <div class="glosario-head">
-            <div class="glosario-name">🏦 Plazo Fijo</div>
+            <div class="glosario-name">Plazo Fijo</div>
             <div class="glosario-tag warn">Ojo acá</div>
           </div>
           <div class="glosario-desc">Le prestás plata al banco por un plazo fijo (30, 60, 90 días). A cambio, te pagan una tasa.</div>
@@ -1163,7 +1247,7 @@
 
         <div class="glosario-item">
           <div class="glosario-head">
-            <div class="glosario-name">💧 FCI Money Market</div>
+            <div class="glosario-name">FCI Money Market</div>
             <div class="glosario-tag good">Buena base</div>
           </div>
           <div class="glosario-desc">Un fondo común de inversión que invierte en cuentas remuneradas, cauciones y plazos fijos cortos. Rinde todos los días.</div>
@@ -1173,7 +1257,7 @@
 
         <div class="glosario-item">
           <div class="glosario-head">
-            <div class="glosario-name">🔄 Caución</div>
+            <div class="glosario-name">Caución</div>
             <div class="glosario-tag good">Corto plazo</div>
           </div>
           <div class="glosario-desc">Prestás plata a alguien que deja un bono como garantía. Plazo de 1 a 30 días. Lo opera el mercado de capitales.</div>
@@ -1183,7 +1267,7 @@
 
         <div class="glosario-item">
           <div class="glosario-head">
-            <div class="glosario-name">📜 LECAP</div>
+            <div class="glosario-name">LECAP</div>
             <div class="glosario-tag good">Tasa fija</div>
           </div>
           <div class="glosario-desc">Letra del Tesoro en pesos. La comprás con descuento y al vencimiento te pagan $100 por cada letra. La diferencia es tu rendimiento.</div>
@@ -1193,7 +1277,7 @@
 
         <div class="glosario-item">
           <div class="glosario-head">
-            <div class="glosario-name">📈 BONCER</div>
+            <div class="glosario-name">BONCER</div>
             <div class="glosario-tag good">Anti-inflación</div>
           </div>
           <div class="glosario-desc">Bono del Tesoro que <strong>ajusta por inflación</strong> (índice CER). Te paga inflación + una tasa real extra.</div>
@@ -1445,17 +1529,17 @@
       <div id="adminLastUpdate" style="margin-top:16px;font-size:11px;color:var(--muted);text-align:center;font-style:italic"></div>
 
       <div class="admin-section">
-        <div style="font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:6px">📄 Carga rápida desde PDF</div>
+        <div style="font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:6px">Carga rápida desde PDF</div>
         <p class="admin-sub" style="margin-bottom:14px">Subí los PDFs de Docta Capital. La app los lee, extrae los datos y actualiza la curva de bonos automáticamente. <strong>Todo se procesa local en tu celular.</strong></p>
 
         <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">
           <label style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px;background:linear-gradient(135deg,#1a1d40 0%,#252a55 100%);color:#fff;border-radius:10px;cursor:pointer;font-weight:600;font-size:13px">
-            <span>📄 Subir PDF: Tasa Fija</span>
+            <span>Subir PDF: Tasa Fija</span>
             <span id="status-pdf-fija" style="font-size:11px;opacity:.7">Sin cargar</span>
             <input type="file" id="pdf-upload-fija" accept="application/pdf" style="display:none">
           </label>
           <label style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px;background:linear-gradient(135deg,#1a1d40 0%,#252a55 100%);color:#fff;border-radius:10px;cursor:pointer;font-weight:600;font-size:13px">
-            <span>📄 Subir PDF: CER</span>
+            <span>Subir PDF: CER</span>
             <span id="status-pdf-cer" style="font-size:11px;opacity:.7">Sin cargar</span>
             <input type="file" id="pdf-upload-cer" accept="application/pdf" style="display:none">
           </label>
@@ -1512,9 +1596,9 @@
 </button>
 
 <nav class="tabs">
-  <button class="tab active" data-view="home">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-    Inicio
+  <button class="tab active" data-view="calc">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="10" y2="10"/><line x1="14" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="10" y2="14"/></svg>
+    Calcular
   </button>
   <button class="tab" data-view="hist">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 106 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>
@@ -3558,7 +3642,7 @@ document.getElementById('adminSave').addEventListener('click', () => {
   if (typeof updateInflHint === 'function') updateInflHint();
   document.getElementById('tasa').value = CFG.tasas.fci;
   closeAdmin();
-  toast('✓ Configuración guardada (queda hasta que la cambies)');
+  toast('Configuración guardada (queda hasta que la cambies)');
 });
 
 document.getElementById('adminReset').addEventListener('click', () => {
@@ -3906,7 +3990,7 @@ function buildShareText(res) {
   const decision = res.decision === 'financiar' ? 'Me conviene FINANCIARME' : 'Me conviene pagar CONTADO';
   const impacto = fmtMoney(Math.abs(res.remanente));
   const tirTxt = res.sinInteres ? 'sin interés' : `TNA ${fmtPct(res.tir_a)}`;
-  return `💰 ¿Cuotas o Contado? — Value Latam\n\n${decision}\n${fmtMoney(res.PC)} en ${res.n} cuotas de ${fmtMoney(res.C)} (${tirTxt})\n\nImpacto: ${res.decision==='financiar'?'+':''}${impacto}`;
+  return `¿Cuotas o Contado? — Value Latam\n\n${decision}\n${fmtMoney(res.PC)} en ${res.n} cuotas de ${fmtMoney(res.C)} (${tirTxt})\n\nImpacto: ${res.decision==='financiar'?'+':''}${impacto}`;
 }
 document.getElementById('btnShare').addEventListener('click', async () => {
   if (!window._lastResult) return;
@@ -3917,12 +4001,36 @@ document.getElementById('btnShare').addEventListener('click', async () => {
 
 /* ENTRY */
 document.getElementById('btn').addEventListener('click', () => {
+  // Resolver inflación: campo del usuario > breakeven VL > REM > 22.6 (último fallback)
+  let inflInput = parseNum(document.getElementById('infl').value);
+  if (!isFinite(inflInput) || inflInput <= 0) {
+    if (marketData && marketData.inflBreakeven && marketData.inflBreakeven.anual) {
+      inflInput = marketData.inflBreakeven.anual * 100;
+    } else if (CFG.rem_manual) {
+      inflInput = CFG.rem_manual;
+    } else {
+      inflInput = 22.6;
+    }
+  }
+  
+  // Resolver tasa de inversión: campo del usuario > LECAP (mejor) > PF
+  let tasaInput = parseNum(document.getElementById('tasa').value);
+  if (!isFinite(tasaInput) || tasaInput <= 0) {
+    if (marketData && marketData.lecapBenchmark && marketData.lecapBenchmark.tea) {
+      tasaInput = marketData.lecapBenchmark.tea * 100;
+    } else if (CFG.tasas && CFG.tasas.pf) {
+      tasaInput = CFG.tasas.pf;
+    } else {
+      tasaInput = 21.5;
+    }
+  }
+  
   const inputs = {
     PC: parseNum(document.getElementById('pc').value),
     C: parseNum(document.getElementById('c').value),
     n: parseInt(parseNum(document.getElementById('n').value), 10),
-    infl_anual: parseNum(document.getElementById('infl').value) / 100,
-    tasa_anual: parseNum(document.getElementById('tasa').value) / 100,
+    infl_anual: inflInput / 100,
+    tasa_anual: tasaInput / 100,
   };
   const err = validar(inputs);
   pintarErrores(err);
@@ -3941,9 +4049,26 @@ document.querySelectorAll('#view-calc input').forEach(inp => {
    =========================================================== */
 const INTRO_KEY = 'vl_intro_seen_v1';
 
-function showIntro() { /* portada eliminada */ return; }
+function showIntro() {
+  var overlay = document.getElementById('introOverlay');
+  if (!overlay) return;
+  overlay.style.display = 'flex';
+  currentSlide = 0;
+  scrollToSlide(0, false);
+  updateIntroNav();
+}
 
-function hideIntro() { /* portada eliminada */ return; }
+function hideIntro() {
+  var overlay = document.getElementById('introOverlay');
+  if (!overlay) return;
+  overlay.style.opacity = '0';
+  overlay.style.transition = 'opacity 350ms ease-out';
+  setTimeout(function() { 
+    overlay.style.display = 'none';
+    overlay.style.opacity = '1';
+  }, 350);
+  try { localStorage.setItem(INTRO_KEY, '1'); } catch(e) {}
+}
 
 let currentSlide = 0;
 const TOTAL_SLIDES = 3;
@@ -4372,18 +4497,18 @@ try {
       extractPDFText(file).then(function(text) {
         var parsed = parserFn(text);
         if (!parsed || parsed.length === 0) {
-          status.textContent = '❌ No pude leer';
+          status.textContent = 'No pude leer';
           status.style.color = '#ff8a8a';
           alert('No pude extraer datos del PDF de ' + label + '. ¿Es el PDF correcto de Docta Capital?');
           return;
         }
         pendingPDF[key] = parsed;
-        status.textContent = '✓ ' + parsed.length + ' bonos';
+        status.textContent = 'OK · ' + parsed.length + ' bonos';
         status.style.color = '#7be8a8';
         renderPreview();
       }).catch(function(err) {
         console.error('[PDF parse error]', err);
-        status.textContent = '❌ Error';
+        status.textContent = 'Error';
         status.style.color = '#ff8a8a';
         alert('Error procesando PDF: ' + err.message);
       });
@@ -4524,6 +4649,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 /* ============================================================
    CALCULADORA: PLATA PARADA
+   Enfoque: mostrar Caución, FCI, LECAP (mejor primero), demonizar PF sutilmente
    ============================================================ */
 document.addEventListener('DOMContentLoaded', function() {
   var btn = document.getElementById('plata-calcular');
@@ -4542,62 +4668,119 @@ document.addEventListener('DOMContentLoaded', function() {
       var fci = (CFG.tasas.fci || 17.5) / 100;
       var caucion = (CFG.tasas.caucion || 19.5) / 100;
       var lecap = null;
+      var lecapTicker = '';
+      var lecapDias = null;
       if (marketData && marketData.lecapBenchmark) {
         lecap = marketData.lecapBenchmark.tea;
+        lecapTicker = marketData.lecapBenchmark.ticker || '';
+        lecapDias = marketData.lecapBenchmark.dias || null;
       }
       
-      // Ganancia mensual (simple, no compuesta) y al año
-      var pfMes = monto * pf / 12;
-      var fciMes = monto * fci / 12;
-      var caucionMes = monto * caucion / 12;
-      var lecapMes = lecap ? monto * lecap / 12 : null;
+      // Si no hay lecap del mercado, default razonable: ~24% (similar a S29Y6)
+      if (!lecap) {
+        lecap = 0.247;
+        lecapTicker = 'LECAP corta';
+        lecapDias = 30;
+      }
       
-      var pfAnio = monto * pf;
-      var fciAnio = monto * fci;
-      var caucionAnio = monto * caucion;
-      var lecapAnio = lecap ? monto * lecap : null;
+      // Ganancias mensuales (simples) y anuales (compuestas)
+      function ganMes(t) { return monto * t / 12; }
+      function ganAnio(t) { return monto * t; }  // simplificación
       
-      // El "techo" es la mejor opción
-      var mejor = lecap ? { nombre: 'LECAP', tasa: lecap, mes: lecapMes, anio: lecapAnio } 
-                        : { nombre: 'Plazo Fijo', tasa: pf, mes: pfMes, anio: pfAnio };
+      // Ordenar opciones por tasa (mejor primero)
+      // CAUCIÓN, FCI, LECAP — sin PF como protagonista
+      var opciones = [
+        { 
+          nombre: 'LECAP ' + lecapTicker, 
+          desc: 'Letra del Tesoro a ' + (lecapDias || 30) + ' días. La mejor tasa del mercado para corto plazo.',
+          tasa: lecap, 
+          mes: ganMes(lecap), 
+          anio: ganAnio(lecap),
+          tag: 'Recomendada'
+        },
+        { 
+          nombre: 'Caución bursátil', 
+          desc: 'Préstamo a 1 día garantizado. Disponibilidad inmediata.',
+          tasa: caucion, 
+          mes: ganMes(caucion), 
+          anio: ganAnio(caucion),
+          tag: ''
+        },
+        { 
+          nombre: 'FCI Money Market', 
+          desc: 'Fondo común de inversión líquido. Suscribís y rescatás cuando querés.',
+          tasa: fci, 
+          mes: ganMes(fci), 
+          anio: ganAnio(fci),
+          tag: ''
+        },
+      ];
+      
+      // Ordenar por tasa descendente
+      opciones.sort(function(a, b) { return b.tasa - a.tasa; });
+      
+      var mejor = opciones[0];
       
       var html = '';
-      html += '<div style="background:linear-gradient(135deg,#1a1d40 0%,#252a55 100%);color:#fff;border-radius:14px;padding:20px;margin-bottom:16px">';
-      html += '<div style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;opacity:.7;margin-bottom:6px">Estás dejando de ganar</div>';
-      html += '<div style="font-size:32px;font-weight:800;letter-spacing:-.02em;margin-bottom:4px">' + fmtMoney(mejor.mes) + '</div>';
-      html += '<div style="font-size:13px;opacity:.85">por mes con ' + mejor.nombre + ' al ' + (mejor.tasa * 100).toFixed(1) + '% anual</div>';
-      html += '<div style="font-size:13px;opacity:.7;margin-top:6px">≈ ' + fmtMoney(mejor.anio) + ' al año</div>';
+      
+      // Hero: estás dejando de ganar X con la mejor opción
+      html += '<div style="background:linear-gradient(135deg,#1a1d40 0%,#252a55 100%);color:#fff;border-radius:14px;padding:22px;margin-bottom:18px">';
+      html += '<div style="font-size:11px;letter-spacing:.18em;text-transform:uppercase;opacity:.65;margin-bottom:8px;font-weight:600">Estás dejando de ganar</div>';
+      html += '<div style="font-size:34px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px">' + fmtMoney(mejor.mes) + '</div>';
+      html += '<div style="font-size:14px;opacity:.85;line-height:1.5">por mes invirtiendo en <strong>' + mejor.nombre + '</strong> al ' + (mejor.tasa * 100).toFixed(1) + '% anual.</div>';
+      html += '<div style="font-size:13px;opacity:.6;margin-top:8px">Proyección anual: ' + fmtMoney(mejor.anio) + '</div>';
       html += '</div>';
       
-      html += '<div style="font-size:13px;color:var(--muted);margin-bottom:10px;letter-spacing:.05em;font-weight:600;text-transform:uppercase">Tus opciones</div>';
+      // Comparativa de las 3 opciones (mejor primero)
+      html += '<div style="font-size:11px;color:var(--muted);margin-bottom:10px;letter-spacing:.18em;font-weight:700;text-transform:uppercase">Tus opciones, ordenadas por rentabilidad</div>';
       
-      function row(emoji, nombre, descripcion, tasa, mes, destacar) {
-        var bg = destacar ? 'background:rgba(184,151,90,.12);border-color:rgba(184,151,90,.35)' : 'background:#fff';
-        return '<div style="border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;' + bg + '">'
-          + '<div style="font-size:24px">' + emoji + '</div>'
-          + '<div style="flex:1">'
-          + '<div style="font-weight:700;font-size:14px">' + nombre + '</div>'
-          + '<div style="font-size:12px;color:var(--muted);line-height:1.3">' + descripcion + '</div>'
-          + '</div>'
-          + '<div style="text-align:right">'
-          + '<div style="font-weight:700;color:var(--gold)">+' + fmtMoney(mes) + '</div>'
-          + '<div style="font-size:11px;color:var(--muted)">' + (tasa*100).toFixed(1) + '% anual</div>'
-          + '</div>'
-          + '</div>';
-      }
+      opciones.forEach(function(op, idx) {
+        var isFirst = idx === 0;
+        var bg = isFirst ? 'background:rgba(184,151,90,.10);border-color:rgba(184,151,90,.45)' : 'background:#fff';
+        var label = isFirst ? '<div style="display:inline-block;background:var(--gold);color:#fff;font-size:10px;font-weight:700;letter-spacing:.1em;padding:2px 8px;border-radius:4px;text-transform:uppercase;margin-bottom:6px">' + op.tag + '</div>' : '';
+        
+        html += '<div style="border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:10px;display:flex;align-items:flex-start;gap:14px;' + bg + '">';
+        html += '<div style="flex:1">';
+        html += label;
+        html += '<div style="font-weight:700;font-size:15px;margin-bottom:3px">' + op.nombre + '</div>';
+        html += '<div style="font-size:12px;color:var(--muted);line-height:1.4">' + op.desc + '</div>';
+        html += '</div>';
+        html += '<div style="text-align:right;flex-shrink:0">';
+        html += '<div style="font-weight:800;color:' + (isFirst ? 'var(--gold)' : 'var(--ink)') + ';font-size:16px">+' + fmtMoney(op.mes) + '</div>';
+        html += '<div style="font-size:11px;color:var(--muted);margin-top:2px">' + (op.tasa*100).toFixed(1) + '% anual · al mes</div>';
+        html += '</div>';
+        html += '</div>';
+      });
       
-      // FCI primero porque es lo más fácil para alguien sin experiencia
-      html += row('💧', 'FCI Money Market', 'Disponible siempre. Lo más práctico.', fci, fciMes, mejor.nombre === 'FCI');
-      html += row('🏦', 'Plazo Fijo', 'Plazo fijo a 30 días. Tasa garantizada.', pf, pfMes, mejor.nombre === 'Plazo Fijo');
-      if (lecap) {
-        html += row('📈', 'LECAP', 'Letra del Tesoro. Mayor tasa, plazo fijo.', lecap, lecapMes, mejor.nombre === 'LECAP');
-      }
-      html += row('💸', 'Caución', 'Préstamo a 1 día. Sale fácil.', caucion, caucionMes, false);
+      // ===== Sección crítica: LECAP vs Plazo Fijo =====
+      // Comparación numérica que muestra el costo de oportunidad de elegir PF
+      var lecapMes = ganMes(lecap);
+      var pfMes = ganMes(pf);
+      var diffMes = lecapMes - pfMes;
+      var diffAnio = ganAnio(lecap) - ganAnio(pf);
+      var diffPctTasa = ((lecap - pf) / pf) * 100;
+      
+      html += '<div style="margin-top:24px;padding:20px;background:#fffaf0;border:1px solid #e6dec0;border-left:3px solid var(--gold);border-radius:10px">';
+      html += '<div style="font-size:11px;color:var(--gold);font-weight:700;letter-spacing:.18em;text-transform:uppercase;margin-bottom:8px">Análisis Value Latam</div>';
+      html += '<div style="font-size:15px;font-weight:700;color:var(--ink);margin-bottom:10px;line-height:1.4">¿Sabías que un Plazo Fijo te hace dejar plata sobre la mesa?</div>';
+      html += '<div style="font-size:13px;color:var(--ink);line-height:1.6;margin-bottom:14px">Mucha gente arma un Plazo Fijo por costumbre. Pero hoy una <strong>LECAP a ' + (lecapDias || 30) + ' días</strong> rinde <strong>' + (lecap*100).toFixed(1) + '%</strong> contra <strong>' + (pf*100).toFixed(1) + '%</strong> del Plazo Fijo. Más tasa, mismo o menor plazo, y respaldo del Tesoro. Liquidable en mercado secundario si necesitás salir antes — algo que el Plazo Fijo no permite.</div>';
+      
+      html += '<div style="background:#fff;border-radius:8px;padding:14px;margin-bottom:8px">';
+      html += '<div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--line)"><span>Con LECAP, ganás por mes</span><strong style="color:var(--gold)">+' + fmtMoney(lecapMes) + '</strong></div>';
+      html += '<div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--line)"><span>Con Plazo Fijo, solo</span><span style="color:var(--muted)">+' + fmtMoney(pfMes) + '</span></div>';
+      html += '<div style="display:flex;justify-content:space-between;font-size:14px;padding:8px 0 0;font-weight:700"><span>Diferencia mensual</span><span style="color:var(--gold)">+' + fmtMoney(diffMes) + '</span></div>';
+      html += '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:var(--muted)"><span>Al año</span><span>+' + fmtMoney(diffAnio) + '</span></div>';
+      html += '</div>';
+      
+      html += '<div style="font-size:12px;color:var(--muted);font-style:italic;line-height:1.5">El Plazo Fijo te paga ' + diffPctTasa.toFixed(0) + '% menos y te ata 30 días sin posibilidad de salir. La LECAP te da más tasa y la podés vender en mercado secundario cuando quieras.</div>';
+      html += '</div>';
       
       // CTA hacia asesor
-      html += '<div style="margin-top:20px;padding:16px;background:rgba(37,211,102,.08);border:1px solid rgba(37,211,102,.25);border-radius:12px;text-align:center">';
-      html += '<div style="font-size:14px;color:var(--ink);margin-bottom:10px;font-weight:600">¿No sabés cuál elegir?</div>';
-      html += '<button id="plata-asesor" type="button" style="background:#25D366;color:#fff;border:none;padding:11px 20px;border-radius:9px;font-weight:700;font-size:13px;cursor:pointer">Que un asesor me ayude</button>';
+      html += '<div style="margin-top:22px;padding:18px;background:rgba(37,211,102,.08);border:1px solid rgba(37,211,102,.25);border-radius:12px;text-align:center">';
+      html += '<div style="font-size:14px;color:var(--ink);margin-bottom:12px;font-weight:600;line-height:1.4">¿Querés que un asesor te guíe para invertir bien?</div>';
+      html += '<button id="plata-asesor" type="button" style="background:#25D366;color:#fff;border:none;padding:12px 22px;border-radius:9px;font-weight:700;font-size:14px;cursor:pointer;display:inline-flex;align-items:center;gap:8px">';
+      html += '<svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>';
+      html += 'Hablar con un asesor</button>';
       html += '</div>';
       
       var resDiv = document.getElementById('plata-result');
@@ -4608,7 +4791,7 @@ document.addEventListener('DOMContentLoaded', function() {
       var asesorBtn = document.getElementById('plata-asesor');
       if (asesorBtn) {
         asesorBtn.addEventListener('click', function() {
-          var msg = 'Hola! Tengo ' + fmtMoney(monto) + ' parados y quiero saber dónde ponerlos a rendir. ¿Pueden asesorarme?';
+          var msg = 'Hola! Tengo ' + fmtMoney(monto) + ' parados y quiero ponerlos a rendir. La app me sugirió ' + mejor.nombre + ' (' + (mejor.tasa*100).toFixed(1) + '%). ¿Pueden asesorarme?';
           var wa = CFG.wa || '5491130004720';
           window.open('https://wa.me/' + wa + '?text=' + encodeURIComponent(msg), '_blank');
         });
@@ -4893,6 +5076,109 @@ document.addEventListener('DOMContentLoaded', function() {
     } catch(e) { console.error('[infl-personal]', e); }
   });
 });
+
+
+
+/* ============================================================
+   PORTADA — handlers
+   ============================================================ */
+(function setupIntro() {
+  function init() {
+    try {
+      var overlay = document.getElementById('introOverlay');
+      if (!overlay) return;
+      
+      // Mostrar al primer ingreso
+      var seen = false;
+      try { seen = localStorage.getItem(INTRO_KEY) === '1'; } catch(e) {}
+      if (!seen) {
+        overlay.style.display = 'flex';
+      }
+      
+      var slides = document.getElementById('introSlides');
+      var dots = document.querySelectorAll('.intro-dot');
+      var btnNext = document.getElementById('introNext');
+      var btnSkip = document.getElementById('introSkip');
+      var btnStart = document.getElementById('introStart');
+      
+      // Función para ir a un slide
+      function goToSlide(idx) {
+        if (idx < 0 || idx > 2) return;
+        currentSlide = idx;
+        if (slides) {
+          slides.scrollTo({ left: idx * slides.clientWidth, behavior: 'smooth' });
+        }
+        // Update dots
+        dots.forEach(function(d, i) {
+          if (i === idx) {
+            d.style.background = '#d4b884';
+          } else {
+            d.style.background = 'rgba(255,255,255,.25)';
+          }
+        });
+        // Update next button
+        if (btnNext) {
+          if (idx === 2) {
+            btnNext.style.display = 'none';
+          } else {
+            btnNext.style.display = 'inline';
+          }
+        }
+      }
+      
+      // Click en dots
+      dots.forEach(function(d) {
+        d.addEventListener('click', function() {
+          var idx = parseInt(d.dataset.dot, 10);
+          goToSlide(idx);
+        });
+      });
+      
+      // Click en next
+      if (btnNext) {
+        btnNext.addEventListener('click', function() {
+          goToSlide(currentSlide + 1);
+        });
+      }
+      
+      // Click en skip
+      if (btnSkip) {
+        btnSkip.addEventListener('click', function() {
+          hideIntro();
+        });
+      }
+      
+      // Click en start
+      if (btnStart) {
+        btnStart.addEventListener('click', function() {
+          hideIntro();
+        });
+      }
+      
+      // Tracking de scroll para actualizar dots
+      if (slides) {
+        slides.addEventListener('scroll', function() {
+          var idx = Math.round(slides.scrollLeft / slides.clientWidth);
+          if (idx !== currentSlide) {
+            currentSlide = idx;
+            dots.forEach(function(d, i) {
+              d.style.background = i === idx ? '#d4b884' : 'rgba(255,255,255,.25)';
+            });
+            if (btnNext) {
+              btnNext.style.display = idx === 2 ? 'none' : 'inline';
+            }
+          }
+        });
+      }
+    } catch(e) { console.error('[intro]', e); }
+  }
+  
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
 
 </script>
 
