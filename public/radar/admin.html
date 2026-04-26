@@ -1353,9 +1353,20 @@ auth.onAuthStateChanged(async user=>{
   if(!user){window.location.href='index.html';return;}
   if(user.email!==ADMIN_EMAIL){window.location.href='app.html';return;}
   document.getElementById('admin-email').textContent=user.email;
-  await loadTNA(); await loadClientes(); await loadBreakeven();
-  document.getElementById('loading-screen').style.display='none';
-  document.getElementById('app').style.display='flex';
+  const av=document.getElementById('admin-avatar');
+  if(av)av.textContent=user.email[0].toUpperCase();
+  try{
+    await Promise.all([
+      loadTNA().catch(e=>console.warn('loadTNA:',e)),
+      loadClientes().catch(e=>console.warn('loadClientes:',e)),
+      loadBreakeven().catch(e=>console.warn('loadBreakeven:',e)),
+    ]);
+  } catch(e){
+    console.error('Error cargando admin:',e);
+  } finally {
+    document.getElementById('loading-screen').style.display='none';
+    document.getElementById('app').style.display='flex';
+  }
 });
 
 async function procesarCargaRapidaAdm(){
