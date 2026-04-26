@@ -276,91 +276,74 @@
 </div>
 
 <script>
-  const auth = firebase.auth();
-  const ADMIN_EMAIL = 'mauricio@valuelatam.com';
+  // Timeout de emergencia — si Firebase no responde en 3s, mostrar form
+  const emergencyTimer = setTimeout(mostrarForm, 3000);
 
-  // Flag para evitar loop si venimos de logout
-  const vieneDeCerrarSesion = sessionStorage.getItem('logout') === '1';
-  if(vieneDeCerrarSesion) sessionStorage.removeItem('logout');
-
-  // Timeout de seguridad — si Firebase tarda más de 4s, mostrar form igual
-  const safetyTimer = setTimeout(() => {
+  function mostrarForm() {
+    clearTimeout(emergencyTimer);
     document.getElementById('loading').style.display = 'none';
     document.getElementById('main').style.display = 'block';
-  }, 4000);
-
-  auth.onAuthStateChanged(user => {
-    clearTimeout(safetyTimer);
-    document.getElementById('loading').style.display = 'none';
-    if(user && !vieneDeCerrarSesion){
-      // Ya logueado — redirigir según rol
-      if(user.email === ADMIN_EMAIL){
-        window.location.href = 'admin.html';
-      } else {
-        window.location.href = 'app.html';
-      }
-      return;
-    }
-    // No logueado o venimos de logout — mostrar form
-    document.getElementById('main').style.display = 'block';
-
-    // Verificar parámetros de URL (ej: ?acceso=denegado)
+    setTimeout(()=>{ const e=document.getElementById('email'); if(e) e.focus(); }, 100);
+    // Verificar params URL
     const params = new URLSearchParams(window.location.search);
     const infoEl = document.getElementById('info-msg');
-    if(params.get('acceso') === 'denegado'){
-      infoEl.style.display = 'block';
-      infoEl.textContent = 'Tu sesión no tiene acceso a esa sección.';
-    }
     if(params.get('sesion') === 'cerrada'){
-      infoEl.style.display = 'block';
-      infoEl.textContent = 'Sesión cerrada correctamente.';
-      infoEl.style.borderLeftColor = '#3DD68C';
-      infoEl.style.color = '#3DD68C';
+      infoEl.style.display='block';
+      infoEl.textContent='Sesión cerrada correctamente.';
+      infoEl.style.borderLeftColor='#3DD68C';
+      infoEl.style.color='#3DD68C';
     }
+  }
 
-    // Focus en email
-    setTimeout(()=>{ document.getElementById('email').focus(); }, 100);
-  });
+  // Intentar cargar Firebase
+  try {
+    const auth = firebase.auth();
+    const ADMIN_EMAIL = 'mauricio@valuelatam.com';
+    const vieneDeCerrarSesion = sessionStorage.getItem('logout') === '1';
+    if(vieneDeCerrarSesion) sessionStorage.removeItem('logout');
 
-  async function doLogin(){
-    const email = document.getElementById('email').value.trim();
-    const pass  = document.getElementById('pass').value;
-    const btn   = document.getElementById('btn-login');
-    const errEl = document.getElementById('error-msg');
+    auth.onAuthStateChanged(user => {
+      if(user && !vieneDeCerrarSesion){
+        clearTimeout(emergencyTimer);
+        window.location.href = user.email === ADMIN_EMAIL ? 'admin.html' : 'app.html';
+        return;
+      }
+      mostrarForm();
+    });
 
-    if(!email || !pass){
-      showError('Completá email y contraseña');
-      return;
-    }
+    window.doLogin = async function() {
+      const email = document.getElementById('email').value.trim();
+      const pass  = document.getElementById('pass').value;
+      const btn   = document.getElementById('btn-login');
+      const errEl = document.getElementById('error-msg');
+      if(!email || !pass){ showError('Completá email y contraseña'); return; }
+      btn.disabled = true; btn.textContent = 'Ingresando...'; errEl.style.display = 'none';
+      try {
+        await auth.signInWithEmailAndPassword(email, pass);
+      } catch(e){
+        btn.disabled = false; btn.textContent = 'Ingresar →';
+        const msgs = {
+          'auth/user-not-found':     'No existe una cuenta con ese email',
+          'auth/wrong-password':     'Contraseña incorrecta',
+          'auth/invalid-email':      'Email no válido',
+          'auth/too-many-requests':  'Demasiados intentos. Esperá unos minutos',
+          'auth/invalid-credential': 'Email o contraseña incorrectos',
+        };
+        showError(msgs[e.code] || 'Error: ' + e.message);
+      }
+    };
 
-    btn.disabled = true;
-    btn.textContent = 'Ingresando...';
-    errEl.style.display = 'none';
-
-    try {
-      await auth.signInWithEmailAndPassword(email, pass);
-      // onAuthStateChanged maneja la redirección
-    } catch(e){
-      btn.disabled = false;
-      btn.textContent = 'Ingresar →';
-      const msgs = {
-        'auth/user-not-found':   'No existe una cuenta con ese email',
-        'auth/wrong-password':   'Contraseña incorrecta',
-        'auth/invalid-email':    'El email no es válido',
-        'auth/too-many-requests':'Demasiados intentos. Esperá unos minutos',
-        'auth/user-disabled':    'Esta cuenta está deshabilitada',
-        'auth/invalid-credential': 'Email o contraseña incorrectos',
-      };
-      showError(msgs[e.code] || 'Error al ingresar: ' + e.message);
-    }
+  } catch(e) {
+    // Firebase no disponible — mostrar form igual
+    console.error('Firebase error:', e);
+    mostrarForm();
+    window.doLogin = function(){ showError('Error de conexión. Recargá la página.'); };
   }
 
   function showError(msg){
     const el = document.getElementById('error-msg');
-    el.textContent = msg;
-    el.style.display = 'block';
+    el.textContent = msg; el.style.display = 'block';
   }
 </script>
-
 </body>
 </html>
