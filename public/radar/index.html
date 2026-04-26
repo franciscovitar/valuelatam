@@ -279,10 +279,20 @@
   const auth = firebase.auth();
   const ADMIN_EMAIL = 'mauricio@valuelatam.com';
 
-  // Verificar si ya hay sesión activa
-  auth.onAuthStateChanged(user => {
+  // Flag para evitar loop si venimos de logout
+  const vieneDeCerrarSesion = sessionStorage.getItem('logout') === '1';
+  if(vieneDeCerrarSesion) sessionStorage.removeItem('logout');
+
+  // Timeout de seguridad — si Firebase tarda más de 4s, mostrar form igual
+  const safetyTimer = setTimeout(() => {
     document.getElementById('loading').style.display = 'none';
-    if(user){
+    document.getElementById('main').style.display = 'block';
+  }, 4000);
+
+  auth.onAuthStateChanged(user => {
+    clearTimeout(safetyTimer);
+    document.getElementById('loading').style.display = 'none';
+    if(user && !vieneDeCerrarSesion){
       // Ya logueado — redirigir según rol
       if(user.email === ADMIN_EMAIL){
         window.location.href = 'admin.html';
@@ -291,7 +301,7 @@
       }
       return;
     }
-    // No logueado — mostrar form
+    // No logueado o venimos de logout — mostrar form
     document.getElementById('main').style.display = 'block';
 
     // Verificar parámetros de URL (ej: ?acceso=denegado)
