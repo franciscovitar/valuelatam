@@ -11,16 +11,307 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
   :root{
-    --navy:#1C3A5E;--navy-deep:#132742;--navy-ink:#221C49;
-    --blue-light:#8BB8E8;--blue-dark:#2B3990;
-    --gold:#B8975A;--gold-soft:#D4B87A;
-    --bg:#F5F1EA;--ink:#0F1C2E;--muted:#5B6675;
-    --green:#1F7A4D;--green-soft:#E6F3EC;
-    --red:#B23A2E;--red-soft:#FBE9E7;
-    --amber:#C47E2C;--amber-soft:#FBF0DF;
-    --line:rgba(28,58,94,.12);
-    --shadow:0 30px 60px -30px rgba(19,39,66,.35);
+    /* Paleta oscura premium — Value Latam */
+    --navy:#1a2342;--navy-deep:#0f1428;--navy-ink:#f4ebd2;
+    --blue-light:#8BB8E8;--blue-dark:#3d4d8a;
+    --gold:#d4b884;--gold-soft:#e8d4a8;
+    
+    /* Backgrounds y textos: oscuro */
+    --bg:#0d1129;
+    --bg-card:#161b3a;
+    --bg-card-hover:#1d2447;
+    --ink:#f4ebd2;
+    --ink-soft:#e0d8c0;
+    --muted:#8a92a8;
+    --muted-strong:#a8b0c4;
+    
+    /* Estados */
+    --green:#5fd49a;--green-soft:rgba(95,212,154,.12);
+    --red:#ff7575;--red-soft:rgba(255,117,117,.12);
+    --amber:#ffc56f;--amber-soft:rgba(255,197,111,.12);
+    
+    /* Líneas y sombras */
+    --line:rgba(212,184,132,.15);
+    --line-strong:rgba(212,184,132,.28);
+    --shadow:0 24px 60px -20px rgba(0,0,0,.6), 0 0 0 1px rgba(212,184,132,.05);
+    --shadow-glow:0 0 40px rgba(212,184,132,.15);
   }
+
+  /* ================================================
+     OVERRIDES TEMA OSCURO PREMIUM
+     ================================================ */
+  
+  body {
+    background: var(--bg);
+    color: var(--ink);
+  }
+  
+  /* Body background con gradients sutiles y orbes de luz */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background:
+      radial-gradient(ellipse at 20% 10%, rgba(212, 184, 132, 0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 90%, rgba(43, 64, 130, 0.15) 0%, transparent 50%),
+      var(--bg);
+    pointer-events: none;
+  }
+  
+  /* Cards con fondo oscuro + borde sutil */
+  .card {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--line) !important;
+    box-shadow: 0 24px 60px -20px rgba(0,0,0,.6), 0 0 0 1px rgba(212,184,132,.05) !important;
+  }
+  
+  /* Inputs */
+  input[type="text"],
+  input[type="number"],
+  input[type="date"],
+  input[type="password"],
+  textarea,
+  select {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border: 1px solid var(--line) !important;
+    color: var(--ink) !important;
+  }
+  input[type="text"]:focus,
+  input[type="number"]:focus,
+  input[type="date"]:focus,
+  input[type="password"]:focus,
+  textarea:focus,
+  select:focus {
+    border-color: var(--gold) !important;
+    background: rgba(212, 184, 132, 0.04) !important;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(212, 184, 132, 0.1) !important;
+  }
+  input::placeholder, textarea::placeholder {
+    color: var(--muted) !important;
+    opacity: 0.6;
+  }
+  
+  /* Tabs (bottom-nav) */
+  .tabs {
+    background: rgba(13, 17, 41, 0.85) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--line) !important;
+  }
+  .tab {
+    color: var(--muted) !important;
+  }
+  .tab.active {
+    color: var(--gold) !important;
+  }
+  
+  /* Headings */
+  h1, h2, h3, h4 {
+    color: var(--ink) !important;
+  }
+  h1 em, h2 em {
+    color: var(--gold) !important;
+  }
+  
+  /* Labels y muted */
+  label {
+    color: var(--muted-strong) !important;
+  }
+  .section-label {
+    color: var(--gold) !important;
+  }
+  .view-sub, p {
+    color: var(--muted-strong) !important;
+  }
+  
+  /* CTA principal (botón oscuro) - debe destacar */
+  .cta {
+    background: linear-gradient(135deg, var(--gold) 0%, var(--gold-soft) 100%) !important;
+    color: var(--bg) !important;
+    border: none !important;
+    box-shadow: 0 8px 32px rgba(212, 184, 132, 0.25), 0 0 0 1px rgba(212, 184, 132, 0.4) !important;
+    transition: all .3s ease !important;
+  }
+  .cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(212, 184, 132, 0.4), 0 0 0 1px rgba(212, 184, 132, 0.6) !important;
+  }
+  
+  /* Botones secundarios */
+  .action-btn {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid var(--line) !important;
+    color: var(--ink) !important;
+  }
+  .action-btn:hover {
+    background: rgba(212, 184, 132, 0.08) !important;
+    border-color: var(--gold) !important;
+  }
+  .action-btn.primary {
+    background: var(--gold) !important;
+    color: var(--bg) !important;
+    border-color: var(--gold) !important;
+  }
+  
+  /* Verdict cards (resultado de cuotas) */
+  .verdict {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--line) !important;
+  }
+  .verdict.financiar {
+    background: linear-gradient(135deg, rgba(95,212,154,.1) 0%, var(--bg-card) 100%) !important;
+    border-color: rgba(95,212,154,.3) !important;
+  }
+  .verdict.contado {
+    background: linear-gradient(135deg, rgba(212,184,132,.1) 0%, var(--bg-card) 100%) !important;
+    border-color: rgba(212,184,132,.3) !important;
+  }
+  
+  /* Result box */
+  #result {
+    background: transparent !important;
+  }
+  
+  /* Hero */
+  .hero h1 {
+    color: var(--ink) !important;
+  }
+  .hero p {
+    color: var(--muted-strong) !important;
+  }
+  
+  /* Cards de la home */
+  .home-card, .invest-calc-card {
+    background: var(--bg-card) !important;
+    border-color: var(--line) !important;
+    color: var(--ink) !important;
+  }
+  .home-card:hover, .invest-calc-card:hover {
+    background: var(--bg-card-hover) !important;
+    border-color: var(--gold) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,.4) !important;
+  }
+  .home-card div, .invest-calc-card div {
+    color: inherit;
+  }
+  
+  /* Cards mini de la home */
+  .home-mini {
+    background: rgba(212, 184, 132, 0.05) !important;
+    border-color: rgba(212, 184, 132, 0.15) !important;
+    color: var(--ink) !important;
+  }
+  .home-mini:hover {
+    background: rgba(212, 184, 132, 0.12) !important;
+    border-color: rgba(212, 184, 132, 0.4) !important;
+  }
+  
+  /* Tablas */
+  table {
+    color: var(--ink) !important;
+  }
+  th {
+    color: var(--gold) !important;
+    border-bottom-color: var(--line-strong) !important;
+  }
+  td {
+    border-bottom-color: var(--line) !important;
+  }
+  
+  /* Foot */
+  .foot {
+    color: var(--muted) !important;
+    border-top-color: var(--line) !important;
+  }
+  
+  /* Brand bar */
+  .brand {
+    border-bottom-color: var(--line) !important;
+  }
+  
+  /* Admin overlay */
+  .admin-overlay {
+    background: rgba(13, 17, 41, 0.85) !important;
+    backdrop-filter: blur(8px);
+  }
+  .admin-overlay > div {
+    background: var(--bg-card) !important;
+    color: var(--ink) !important;
+    border: 1px solid var(--line);
+  }
+  .admin-section {
+    border-top-color: var(--line) !important;
+  }
+  
+  /* Glosario */
+  .glosario-card, .explainer-card, .vinculo-cta {
+    background: var(--bg-card) !important;
+    border-color: var(--line) !important;
+    color: var(--ink) !important;
+  }
+  
+  /* Hint y supporting text */
+  .hint, .admin-sub {
+    color: var(--muted) !important;
+  }
+  
+  /* Sub elements oscuros que necesitan invertir */
+  .subnav, .nav-link {
+    color: var(--muted-strong) !important;
+  }
+  .subnav.active, .nav-link.active {
+    color: var(--gold) !important;
+  }
+  
+  /* Fix: hardcoded white backgrounds dentro de inline styles dinámicos
+     (los que aparecen en JS templates) */
+  [style*="background:#fff"],
+  [style*="background: #fff"],
+  [style*="background:#ffffff"] {
+    background: var(--bg-card) !important;
+  }
+  
+  /* Fondo navy en bloques destacados (resultado plata, etc.) — mantener navy pero más oscuro */
+  [style*="linear-gradient(135deg,#1a1d40"],
+  [style*="linear-gradient(135deg, #1a1d40"] {
+    background: linear-gradient(135deg, #2a2050 0%, #383680 100%) !important;
+  }
+  
+  /* Fondos crema (#fffaf0, #f8f4e8, etc) — convertir a card oscuro */
+  [style*="background:#fffaf0"],
+  [style*="background: #fffaf0"] {
+    background: rgba(212, 184, 132, 0.06) !important;
+  }
+  [style*="background:#f8f4e8"],
+  [style*="background: #f8f4e8"] {
+    background: rgba(212, 184, 132, 0.05) !important;
+  }
+  
+  /* Selectores y pickers */
+  ::selection {
+    background: var(--gold);
+    color: var(--bg);
+  }
+  
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--bg);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(212, 184, 132, 0.2);
+    border-radius: 5px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(212, 184, 132, 0.4);
+  }
+
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
   body{
@@ -4536,10 +4827,17 @@ document.getElementById('btn').addEventListener('click', () => {
     }
   }
   
+  // Cantidad de cuotas: si está vacío, usar el placeholder (12)
+  let nVal = parseInt(parseNum(document.getElementById('n').value), 10);
+  if (!isFinite(nVal) || nVal <= 0) {
+    var placeholder = document.getElementById('n').placeholder;
+    nVal = parseInt(placeholder, 10) || 12;
+  }
+  
   const inputs = {
     PC: parseNum(document.getElementById('pc').value),
     C: parseNum(document.getElementById('c').value),
-    n: parseInt(parseNum(document.getElementById('n').value), 10),
+    n: nVal,
     infl_anual: inflInput / 100,
     tasa_anual: tasaInput / 100,
   };
