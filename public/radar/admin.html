@@ -1444,6 +1444,12 @@ Si ambiguo:
 }
 
 // ── FIN CARGA RÁPIDA ADMIN ──────────────────────────
+
+function doLogout(){
+  auth.signOut()
+    .then(()=>{ window.location.href='index.html'; })
+    .catch(()=>{ window.location.href='index.html'; });
+}
 // ═══════════════════════════════════════════════════════
 
 function handlePDFDropAdm(file) { if(file) analizarPDFAdm(file); }
