@@ -313,6 +313,157 @@
   }
   
   /* ========================
+     FIX: Mercado y análisis VL — colores de números y fondos claros
+     ======================== */
+  
+  /* Números grandes de las cards de mercado (1,62% TEM, etc.) */
+  .market-card-value {
+    color: var(--ink) !important;
+  }
+  .market-card-sub {
+    color: var(--muted-strong) !important;
+  }
+  .market-card-ticker {
+    color: var(--muted) !important;
+  }
+  
+  /* Refresh button */
+  .market-refresh {
+    color: var(--ink) !important;
+    background: var(--bg-card) !important;
+  }
+  .market-refresh:hover {
+    border-color: var(--gold) !important;
+  }
+  
+  /* ========== ANÁLISIS VALUE LATAM ==========
+     El gradient claro arruinaba la legibilidad. 
+     Ahora: gradient dorado oscuro (mantiene la diferenciación visual sin ser blanco) */
+  .vl-analysis-card {
+    background: linear-gradient(135deg, rgba(212,184,132,0.08) 0%, rgba(212,184,132,0.04) 100%) !important;
+    border: 1px solid rgba(212, 184, 132, 0.35) !important;
+    border-left: 3px solid var(--gold) !important;
+  }
+  .vl-analysis-title {
+    color: var(--ink) !important;
+  }
+  .vl-analysis-title em {
+    color: var(--gold) !important;
+  }
+  .vl-analysis-text {
+    color: var(--muted-strong) !important;
+    opacity: 1 !important;
+  }
+  .vl-analysis-text strong {
+    color: var(--ink) !important;
+  }
+  .vl-analysis-badge {
+    background: var(--gold) !important;
+    color: var(--bg) !important;
+  }
+  
+  /* ========== INFLACIÓN BREAKEVEN CARD ==========
+     La card grande arriba con "1,32% mensual" */
+  .vl-rem-card, .infl-card, .breakeven-card {
+    background: linear-gradient(135deg, #1a2342 0%, #2d3a6e 100%) !important;
+    border: 1px solid var(--line-strong) !important;
+    border-top: 3px solid var(--gold) !important;
+    color: #fff !important;
+  }
+  .vl-rem-card *, .infl-card *, .breakeven-card * {
+    color: #fff !important;
+  }
+  .vl-rem-card .vl-rem-num, 
+  .vl-rem-card .vl-rem-pct, 
+  .vl-rem-card strong {
+    color: var(--gold-soft) !important;
+  }
+  .vl-rem-title em {
+    color: var(--gold) !important;
+  }
+  
+  /* ========== CONCLUSIÓN DEL MERCADO ==========
+     Card "Hoy la tasa fija sobresale: S30A6" tenía gradient claro */
+  [class*="conclusion"] {
+    background: linear-gradient(135deg, #1a2342 0%, #2d3a6e 100%) !important;
+    color: #fff !important;
+  }
+  [class*="conclusion"] * {
+    color: #fff !important;
+  }
+  [class*="conclusion"] strong {
+    color: var(--gold-soft) !important;
+  }
+  
+  /* ========== TABLAS de comparación VL vs REM ========== */
+  .comp-vl-rem-table th {
+    color: var(--gold) !important;
+    background: rgba(212,184,132,0.06) !important;
+  }
+  .comp-vl-rem-table td {
+    color: var(--ink) !important;
+  }
+  
+  /* ========== CHARTS Y SUS CONTENEDORES ========== */
+  .chart-card, .chart-wrap {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--line) !important;
+  }
+  .chart-title {
+    color: var(--ink) !important;
+  }
+  .chart-sub {
+    color: var(--muted-strong) !important;
+  }
+  .chart-footnote {
+    background: rgba(212,184,132,0.06) !important;
+    border-color: rgba(212,184,132,0.2) !important;
+    color: var(--ink) !important;
+  }
+  .chart-footnote strong {
+    color: var(--gold) !important;
+  }
+  
+  /* ========== EXPLAINER (¿Cómo se lee esto?) ========== */
+  .explainer-card {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--line) !important;
+    color: var(--ink) !important;
+  }
+  .explainer-title {
+    color: var(--ink) !important;
+  }
+  .explainer-text {
+    color: var(--muted-strong) !important;
+    opacity: 1 !important;
+  }
+  .explainer-text strong {
+    color: var(--ink) !important;
+  }
+  .explainer-icon {
+    background: rgba(212, 184, 132, 0.15) !important;
+    color: var(--gold) !important;
+  }
+  
+  /* ========== BLUE / GRADIENT navy en cualquier inline style ========== */
+  /* Si algún elemento generado dinámicamente tiene gradient navy, asegurar texto blanco */
+  [style*="linear-gradient(135deg, #1a"]  *,
+  [style*="linear-gradient(135deg,#1a"] * {
+    color: #fff;
+  }
+  
+  /* ========== PESTAÑAS DEL MERCADO ========== */
+  .mkt-tabs {
+    border-bottom: 1px solid var(--line) !important;
+  }
+  
+  /* ========== Tabla CER comparison ========== */
+  .vl-rem-tag, .vl-analysis-badge {
+    background: var(--gold) !important;
+    color: var(--bg) !important;
+  }
+  
+  /* ========================
      FIX FINAL: textos que usaban color:var(--navy-ink)
      ahora deben ser claros (--ink) sobre fondo oscuro
      ======================== */
@@ -3289,7 +3440,7 @@ function renderSimChart(flujo) {
         tension: 0.25,
         pointRadius: 3,
         pointBackgroundColor: '#B8975A',
-        pointBorderColor: '#fff',
+        pointBorderColor: '#0d1129',
         pointBorderWidth: 1.5,
         fill: true,
       }]
@@ -3306,8 +3457,8 @@ function renderSimChart(flujo) {
         }
       },
       scales: {
-        x: { title: { display: true, text: 'Mes', color: '#5B6675', font: { size: 10 } }, ticks: { color: '#5B6675', font: { size: 10 } }, grid: { display: false } },
-        y: { ticks: { color: '#5B6675', font: { size: 10 }, callback: (v) => '$' + (v/1000).toFixed(0) + 'k' }, grid: { color: 'rgba(28,58,94,.06)' } }
+        x: { title: { display: true, text: 'Mes', color: '#a8b0c4', font: { size: 10 } }, ticks: { color: '#a8b0c4', font: { size: 10 } }, grid: { display: false } },
+        y: { ticks: { color: '#a8b0c4', font: { size: 10 }, callback: (v) => '$' + (v/1000).toFixed(0) + 'k' }, grid: { color: 'rgba(212,184,132,.08)' } }
       }
     }
   });
@@ -4580,7 +4731,7 @@ function renderCharts() {
       const ctx = cvs1.getContext('2d');
       ctx.canvas.width = cvs1.offsetWidth;
       ctx.canvas.height = cvs1.offsetHeight || 240;
-      ctx.fillStyle = '#5B6675';
+      ctx.fillStyle = '#a8b0c4';
       ctx.font = '14px system-ui, -apple-system, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('Esperando datos del mercado…', ctx.canvas.width / 2, ctx.canvas.height / 2);
@@ -4611,7 +4762,7 @@ function renderCharts() {
         tension: 0.3,
         pointRadius: 5,
         pointBackgroundColor: '#B8975A',
-        pointBorderColor: '#fff',
+        pointBorderColor: '#0d1129',
         pointBorderWidth: 2,
         pointHoverRadius: 8,
         fill: true,
@@ -4629,7 +4780,7 @@ function renderCharts() {
           tension: 0.25,
           pointRadius: 4,
           pointBackgroundColor: '#B23A2E',
-          pointBorderColor: '#fff',
+          pointBorderColor: '#0d1129',
           pointBorderWidth: 1.5,
           fill: false,
           spanGaps: true,
@@ -4643,7 +4794,7 @@ function renderCharts() {
         options: {
           responsive: true, maintainAspectRatio: false,
           plugins: {
-            legend: { position: 'top', labels: { font: { size: 11 }, color: '#5B6675', boxWidth: 18, padding: 10 } },
+            legend: { position: 'top', labels: { font: { size: 11 }, color: '#a8b0c4', boxWidth: 18, padding: 10 } },
             tooltip: {
               callbacks: {
                 title: (items) => labels[items[0].dataIndex],
@@ -4661,8 +4812,8 @@ function renderCharts() {
             }
           },
           scales: {
-            x: { title: { display: true, text: 'Mes proyectado', color: '#5B6675', font: { size: 11 } }, ticks: { color: '#5B6675', font: { size: 10 }, maxRotation: 45, minRotation: 30 }, grid: { color: 'rgba(28,58,94,.04)' } },
-            y: { title: { display: true, text: 'Inflación TEM (%)', color: '#5B6675', font: { size: 11 } }, ticks: { color: '#5B6675', callback: (v) => v.toFixed(1).replace('.',',') + '%' }, grid: { color: 'rgba(28,58,94,.06)' } }
+            x: { title: { display: true, text: 'Mes proyectado', color: '#a8b0c4', font: { size: 11 } }, ticks: { color: '#a8b0c4', font: { size: 10 }, maxRotation: 45, minRotation: 30 }, grid: { color: 'rgba(212,184,132,.06)' } },
+            y: { title: { display: true, text: 'Inflación TEM (%)', color: '#a8b0c4', font: { size: 11 } }, ticks: { color: '#a8b0c4', callback: (v) => v.toFixed(1).replace('.',',') + '%' }, grid: { color: 'rgba(212,184,132,.08)' } }
           }
         }
       });
@@ -4682,7 +4833,7 @@ function renderCharts() {
       const ctx = cvs2.getContext('2d');
       ctx.canvas.width = cvs2.offsetWidth;
       ctx.canvas.height = cvs2.offsetHeight || 240;
-      ctx.fillStyle = '#5B6675';
+      ctx.fillStyle = '#a8b0c4';
       ctx.font = '14px system-ui, -apple-system, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('Esperando datos del mercado…', ctx.canvas.width / 2, ctx.canvas.height / 2);
@@ -4718,7 +4869,7 @@ function renderCharts() {
           type: 'bar',
           label: 'LECAP (TEM)',
           data: lecapBarData,
-          backgroundColor: 'rgba(34,28,73,.85)',
+          backgroundColor: 'rgba(212,184,132,.5)',
           borderRadius: 6,
           order: 2,
           tickers: lecapTickers,
@@ -4733,7 +4884,7 @@ function renderCharts() {
           tension: 0.25,
           pointRadius: 4,
           pointBackgroundColor: '#B8975A',
-          pointBorderColor: '#fff',
+          pointBorderColor: '#0d1129',
           pointBorderWidth: 1.5,
           fill: false,
           order: 1,
@@ -4747,7 +4898,7 @@ function renderCharts() {
         options: {
           responsive: true, maintainAspectRatio: false,
           plugins: {
-            legend: { position: 'top', labels: { font: { size: 11 }, color: '#5B6675', boxWidth: 18, padding: 10 } },
+            legend: { position: 'top', labels: { font: { size: 11 }, color: '#a8b0c4', boxWidth: 18, padding: 10 } },
             tooltip: {
               callbacks: {
                 title: (items) => mesesLabels[items[0].dataIndex],
@@ -4765,8 +4916,8 @@ function renderCharts() {
             }
           },
           scales: {
-            x: { ticks: { color: '#5B6675', font: { size: 10 }, maxRotation: 45, minRotation: 30 }, grid: { display: false } },
-            y: { ticks: { color: '#5B6675', callback: (v) => v.toFixed(1) + '%' }, grid: { color: 'rgba(28,58,94,.06)' }, title: { display: true, text: 'TEM (% mensual)', color: '#5B6675', font: { size: 11 } } }
+            x: { ticks: { color: '#a8b0c4', font: { size: 10 }, maxRotation: 45, minRotation: 30 }, grid: { display: false } },
+            y: { ticks: { color: '#a8b0c4', callback: (v) => v.toFixed(1) + '%' }, grid: { color: 'rgba(212,184,132,.08)' }, title: { display: true, text: 'TEM (% mensual)', color: '#a8b0c4', font: { size: 11 } } }
           }
         }
       });
