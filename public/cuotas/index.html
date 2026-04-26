@@ -3451,99 +3451,212 @@ async function safeFetch(url, label) {
   }
 }
 
-async function fetchArgNotes() { return null; /* API desactivada — datos manuales desde admin */ }
-/* ===========================================================
-   Bonos CER — metadata + precios en vivo
-   =========================================================== */
+/* ============================================================
+   APIs externas: data912 + ArgentinaDatos
+   Con timeout, error handling y fallbacks defensivos.
+   ============================================================ */
 
-// Metadata de bonos CER zero-coupon. precio_tecnico = 100 * CER_actual/CER_emision
-// Para todos estos bonos usamos la convención de mercado: el precio de data912 ya
-// está ajustado por CER y la TIR_real se calcula como (100/precio)^(365/dias)-1
-// Para bonos con cupones (DICP, PARP, TX26, TX28) se agrega lógica de cupones.
-const BONOS_CER_META = {
-  // Zero Coupons (más comunes y nuevos)
-  "X15Y6": { vto: "2026-05-15", cupon: 0, tipo: "ZC" },
-  "X29Y6": { vto: "2026-05-29", cupon: 0, tipo: "ZC" },
-  "X31L6": { vto: "2026-07-31", cupon: 0, tipo: "ZC" },
-  "X30S6": { vto: "2026-09-30", cupon: 0, tipo: "ZC" },
-  "X29D6": { vto: "2026-12-29", cupon: 0, tipo: "ZC" },
-  "X30J7": { vto: "2027-06-30", cupon: 0, tipo: "ZC" },
-  // BONCERs Zero Coupon
-  "TZX26": { vto: "2026-06-30", cupon: 0, tipo: "ZC" },
-  "TZXO6": { vto: "2026-10-30", cupon: 0, tipo: "ZC" },
-  "TZXD6": { vto: "2026-12-15", cupon: 0, tipo: "ZC" },
-  "TZXM7": { vto: "2027-03-31", cupon: 0, tipo: "ZC" },
-  "TZX27": { vto: "2027-06-30", cupon: 0, tipo: "ZC" },
-  "TZXD7": { vto: "2027-12-15", cupon: 0, tipo: "ZC" },
-  "TZXM8": { vto: "2028-03-31", cupon: 0, tipo: "ZC" },
-  "TZX28": { vto: "2028-06-30", cupon: 0, tipo: "ZC" },
-  "TZXD8": { vto: "2028-12-15", cupon: 0, tipo: "ZC" },
-  "TZX29": { vto: "2029-06-30", cupon: 0, tipo: "ZC" },
-  // Bonos viejos con cupones (TX26 = 2% anual; TX28 = 2.25%; DICP = 5.83%; PARP = 1.18%)
-  "TX26": { vto: "2026-11-09", cupon: 0.02, tipo: "CUP" },
-  "TX28": { vto: "2028-11-09", cupon: 0.0225, tipo: "CUP" },
-  "DICP": { vto: "2033-12-31", cupon: 0.0583, tipo: "CUP" },
-  "PARP": { vto: "2038-12-31", cupon: 0.0118, tipo: "CUP" },
-};
-
-/* TIR real de un bono CER zero-coupon a partir del precio dirty */
-function calcTIRRealZC(precioDirty, dias) {
-  if (precioDirty <= 0 || dias <= 0) return null;
-  // Convención del mercado: precio dirty ya CER-adjustado, VN nominal = 100
-  // TIR_real = (100/precio)^(365/dias) - 1
-  const ratio = 100 / precioDirty;
-  if (ratio <= 0) return null;
-  return Math.pow(ratio, 365 / dias) - 1;
+// Helper: fetch con timeout (no usamos AbortController por compatibilidad amplia)
+async function safeFetch(url, opts) {
+  opts = opts || {};
+  const timeout = opts.timeout || 8000;
+  
+  return new Promise((resolve) => {
+    let resolved = false;
+    
+    // Timeout
+    const timeoutId = setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        console.warn('[API] Timeout:', url);
+        resolve(null);
+      }
+    }, timeout);
+    
+    fetch(url, { 
+      method: 'GET',
+      headers: { 'Accept': 'application/json' },
+      cache: 'no-store',
+      mode: 'cors'
+    })
+      .then(r => {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(data => {
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timeoutId);
+          resolve(data);
+        }
+      })
+      .catch(err => {
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timeoutId);
+          console.warn('[API] Error en', url, '-', err.message);
+          resolve(null);
+        }
+      });
+  });
 }
 
-/* TIR real aproximada para bonos CER con cupón anual fijo */
-function calcTIRRealConCupon(precioDirty, dias, cuponAnual) {
-  if (precioDirty <= 0 || dias <= 0) return null;
-  // Aproximación: para bonos con cupones, TIR_real_total ≈ TIR_ZC + cupon
-  const tirZC = calcTIRRealZC(precioDirty, dias);
-  if (tirZC === null) return null;
-  return tirZC + (cuponAnual || 0);
+// Helper: parsear fecha de venc en distintos formatos
+function parseFechaBono(s) {
+  if (!s) return null;
+  if (typeof s !== 'string') s = String(s);
+  // ISO yyyy-mm-dd
+  const m1 = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (m1) return new Date(parseInt(m1[1]), parseInt(m1[2])-1, parseInt(m1[3]));
+  // dd/mm/yyyy
+  const m2 = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (m2) return new Date(parseInt(m2[3]), parseInt(m2[2])-1, parseInt(m2[1]));
+  return null;
 }
 
-/* Fetch principal: precios en vivo + cálculo de TIR real */
-async function fetchBonosCER() { return null; /* API desactivada — datos manuales desde admin */ }
-
-/* Igual para LECAPs/BONCAPs: traemos precios + metadata fija */
-const BONOS_FIJA_META = {
-  "S30A6": { vto: "2026-04-30" },
-  "S15Y6": { vto: "2026-05-15" },
-  "S29Y6": { vto: "2026-05-29" },
-  "T13F6": { vto: "2026-06-13" },
-  "S30J6": { vto: "2026-06-30" },
-  "T30J6": { vto: "2026-06-30" },
-  "S31L6": { vto: "2026-07-31" },
-  "T31L6": { vto: "2026-07-31" },
-  "S29G6": { vto: "2026-08-29" },
-  "S30S6": { vto: "2026-09-30" },
-  "T30S6": { vto: "2026-09-30" },
-  "S31O6": { vto: "2026-10-31" },
-  "T30O6": { vto: "2026-10-30" },
-  "T30N6": { vto: "2026-11-30" },
-  "T15D6": { vto: "2026-12-15" },
-  "T15E7": { vto: "2027-01-15" },
-  "T13F7": { vto: "2027-02-13" },
-  "T30A7": { vto: "2027-04-30" },
-  "T30J7": { vto: "2027-06-30" },
-  "T15D7": { vto: "2027-12-15" },
-};
-
-/* Calcular TIR de una LECAP/BONCAP */
-function calcTIRLecap(precio, dias, vnFinal = 100) {
-  if (precio <= 0 || dias <= 0) return null;
-  return Math.pow(vnFinal / precio, 365 / dias) - 1;
+// data912 — LECAPs / BONCAPs (Tasa Fija)
+async function fetchArgNotes() {
+  const data = await safeFetch('https://data912.com/live/arg_notes');
+  if (!data || !Array.isArray(data)) return null;
+  
+  const today = new Date();
+  const results = [];
+  
+  data.forEach(item => {
+    try {
+      // Estructura típica de data912: { symbol, last, vencimiento, tem, tea, ... }
+      const ticker = item.symbol || item.ticker;
+      if (!ticker) return;
+      
+      // Filtrar solo LECAPs y BONCAPs (S* o T* con formato corto)
+      if (!/^[ST]\d{1,2}[A-Z]\d$/i.test(ticker)) return;
+      
+      const venc = parseFechaBono(item.vencimiento || item.maturity_date || item.vto);
+      if (!venc) return;
+      
+      const dias = Math.ceil((venc - today) / 86400000);
+      if (dias <= 0 || dias > 800) return;
+      
+      // TEM puede venir como decimal o porcentaje
+      let tem = parseFloat(item.tem);
+      if (!isFinite(tem) || tem === 0) return;
+      if (tem > 1) tem = tem / 100;  // si vino como porcentaje
+      
+      let tea = parseFloat(item.tea);
+      if (!isFinite(tea)) tea = Math.pow(1 + tem, 12) - 1;
+      else if (tea > 1) tea = tea / 100;
+      
+      const precio = parseFloat(item.last || item.price || item.precio) || null;
+      
+      results.push({
+        ticker: ticker.toUpperCase(),
+        precio,
+        tem,
+        tea,
+        vto: venc.toISOString().slice(0, 10),
+        dias,
+        venc,
+        tir: tea
+      });
+    } catch(e) { /* skip item */ }
+  });
+  
+  return results.length ? results : null;
 }
 
-async function fetchPlazoFijo() { return null; /* API desactivada — datos manuales desde admin */ }
+// data912 — Bonos CER
+async function fetchBonosCER() {
+  const data = await safeFetch('https://data912.com/live/arg_bonds');
+  if (!data || !Array.isArray(data)) return null;
+  
+  const today = new Date();
+  const results = [];
+  
+  data.forEach(item => {
+    try {
+      const ticker = item.symbol || item.ticker;
+      if (!ticker) return;
+      
+      // Filtrar solo CER: X*, TZ*, TX*, DICP, DIP0, etc
+      if (!/^(?:X|TZX?|TX|DIC[PA]|DIP0|PARP|PAP0|CUAP)[0-9A-Z]+/i.test(ticker)) return;
+      
+      const venc = parseFechaBono(item.vencimiento || item.maturity_date || item.vto);
+      if (!venc) return;
+      
+      const dias = Math.ceil((venc - today) / 86400000);
+      if (dias < 30 || dias > 5000) return;
+      
+      let tirReal = parseFloat(item.tir_real || item.tir || item.yield);
+      if (!isFinite(tirReal)) return;
+      if (Math.abs(tirReal) > 1) tirReal = tirReal / 100;
+      if (Math.abs(tirReal) > 0.5) return; // outliers
+      
+      const precio = parseFloat(item.last || item.price || item.precio) || null;
+      const duration = parseFloat(item.duration) || (dias / 365);
+      
+      results.push({
+        ticker: ticker.toUpperCase(),
+        precio,
+        tirReal,
+        duration,
+        vto: venc.toISOString().slice(0, 10),
+        dias,
+        venc,
+        paridad: precio ? precio / 100 : null
+      });
+    } catch(e) { /* skip */ }
+  });
+  
+  return results.length ? results : null;
+}
 
-// --- FCI Money Market promedio de mercado (ArgentinaDatos) ---
-async function fetchFCIMercado() { return null; /* API desactivada — datos manuales desde admin */ }
+// ArgentinaDatos — Plazo Fijo BCRA (TNA promedio)
+async function fetchPlazoFijo() {
+  const data = await safeFetch('https://api.argentinadatos.com/v1/finanzas/tasas/plazoFijo');
+  if (!data || !Array.isArray(data) || !data.length) return null;
+  
+  // Estructura típica: array con bancos. Tomamos promedio o el último día
+  // Cada item suele tener { entidad, tnaClientes, tnaPersona }
+  try {
+    const tasas = data
+      .map(d => parseFloat(d.tnaClientes))
+      .filter(t => isFinite(t) && t > 0 && t < 1);
+    
+    if (!tasas.length) return null;
+    
+    // Promedio
+    const promedio = tasas.reduce((a,b) => a+b, 0) / tasas.length;
+    return promedio;  // como decimal (0.215 = 21.5%)
+  } catch(e) { return null; }
+}
 
-async function fetchREM() { return null; /* API desactivada — datos manuales desde admin */ }
+// ArgentinaDatos — FCI Money Market (rendimiento promedio)
+async function fetchFCIMercado() {
+  const data = await safeFetch('https://api.argentinadatos.com/v1/finanzas/fci/mercadoDinero/ultimo');
+  if (!data) return null;
+  
+  try {
+    // Estructura típica: array de FCIs con tea
+    if (Array.isArray(data) && data.length) {
+      const teas = data
+        .map(d => parseFloat(d.tea))
+        .filter(t => isFinite(t) && t > 0 && t < 1);
+      
+      if (teas.length) {
+        return teas.reduce((a,b) => a+b, 0) / teas.length;
+      }
+    }
+    
+    // O puede venir como dict con tea promedio directo
+    if (data.tea && isFinite(data.tea)) {
+      return data.tea > 1 ? data.tea / 100 : data.tea;
+    }
+  } catch(e) {}
+  return null;
+}
+
+// REM (no implementado - el dato lo cargás manual)
+async function fetchREM() { return null; }
 
 /* =========================================================
    PARSEO DE TICKERS — mejorado con más tolerancia
@@ -3618,12 +3731,54 @@ async function refreshMarket() {
   const btn = document.getElementById('marketRefresh');
   const status = document.getElementById('marketStatus');
   if (btn) btn.classList.add('spinning');
-  if (status) status.textContent = 'Cargando snapshot...';
+  if (status) status.textContent = 'Cargando datos del mercado...';
   
-  console.log('[Market] Cargando datos desde snapshot manual...');
+  console.log('[Market] Intentando APIs externas...');
   
-  // FUENTE DE DATOS: snapshot guardado en localStorage (cargado desde PDFs de Docta)
-  // o el VL_SNAPSHOT_DEFAULT hardcodeado como fallback
+  // ============ FUENTES DE DATOS ============
+  // Estrategia: API primero, snapshot manual como fallback, defaults como tercera línea.
+  
+  // 1) Bonos: intentar data912
+  let lecapsAPI = null, boncerAPI = null;
+  let fuenteLecaps = 'manual', fuenteBoncer = 'manual';
+  
+  try {
+    lecapsAPI = await fetchArgNotes();
+    if (lecapsAPI && lecapsAPI.length) {
+      fuenteLecaps = 'data912 (live)';
+      console.log('[Market] LECAPs desde data912:', lecapsAPI.length, 'bonos');
+    }
+  } catch(e) { console.warn('[Market] fetchArgNotes error:', e); }
+  
+  try {
+    boncerAPI = await fetchBonosCER();
+    if (boncerAPI && boncerAPI.length) {
+      fuenteBoncer = 'data912 (live)';
+      console.log('[Market] CER desde data912:', boncerAPI.length, 'bonos');
+    }
+  } catch(e) { console.warn('[Market] fetchBonosCER error:', e); }
+  
+  // 2) Tasas mercado: intentar ArgentinaDatos
+  let pfAPI = null, fciAPI = null;
+  let fuentePF = 'manual', fuenteFCI = 'manual';
+  
+  try {
+    pfAPI = await fetchPlazoFijo();
+    if (pfAPI) {
+      fuentePF = 'ArgentinaDatos (live)';
+      console.log('[Market] PF desde ArgentinaDatos:', (pfAPI*100).toFixed(2) + '%');
+    }
+  } catch(e) { console.warn('[Market] fetchPlazoFijo error:', e); }
+  
+  try {
+    fciAPI = await fetchFCIMercado();
+    if (fciAPI) {
+      fuenteFCI = 'ArgentinaDatos (live)';
+      console.log('[Market] FCI desde ArgentinaDatos:', (fciAPI*100).toFixed(2) + '%');
+    }
+  } catch(e) { console.warn('[Market] fetchFCIMercado error:', e); }
+  
+  // 3) Cargar snapshot manual (siempre, como fallback)
   let snap = null;
   try {
     const raw = localStorage.getItem('vl_snapshot_v1');
@@ -3631,61 +3786,73 @@ async function refreshMarket() {
   } catch(e) { console.warn('[Market] localStorage parse error:', e); }
   if (!snap) snap = (typeof VL_SNAPSHOT_DEFAULT !== 'undefined') ? VL_SNAPSHOT_DEFAULT : { fija: [], cer: [], tasas: {} };
   
+  // ============ MERGE: API > snapshot > defaults ============
   const today = new Date();
-  const lecaps = [];
-  const boncer = [];
+  let lecaps = [], boncer = [];
   
-  // Procesar bonos Tasa Fija (LECAPs/BONCAPs) del snapshot
-  (snap.fija || []).forEach(item => {
-    if (!item.ticker || !isFinite(item.tem) || item.tem <= 0) return;
-    const venc = item.vto ? new Date(item.vto) : null;
-    if (!venc || !isFinite(venc.getTime())) return;
-    const dias = diasEntre(today, venc);
-    if (dias <= 0 || dias > 800) return;
-    const tea = item.tea || (Math.pow(1 + item.tem, 12) - 1);
-    lecaps.push({
-      ticker: item.ticker,
-      precio: item.precio || null,
-      venc, vto: item.vto, dias,
-      tir: tea, tea, tem: item.tem,
+  // LECAPs
+  if (lecapsAPI && lecapsAPI.length) {
+    lecaps = lecapsAPI.map(l => ({
+      ticker: l.ticker,
+      precio: l.precio,
+      venc: l.venc, vto: l.vto, dias: l.dias,
+      tir: l.tea, tea: l.tea, tem: l.tem
+    }));
+  } else {
+    // Fallback: usar snapshot
+    (snap.fija || []).forEach(item => {
+      if (!item.ticker || !isFinite(item.tem) || item.tem <= 0) return;
+      const venc = item.vto ? new Date(item.vto) : null;
+      if (!venc || !isFinite(venc.getTime())) return;
+      const dias = diasEntre(today, venc);
+      if (dias <= 0 || dias > 800) return;
+      const tea = item.tea || (Math.pow(1 + item.tem, 12) - 1);
+      lecaps.push({
+        ticker: item.ticker, precio: item.precio || null,
+        venc, vto: item.vto, dias,
+        tir: tea, tea, tem: item.tem,
+      });
     });
-  });
+  }
   lecaps.sort((a,b) => a.dias - b.dias);
   
-  // Procesar bonos CER del snapshot
-  (snap.cer || []).forEach(item => {
-    if (!item.ticker || !isFinite(item.tirReal)) return;
-    const venc = item.vto ? new Date(item.vto) : null;
-    if (!venc || !isFinite(venc.getTime())) return;
-    const dias = diasEntre(today, venc);
-    if (dias <= 0 || dias > 5000) return;
-    // Filtros: bonos muy cortos (<30 días) generan ruido en TIR real
-    if (dias < 30 || Math.abs(item.tirReal) > 0.5) return;
-    boncer.push({
-      ticker: item.ticker,
-      precio: item.precio || null,
-      venc, vto: item.vto, dias,
-      tirReal: item.tirReal,
-      duration: item.duration || (dias / 365),
-      paridad: item.paridad || null,
+  // CER
+  if (boncerAPI && boncerAPI.length) {
+    boncer = boncerAPI.map(b => ({
+      ticker: b.ticker, precio: b.precio,
+      venc: b.venc, vto: b.vto, dias: b.dias,
+      tirReal: b.tirReal, duration: b.duration,
+      paridad: b.paridad
+    }));
+  } else {
+    // Fallback: snapshot
+    (snap.cer || []).forEach(item => {
+      if (!item.ticker || !isFinite(item.tirReal)) return;
+      const venc = item.vto ? new Date(item.vto) : null;
+      if (!venc || !isFinite(venc.getTime())) return;
+      const dias = diasEntre(today, venc);
+      if (dias < 30 || Math.abs(item.tirReal) > 0.5) return;
+      boncer.push({
+        ticker: item.ticker, precio: item.precio || null,
+        venc, vto: item.vto, dias,
+        tirReal: item.tirReal,
+        duration: item.duration || (dias / 365),
+        paridad: item.paridad || null,
+      });
     });
-  });
+  }
   boncer.sort((a,b) => a.dias - b.dias);
   
-  // Tasas manuales (vienen del CFG.tasas, editables desde admin)
-  const pfPct = isFinite(CFG.tasas.pf) ? CFG.tasas.pf : 21.5;
-  const cauPct = isFinite(CFG.tasas.caucion) ? CFG.tasas.caucion : 19.5;
-  const fciPct = isFinite(CFG.tasas.fci) ? CFG.tasas.fci : 17.5;
-  const remPct = isFinite(CFG.rem_manual) ? CFG.rem_manual : 22.6;
+  // Tasas: API > CFG.tasas (manual admin)
+  const pfPct = pfAPI ? pfAPI * 100 : (CFG.tasas.pf || 21.5);
+  const fciPct = fciAPI ? fciAPI * 100 : (CFG.tasas.fci || 17.5);
+  const cauPct = CFG.tasas.caucion || 19.5; // siempre manual
+  const remPct = CFG.rem_manual || 22.6; // siempre manual
   const pfAnual = pfPct / 100;
   const remAnual = remPct / 100;
   
-  // LECAP benchmark: la más corta del snapshot (refleja tasa de mercado actual)
+  // LECAP benchmark (la más corta = mejor referencia de tasa actual)
   const lecapBenchmark = lecaps.length > 0 ? lecaps[0] : null;
-  
-  // Construir REM curva como recta horizontal (no tenemos curva mensual)
-  const remCurva = null;
-  const rem12mAnual = remAnual;
   
   marketData = {
     ts: new Date(),
@@ -3693,12 +3860,23 @@ async function refreshMarket() {
     boncer: boncer.length ? boncer : ((typeof SAMPLE_DATA !== 'undefined') ? SAMPLE_DATA.boncer.slice() : []),
     pfAnual,
     rem: null,
-    remCurva,
+    remCurva: null,
     remUpdated: snap.fecha || null,
-    rem12mAnual,
+    rem12mAnual: remAnual,
     lecapBenchmark,
     isSample: lecaps.length === 0 && boncer.length === 0,
     hasPartialFallback: !lecaps.length || !boncer.length,
+    
+    // Trazabilidad: de dónde viene cada dato
+    fuentes: {
+      lecaps: fuenteLecaps,
+      boncer: fuenteBoncer,
+      pf: fuentePF,
+      fci: fuenteFCI,
+      caucion: 'manual',
+      rem: 'manual'
+    },
+    
     tasasLive: {
       pf: pfPct,
       fci: fciPct,
@@ -3709,22 +3887,30 @@ async function refreshMarket() {
   
   if (btn) btn.classList.remove('spinning');
   
-  // Status pill: muestra fecha del snapshot + fuente
+  // Status pill: indica las fuentes activas
   if (status) {
-    const snapFecha = snap.fecha || '—';
-    const snapFuente = snap.fuente || 'Docta Capital';
-    let fechaFmt = snapFecha;
-    if (/^\d{4}-\d{2}-\d{2}$/.test(snapFecha)) {
-      const [y, mo, d] = snapFecha.split('-');
-      fechaFmt = `${d}/${mo}/${y}`;
+    const fuentes = marketData.fuentes;
+    const hasLive = (fuentes.lecaps !== 'manual') || (fuentes.boncer !== 'manual') || 
+                    (fuentes.pf !== 'manual') || (fuentes.fci !== 'manual');
+    
+    let label;
+    if (hasLive) {
+      const sources = new Set();
+      if (fuentes.lecaps !== 'manual' || fuentes.boncer !== 'manual') sources.add('data912');
+      if (fuentes.pf !== 'manual' || fuentes.fci !== 'manual') sources.add('ArgentinaDatos');
+      label = 'Live · ' + Array.from(sources).join(' + ');
+    } else {
+      const snapFecha = snap.fecha || '—';
+      let fechaFmt = snapFecha;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(snapFecha)) {
+        const [y, mo, d] = snapFecha.split('-');
+        fechaFmt = `${d}/${mo}/${y}`;
+      }
+      label = 'Snapshot al ' + fechaFmt + ' (APIs caídas)';
     }
-    let dotColor = 'var(--green)';
-    if (snap.fecha) {
-      const diasViejo = Math.floor((new Date() - new Date(snap.fecha)) / 86400000);
-      if (diasViejo > 14) dotColor = 'var(--amber)';
-      if (diasViejo > 30) dotColor = 'var(--red)';
-    }
-    status.innerHTML = `<span style="width:6px;height:6px;border-radius:50%;background:${dotColor};display:inline-block"></span> Datos al ${fechaFmt} · Fuente: ${snapFuente}`;
+    
+    let dotColor = hasLive ? 'var(--green)' : 'var(--amber)';
+    status.innerHTML = `<span style="width:6px;height:6px;border-radius:50%;background:${dotColor};display:inline-block"></span> Datos: ${label}`;
   }
   
   try { renderMarketView(); } catch(e) { console.error('[renderMarketView]:', e); }
