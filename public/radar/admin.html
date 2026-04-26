@@ -1445,9 +1445,7 @@ Si ambiguo:
 
 // ── FIN CARGA RÁPIDA ADMIN ──────────────────────────
 
-function doLogout(){
-  auth.signOut()
-    .then(()=>{ window.location.href='index.html'; })
+function doLogout(){ sessionStorage.setItem('logout','1'); auth.signOut().then(()=>{ window.location.href='index.html'; }).catch(()=>{ window.location.href='index.html'; }); })
     .catch(()=>{ window.location.href='index.html'; });
 }
 // ═══════════════════════════════════════════════════════
