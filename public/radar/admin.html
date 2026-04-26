@@ -1361,9 +1361,11 @@ auth.onAuthStateChanged(async user=>{
 async function procesarCargaRapidaAdm(){
   const input=document.getElementById('adm-carga-rapida-input');
   const texto=input?.value.trim(); if(!texto||!clienteActivo) return;
+  // Guardar texto antes de cualquier re-render que destruya el DOM
+  const textoGuardado=texto;
   const btn=document.getElementById('adm-btn-carga');
   const estado=document.getElementById('adm-carga-estado');
-  if(btn) btn.disabled=true, btn.textContent='...';
+  if(btn){ btn.disabled=true; btn.textContent='...'; }
   if(estado){ estado.style.display='block'; estado.innerHTML='<span style="color:var(--text3);">Interpretando...</span>'; }
 
   const bancosDisp=(clienteActivo.entidades||[]).map(e=>e.nombre).filter((v,i,a)=>a.indexOf(v)===i).join(', ');
@@ -1393,6 +1395,8 @@ Si ambiguo:
     const parsed=JSON.parse((data.content?.find(b=>b.type==='text')?.text||'').replace(/```json|```/g,'').trim());
 
     if(parsed.tipo_accion==='operacion'){
+      // Restaurar botón ANTES de abrir modal (el modal no destruye el DOM del detalle)
+      if(btn){ btn.disabled=false; btn.textContent='↵ Interpretar'; }
       openModal('op');
       setTimeout(()=>{
         if(parsed.entidad_nombre){const sel=document.getElementById('op-entidad');if(sel){const m=[...sel.options].find(o=>o.text.toLowerCase().includes(parsed.entidad_nombre.toLowerCase().split(' ')[0]));if(m)sel.value=m.value;onOpEntidadChange?.();}}
@@ -1404,8 +1408,11 @@ Si ambiguo:
         if(parsed.amortizacion){const sel=document.getElementById('op-amortizacion');if(sel)sel.value=parsed.amortizacion;}
         previewCuotas?.();
       },300);
-      if(estado) estado.innerHTML=`<span style="color:var(--green);">✓ ${parsed.interpretacion} — Revisá y guardá.</span>`;
-      if(input) input.value='';
+      // Mostrar estado en el detalle (el DOM sigue vivo)
+      const estadoAdm=document.getElementById('adm-carga-estado');
+      if(estadoAdm) estadoAdm.innerHTML=`<span style="color:var(--green);">✓ ${parsed.interpretacion} — Revisá y guardá.</span>`;
+      const inputAdm=document.getElementById('adm-carga-rapida-input');
+      if(inputAdm) inputAdm.value='';
 
     } else if(parsed.tipo_accion==='flujo'){
       const uid=clienteActivo.uid;
@@ -2345,6 +2352,7 @@ function irARelevamiento(id){
 }
 
 function seleccionarCliente(id){
+  // Reset estado de carga rápida antes de re-renderizar
   clienteActivo=allClientes.find(e=>e.id===id)||null;
   if(!clienteActivo)return;
   document.querySelectorAll('.cliente-list-item').forEach(i=>i.classList.remove('active'));
