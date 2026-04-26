@@ -1277,7 +1277,7 @@ async function recalcularLineaUtilizada() {
   if (hayDiferencias) await batch.commit();
 }
 
-function doLogout() { auth.signOut().then(()=>{ window.location.href='index.html'; }).catch(e=>{ console.error(e); window.location.href='index.html'; }); }
+function doLogout(){ sessionStorage.setItem('logout','1'); auth.signOut().then(()=>{ window.location.href='index.html'; }).catch(()=>{ window.location.href='index.html'; }); }).catch(e=>{ console.error(e); window.location.href='index.html'; }); }
 
 function col(name) { return db.collection('empresas').doc(currentUser.uid).collection(name); }
 
