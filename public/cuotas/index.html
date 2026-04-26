@@ -1051,17 +1051,17 @@
         <div class="inputs">
           <div class="field" id="f-pc">
             <label for="pc">Precio contado</label>
-            <div class="input-wrap"><span class="prefix">$</span><input type="text" id="pc" name="vl-precio-contado" inputmode="decimal" placeholder="100.000" autocomplete="off" data-form-type="other" data-lpignore="true" data-1p-ignore="true"></div>
+            <div class="input-wrap"><span class="prefix">$</span><input type="text" id="pc" name="vl-precio-contado" inputmode="decimal" placeholder="100.000" readonly onfocus="this.removeAttribute('readonly')" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-bwignore="true" data-form-type="other" data-lpignore="true" data-1p-ignore="true"></div>
             <div class="error-msg" id="e-pc"></div>
           </div>
           <div class="field" id="f-c">
             <label for="c">Valor de cada cuota</label>
-            <div class="input-wrap"><span class="prefix">$</span><input type="text" id="c" name="vl-valor-cuota" inputmode="decimal" placeholder="12.000" autocomplete="off" data-form-type="other" data-lpignore="true" data-1p-ignore="true"></div>
+            <div class="input-wrap"><span class="prefix">$</span><input type="text" id="c" name="vl-valor-cuota" inputmode="decimal" placeholder="12.000" readonly onfocus="this.removeAttribute('readonly')" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-bwignore="true" data-form-type="other" data-lpignore="true" data-1p-ignore="true"></div>
             <div class="error-msg" id="e-c"></div>
           </div>
           <div class="field" id="f-n">
             <label for="n">Cantidad de cuotas</label>
-            <div class="input-wrap"><input type="text" id="n" name="vl-cantidad-cuotas" class="no-prefix" inputmode="numeric" placeholder="12" autocomplete="off" data-form-type="other" data-lpignore="true" data-1p-ignore="true" maxlength="3"></div>
+            <div class="input-wrap"><input type="text" id="n" name="vl-qty-a8b3c1" class="no-prefix" inputmode="numeric" pattern="[0-9]*" value="12" placeholder="12" readonly onfocus="this.removeAttribute('readonly');this.select()" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-form-type="other" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" maxlength="3"></div>
             <div class="error-msg" id="e-n"></div>
           </div>
         </div>
@@ -5451,6 +5451,67 @@ document.addEventListener('DOMContentLoaded', function() {
       });
       observer.observe(planesContainer, { childList: true, subtree: true });
     }
+  }
+  
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+
+
+
+/* ============================================================
+   GUARD: limpia auto-fills no numéricos del navegador
+   Si Edge/Chrome auto-rellena con un email u otra basura, lo borra
+   ============================================================ */
+(function setupAutofillGuard() {
+  'use strict';
+  
+  var NUMERIC_INPUTS = ['pc', 'c', 'n', 'plata-monto', 'tc-saldo', 'tc-minimo', 'tc-tienes', 'meta-monto', 'meta-inicial', 'infl-monto', 'infl', 'tasa', 'meta-meses', 'infl-meses', 'tc-tna'];
+  
+  function cleanInput(input) {
+    if (!input) return;
+    var val = input.value;
+    if (!val) return;
+    
+    // Si tiene letras (excepto alguna característica de número), es autocompletado
+    // Permitido: 0-9, punto, coma, espacio, guión
+    if (/[a-zA-Z@]/.test(val)) {
+      console.log('[AutofillGuard] Limpiando input "' + input.id + '" — tenía: "' + val + '"');
+      input.value = input.id === 'n' ? '12' : '';
+    }
+  }
+  
+  function cleanAll() {
+    NUMERIC_INPUTS.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) cleanInput(el);
+    });
+  }
+  
+  function init() {
+    // Limpiar al cargar la página
+    cleanAll();
+    
+    // Limpiar cada vez que el usuario haga foco en un input de la calculadora
+    NUMERIC_INPUTS.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('focus', function() {
+        // Pequeño delay para que el navegador termine de auto-rellenar antes que limpiemos
+        setTimeout(function() { cleanInput(el); }, 10);
+      });
+    });
+    
+    // Re-limpiar cada 1 segundo durante los primeros 5 segundos (por si el navegador es lento)
+    var attempts = 0;
+    var interval = setInterval(function() {
+      cleanAll();
+      attempts++;
+      if (attempts >= 5) clearInterval(interval);
+    }, 1000);
   }
   
   if (document.readyState === 'loading') {
