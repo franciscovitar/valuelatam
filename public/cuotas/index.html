@@ -311,6 +311,185 @@
   ::-webkit-scrollbar-thumb:hover {
     background: rgba(212, 184, 132, 0.4);
   }
+  
+  /* ========================
+     FIX: cards con fondo claro hardcoded
+     Aplicar tema oscuro a estos containers
+     ======================== */
+  
+  .glosario-item {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--line) !important;
+  }
+  .glosario-item:hover {
+    background: var(--bg-card-hover) !important;
+    border-color: var(--gold) !important;
+  }
+  .glosario-name {
+    color: var(--ink) !important;
+  }
+  .glosario-desc, .glosario-cons {
+    color: var(--muted-strong) !important;
+  }
+  .glosario-pros {
+    color: var(--ink-soft) !important;
+  }
+  .glosario-pros strong {
+    color: var(--green) !important;
+  }
+  .glosario-cons strong {
+    color: var(--red) !important;
+  }
+  .glosario-tag {
+    background: rgba(212, 184, 132, 0.15) !important;
+    color: var(--gold) !important;
+  }
+  
+  .explainer-card {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--line) !important;
+  }
+  .explainer-title {
+    color: var(--ink) !important;
+  }
+  .explainer-text {
+    color: var(--muted-strong) !important;
+  }
+  .explainer-icon {
+    background: rgba(212, 184, 132, 0.15) !important;
+    color: var(--gold) !important;
+  }
+  
+  /* CTA Vínculo Balanz: gradient navy-blue (mantener pero ajustar) */
+  .vinculo-cta {
+    background: linear-gradient(135deg, var(--bg-card-hover), #1a2655) !important;
+    border: 1px solid var(--line-strong) !important;
+    color: var(--ink) !important;
+  }
+  .vinculo-balanz, .vinculo-title {
+    color: var(--ink) !important;
+  }
+  .vinculo-text {
+    color: var(--muted-strong) !important;
+  }
+  .vinculo-btn {
+    background: var(--gold) !important;
+    color: var(--bg) !important;
+  }
+  
+  /* Botón de admin (resetear al fábrica) */
+  .admin-reset {
+    background: rgba(255,117,117,0.1) !important;
+    color: var(--red) !important;
+    border: 1px solid rgba(255,117,117,0.3) !important;
+  }
+  .admin-cancel {
+    background: rgba(255,255,255,0.04) !important;
+    color: var(--ink) !important;
+    border: 1px solid var(--line) !important;
+  }
+  .admin-save {
+    background: var(--gold) !important;
+    color: var(--bg) !important;
+  }
+  
+  /* Inputs en admin */
+  .admin-field input, .admin-field select {
+    background: rgba(255,255,255,0.04) !important;
+    border: 1px solid var(--line) !important;
+    color: var(--ink) !important;
+  }
+  
+  /* Sim acordeon */
+  .sim-acordeon, .sim-row, .sim-detail {
+    background: var(--bg-card) !important;
+    border-color: var(--line) !important;
+    color: var(--ink) !important;
+  }
+  
+  /* Comparador table */
+  .comp-table-inner, .comp-row {
+    background: var(--bg-card) !important;
+    color: var(--ink) !important;
+  }
+  
+  /* Mercado tabs */
+  .mkt-tabs button {
+    color: var(--muted-strong) !important;
+  }
+  .mkt-tabs button.active {
+    color: var(--gold) !important;
+    border-bottom-color: var(--gold) !important;
+  }
+  
+  /* Cards de market */
+  .mkt-card, .mkt-section {
+    background: var(--bg-card) !important;
+    border-color: var(--line) !important;
+    color: var(--ink) !important;
+  }
+  
+  /* Charts wrapper */
+  .chart-wrap, .chart-container {
+    background: var(--bg-card) !important;
+    border-color: var(--line) !important;
+  }
+  
+  /* Toast */
+  .toast {
+    background: var(--bg-card) !important;
+    color: var(--ink) !important;
+    border: 1px solid var(--line) !important;
+  }
+  
+  /* CTA wrap (cualquier wrap interno) */
+  .cta-wrap {
+    background: transparent !important;
+  }
+  
+  /* Badges en general */
+  .badge {
+    background: rgba(212, 184, 132, 0.15) !important;
+    color: var(--gold) !important;
+  }
+  
+  /* Pestañas / sub-navs */
+  .subnav-wrap, .sub-tabs {
+    background: var(--bg-card) !important;
+    border-color: var(--line) !important;
+  }
+  
+  /* Cualquier elemento con background blanco hardcoded explícito */
+  [style*="background:#fff"]:not(.brand):not(.tabs),
+  [style*="background: #fff"]:not(.brand):not(.tabs),
+  [style*="background:#FBFAF7"],
+  [style*="background: #FBFAF7"],
+  [style*="background:#fffaf0"],
+  [style*="background: #fffaf0"] {
+    background: var(--bg-card) !important;
+  }
+  
+  /* Texto hardcoded oscuro sobre fondos blancos pasados a oscuros */
+  .hint, [class*="-hint"] {
+    color: var(--muted) !important;
+  }
+  
+  /* Fields y labels en admin */
+  .admin-field label, .admin-grid label {
+    color: var(--muted-strong) !important;
+  }
+  .admin-kicker {
+    color: var(--gold) !important;
+  }
+  .admin-section h2, .admin-section h3 {
+    color: var(--ink) !important;
+  }
+  
+  /* Verdict */
+  .verdict-text, .verdict-num {
+    color: var(--ink) !important;
+  }
+
 
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
@@ -348,7 +527,7 @@
   .hero p{margin:0;color:var(--muted);font-size:14px;max-width:520px;line-height:1.5}
 
   /* CARD */
-  .card{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
+  .card{background:var(--bg-card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
   .card-section{padding:22px 24px}
   .card-section + .card-section{border-top:1px solid var(--line)}
 
@@ -370,7 +549,7 @@
   .input-wrap .suffix{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px;pointer-events:none}
   .field input, .field select{
     width:100%;padding:13px 14px 13px 28px;
-    border:1px solid var(--line);border-radius:10px;background:#FBFAF7;
+    border:1px solid var(--line);border-radius:10px;background:var(--bg-card);
     font:inherit;font-size:15px;color:var(--ink);
     transition:border-color .2s, background .2s, box-shadow .2s;
     font-variant-numeric:tabular-nums;
@@ -378,10 +557,10 @@
   .field input.no-prefix, .field select{padding-left:14px}
   .field input.has-suffix{padding-right:36px}
   .field input:focus, .field select:focus{
-    outline:none;border-color:var(--navy-ink);background:#fff;
+    outline:none;border-color:var(--navy-ink);background:var(--bg-card);
     box-shadow:0 0 0 3px rgba(34,28,73,.08);
   }
-  .field.error input{border-color:var(--red);background:#fff}
+  .field.error input{border-color:var(--red);background:var(--bg-card)}
   .error-msg{font-size:11px;color:var(--red);margin-top:2px;min-height:14px}
 
   .assumptions{display:grid;grid-template-columns:1fr 1fr;gap:14px}
@@ -401,12 +580,12 @@
   /* PLANES */
   .plans-list{display:flex;flex-direction:column;gap:10px}
   .plan-row{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:center}
-  .plan-row input{padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#FBFAF7;font:inherit;font-size:14px;font-variant-numeric:tabular-nums}
-  .plan-row input:focus{outline:none;border-color:var(--navy-ink);background:#fff}
+  .plan-row input{padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg-card);font:inherit;font-size:14px;font-variant-numeric:tabular-nums}
+  .plan-row input:focus{outline:none;border-color:var(--navy-ink);background:var(--bg-card)}
   .plan-row .rm-btn{width:30px;height:30px;border:none;background:transparent;border-radius:50%;color:var(--muted);cursor:pointer;font-size:18px;line-height:1;transition:all .15s}
   .plan-row .rm-btn:hover{background:var(--red-soft);color:var(--red)}
   .add-plan{margin-top:10px;padding:10px 14px;border:1px dashed var(--line);background:transparent;color:var(--navy-ink);border-radius:10px;font:inherit;font-size:13px;font-weight:500;cursor:pointer;width:100%;transition:all .15s}
-  .add-plan:hover{border-color:var(--navy-ink);background:#FBFAF7}
+  .add-plan:hover{border-color:var(--navy-ink);background:var(--bg-card)}
 
   /* BUTTONS */
   .cta-wrap{padding:0 24px 24px}
@@ -416,7 +595,7 @@
   .cta svg{width:16px;height:16px}
 
   /* RESULT */
-  .result{margin-top:22px;border-radius:18px;overflow:hidden;border:1px solid var(--line);background:#fff;box-shadow:var(--shadow);display:none;animation:fadeUp .4s ease}
+  .result{margin-top:22px;border-radius:18px;overflow:hidden;border:1px solid var(--line);background:var(--bg-card);box-shadow:var(--shadow);display:none;animation:fadeUp .4s ease}
   .result.show{display:block}
   @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
   .verdict{padding:28px 24px 22px;position:relative;overflow:hidden}
@@ -468,7 +647,7 @@
   /* DETAILS */
   .details{padding:20px 24px 24px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
   @media (max-width:620px){.details{grid-template-columns:1fr}}
-  .detail{padding:12px 14px;background:#FBFAF7;border:1px solid var(--line);border-radius:10px}
+  .detail{padding:12px 14px;background:var(--bg-card);border:1px solid var(--line);border-radius:10px}
   .detail-label{font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
   .detail-value{font-family:'Fraunces',serif;font-weight:500;font-size:18px;color:var(--navy-ink);font-variant-numeric:tabular-nums}
   .detail-sub{font-size:11px;color:var(--muted);margin-top:2px}
@@ -477,7 +656,7 @@
   .comp-table-inner{border:1px solid var(--line);border-radius:12px;overflow:hidden}
   .comp-row{display:grid;grid-template-columns:1fr 90px 110px 30px;gap:10px;padding:12px 14px;align-items:center;font-size:13px;border-bottom:1px solid var(--line)}
   .comp-row:last-child{border-bottom:none}
-  .comp-row.head{background:#FBFAF7;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .comp-row.head{background:var(--bg-card);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600}
   .comp-row .plan-name{font-weight:500;color:var(--ink)}
   .comp-row .plan-cft{font-variant-numeric:tabular-nums;color:var(--muted);font-size:12px}
   .comp-row .plan-impact{font-variant-numeric:tabular-nums;font-weight:600;font-size:13px;text-align:right}
@@ -490,8 +669,8 @@
 
   .actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 24px 24px}
   @media (max-width:620px){.actions{grid-template-columns:1fr}}
-  .action-btn{padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--navy-ink);font:inherit;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s}
-  .action-btn:hover{background:#FBFAF7;border-color:var(--navy-ink)}
+  .action-btn{padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:var(--bg-card);color:var(--navy-ink);font:inherit;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s}
+  .action-btn:hover{background:var(--bg-card);border-color:var(--navy-ink)}
   .action-btn svg{width:15px;height:15px}
   .action-btn.primary{background:var(--gold);color:#fff;border-color:var(--gold)}
   .action-btn.primary:hover{background:#A7874A;border-color:#A7874A}
@@ -500,7 +679,7 @@
   .tabs{
     position:fixed;bottom:12px;left:50%;transform:translateX(-50%);
     width:calc(100% - 24px);max-width:580px;
-    background:#fff;border:1px solid var(--line);
+    background:var(--bg-card);border:1px solid var(--line);
     display:flex;justify-content:space-around;padding:8px;z-index:50;
     border-radius:20px;box-shadow:0 20px 50px -15px rgba(0,0,0,.25), 0 4px 16px rgba(0,0,0,.06);
   }
@@ -528,7 +707,7 @@
   .hist-stat-value{font-family:'Fraunces',serif;font-weight:500;font-size:22px;font-variant-numeric:tabular-nums}
   .hist-stat.gold{background:linear-gradient(135deg, var(--gold), #9c7e48)}
   .hist-list{padding:0 24px 24px;display:flex;flex-direction:column;gap:8px}
-  .hist-item{padding:12px 14px;background:#FBFAF7;border:1px solid var(--line);border-radius:10px;display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center}
+  .hist-item{padding:12px 14px;background:var(--bg-card);border:1px solid var(--line);border-radius:10px;display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center}
   .hist-item-title{font-size:13px;font-weight:500;color:var(--ink)}
   .hist-item-meta{font-size:11px;color:var(--muted)}
   .hist-item-result{font-family:'Fraunces',serif;font-weight:500;font-size:15px;font-variant-numeric:tabular-nums;grid-row:1/3;align-self:center}
@@ -539,15 +718,15 @@
   /* MERCADO */
   .market-header{padding:0 24px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
   .market-status{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px}
-  .market-refresh{background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 12px;font:inherit;font-size:11px;color:var(--navy-ink);cursor:pointer;display:flex;align-items:center;gap:6px;font-weight:500}
-  .market-refresh:hover{background:#FBFAF7}
+  .market-refresh{background:var(--bg-card);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font:inherit;font-size:11px;color:var(--navy-ink);cursor:pointer;display:flex;align-items:center;gap:6px;font-weight:500}
+  .market-refresh:hover{background:var(--bg-card)}
   .market-refresh svg{width:12px;height:12px}
   .market-refresh.spinning svg{animation:spin 1s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
 
   .market-grid{padding:0 24px 16px;display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
   @media (max-width:620px){.market-grid{grid-template-columns:1fr}}
-  .market-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 18px;position:relative;overflow:hidden}
+  .market-card{background:var(--bg-card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;position:relative;overflow:hidden}
   .market-card.hero{
     background:linear-gradient(135deg, var(--navy-ink), var(--blue-dark));
     color:#fff;grid-column:1/-1;padding:22px 24px;
@@ -564,7 +743,7 @@
   .market-card.hero .market-card-sub{color:rgba(255,255,255,.75);font-size:13px;max-width:440px;line-height:1.5}
   .market-card-ticker{font-size:10px;font-weight:500;color:var(--muted);letter-spacing:.08em;font-family:'Inter',monospace;margin-top:2px}
 
-  .chart-card{background:#fff;border:1px solid var(--line);border-radius:14px;margin:0 24px 16px;padding:18px 20px}
+  .chart-card{background:var(--bg-card);border:1px solid var(--line);border-radius:14px;margin:0 24px 16px;padding:18px 20px}
   .chart-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;gap:12px;flex-wrap:wrap}
   .chart-title{font-family:'Fraunces',serif;font-weight:500;font-size:17px;color:var(--navy-ink);letter-spacing:-.01em;margin:0 0 4px}
   .chart-sub{font-size:12px;color:var(--muted);line-height:1.4;margin:0}
@@ -579,7 +758,7 @@
 
   /* CASOS */
   .case-list{padding:0 24px 24px;display:flex;flex-direction:column;gap:12px}
-  .case{padding:16px 18px;background:#FBFAF7;border:1px solid var(--line);border-radius:12px}
+  .case{padding:16px 18px;background:var(--bg-card);border:1px solid var(--line);border-radius:12px}
   .case-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}
   .case-title{font-weight:600;font-size:14px;color:var(--navy-ink)}
   .case-tag{font-size:10px;padding:2px 8px;border-radius:999px;font-weight:600;letter-spacing:.08em}
@@ -597,24 +776,24 @@
   .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
 
   /* TEST PERFIL */
-  .test-intro{padding:28px 24px;text-align:center;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);margin-bottom:16px}
+  .test-intro{padding:28px 24px;text-align:center;background:var(--bg-card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);margin-bottom:16px}
   .test-intro h3{font-family:'Fraunces',serif;font-weight:500;font-size:24px;margin:0 0 8px;color:var(--navy-ink);letter-spacing:-.01em}
   .test-intro p{font-size:13px;color:var(--muted);margin:0 0 18px;line-height:1.5}
   .test-progress{height:4px;background:#F0EAE0;border-radius:4px;overflow:hidden;margin-bottom:20px}
   .test-progress-bar{height:100%;background:linear-gradient(90deg, var(--gold), var(--gold-soft));border-radius:4px;transition:width .4s ease}
-  .test-card{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
+  .test-card{background:var(--bg-card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
   .test-q{padding:28px 24px 20px}
   .test-q-label{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:10px}
   .test-q-title{font-family:'Fraunces',serif;font-weight:500;font-size:22px;color:var(--navy-ink);line-height:1.2;margin:0 0 18px;letter-spacing:-.01em}
   .test-opts{display:flex;flex-direction:column;gap:8px}
-  .test-opt{padding:14px 16px;background:#FBFAF7;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:14px;color:var(--ink);cursor:pointer;text-align:left;transition:all .15s}
-  .test-opt:hover{background:#fff;border-color:var(--gold);box-shadow:0 4px 12px -4px rgba(184,151,90,.3)}
-  .test-nav{padding:16px 24px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;background:#FBFAF7}
+  .test-opt{padding:14px 16px;background:var(--bg-card);border:1px solid var(--line);border-radius:10px;font:inherit;font-size:14px;color:var(--ink);cursor:pointer;text-align:left;transition:all .15s}
+  .test-opt:hover{background:var(--bg-card);border-color:var(--gold);box-shadow:0 4px 12px -4px rgba(184,151,90,.3)}
+  .test-nav{padding:16px 24px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;background:var(--bg-card)}
   .test-back{background:none;border:none;color:var(--muted);font:inherit;font-size:13px;cursor:pointer;padding:8px 12px}
   .test-back:hover{color:var(--navy-ink)}
   .test-step{font-size:12px;color:var(--muted);font-weight:500}
 
-  .profile-result{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
+  .profile-result{background:var(--bg-card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
   .profile-head{padding:28px 24px;text-align:center;position:relative;overflow:hidden}
   .profile-head.conservador{background:linear-gradient(180deg, #E8F0EC, #fff)}
   .profile-head.moderado{background:linear-gradient(180deg, #FBF0DF, #fff)}
@@ -628,12 +807,12 @@
   .alloc-bar{display:flex;height:14px;border-radius:8px;overflow:hidden;margin-bottom:16px;border:1px solid var(--line)}
   .alloc-seg{height:100%;transition:all .3s}
   .alloc-list{display:flex;flex-direction:column;gap:8px}
-  .alloc-row{display:grid;grid-template-columns:14px 1fr auto;gap:12px;align-items:center;padding:10px 12px;background:#FBFAF7;border:1px solid var(--line);border-radius:8px}
+  .alloc-row{display:grid;grid-template-columns:14px 1fr auto;gap:12px;align-items:center;padding:10px 12px;background:var(--bg-card);border:1px solid var(--line);border-radius:8px}
   .alloc-dot{width:10px;height:10px;border-radius:3px}
   .alloc-name{font-size:13px;font-weight:500;color:var(--ink)}
   .alloc-desc{font-size:11px;color:var(--muted);margin-top:2px}
   .alloc-pct{font-family:'Fraunces',serif;font-weight:500;font-size:16px;color:var(--navy-ink);font-variant-numeric:tabular-nums}
-  .disclaimer{margin:16px 24px 0;padding:12px 14px;background:#FBFAF7;border-left:3px solid var(--gold);border-radius:4px;font-size:11px;color:var(--muted);line-height:1.5}
+  .disclaimer{margin:16px 24px 0;padding:12px 14px;background:var(--bg-card);border-left:3px solid var(--gold);border-radius:4px;font-size:11px;color:var(--muted);line-height:1.5}
   .disclaimer strong{color:var(--navy-ink);font-weight:600}
   .retake{margin:16px 24px 24px;padding:12px;background:transparent;border:1px solid var(--line);border-radius:10px;color:var(--muted);font:inherit;font-size:13px;cursor:pointer;width:calc(100% - 48px)}
   .retake:hover{border-color:var(--navy-ink);color:var(--navy-ink)}
@@ -642,7 +821,7 @@
   .admin-overlay{position:fixed;inset:0;z-index:200;background:rgba(15,28,46,.85);backdrop-filter:blur(6px);display:none;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;-webkit-overflow-scrolling:touch}
   .admin-overlay.show{padding-top:20px;padding-bottom:40px}
   .admin-overlay.show{display:flex}
-  .admin-modal{width:100%;max-width:540px;background:#fff;border-radius:20px;padding:28px 26px;box-shadow:0 30px 80px rgba(0,0,0,.4);position:relative;max-height:92vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .admin-modal{width:100%;max-width:540px;background:var(--bg-card);border-radius:20px;padding:28px 26px;box-shadow:0 30px 80px rgba(0,0,0,.4);position:relative;max-height:92vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
   .admin-modal::after{content:"";display:block;height:80px} /* espacio extra abajo para que no tape el teclado */
   .admin-close{position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:#F5F1EA;border-radius:50%;font-size:20px;cursor:pointer;color:var(--muted);line-height:1}
   .admin-close:hover{background:var(--red-soft);color:var(--red)}
@@ -652,14 +831,14 @@
   .admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
   @media (max-width:480px){.admin-grid{grid-template-columns:1fr}}
   .admin-field label{font-size:11px;font-weight:500;color:var(--muted);display:block;margin-bottom:4px}
-  .admin-field input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#FBFAF7;font:inherit;font-size:14px;font-variant-numeric:tabular-nums}
-  .admin-field input:focus{outline:none;border-color:var(--navy-ink);background:#fff}
+  .admin-field input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg-card);font:inherit;font-size:14px;font-variant-numeric:tabular-nums}
+  .admin-field input:focus{outline:none;border-color:var(--navy-ink);background:var(--bg-card)}
   .admin-section{margin-top:18px;padding-top:18px;border-top:1px solid var(--line)}
   .admin-save{width:100%;padding:13px;border:none;border-radius:10px;background:var(--navy-ink);color:#fff;font:inherit;font-weight:600;font-size:14px;cursor:pointer;margin-top:12px}
   .admin-save:hover{background:var(--blue-dark)}
   .admin-reset{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--muted);font:inherit;font-size:12px;cursor:pointer;margin-top:8px}
   .admin-reset:hover{color:var(--red);border-color:var(--red)}
-  .admin-pass{padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#FBFAF7;font:inherit;font-size:14px;width:100%}
+  .admin-pass{padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg-card);font:inherit;font-size:14px;width:100%}
   .admin-error{font-size:12px;color:var(--red);margin-top:8px;min-height:14px}
 
   /* ===== CONCLUSIÓN DINÁMICA DE MERCADO ===== */
@@ -708,7 +887,7 @@
   /* ===== EXPLAINER CARD ===== */
   .explainer-card{
     margin:0 24px 16px;padding:16px 18px;
-    background:#FBFAF7;border:1px solid var(--line);
+    background:var(--bg-card);border:1px solid var(--line);
     border-radius:12px;display:flex;gap:12px;align-items:flex-start;
   }
   .explainer-icon{
@@ -729,7 +908,7 @@
   /* ===== CHART FOOTNOTE ===== */
   .chart-footnote{
     margin-top:12px;padding:10px 12px;
-    background:#FBFAF7;border-left:3px solid var(--gold);
+    background:var(--bg-card);border-left:3px solid var(--gold);
     border-radius:4px;font-size:11.5px;color:var(--muted);
     line-height:1.5;
   }
@@ -738,7 +917,7 @@
   /* ===== GLOSARIO ===== */
   .glosario{display:flex;flex-direction:column;gap:10px}
   .glosario-item{
-    padding:14px 16px;background:#fff;border:1px solid var(--line);
+    padding:14px 16px;background:var(--bg-card);border:1px solid var(--line);
     border-radius:12px;transition:all .15s;
   }
   .glosario-item:hover{box-shadow:var(--shadow);border-color:rgba(184,151,90,.25)}
@@ -823,9 +1002,9 @@
   .snapshot-info-row .s-item strong{color:var(--navy-ink);font-weight:600}
 
   /* Admin: editor de snapshot */
-  .snap-editor{margin-top:14px;padding:14px;background:#FBFAF7;border:1px solid var(--line);border-radius:10px}
+  .snap-editor{margin-top:14px;padding:14px;background:var(--bg-card);border:1px solid var(--line);border-radius:10px}
   .snap-editor-row{display:grid;grid-template-columns:70px 1fr 90px 90px 90px;gap:6px;align-items:center;margin-bottom:6px;font-size:12px}
-  .snap-editor-row input{padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:#fff;font:inherit;font-size:12px;font-variant-numeric:tabular-nums;width:100%}
+  .snap-editor-row input{padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg-card);font:inherit;font-size:12px;font-variant-numeric:tabular-nums;width:100%}
   .snap-editor-row input:focus{outline:none;border-color:var(--navy-ink)}
   .snap-editor-head{display:grid;grid-template-columns:70px 1fr 90px 90px 90px;gap:6px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:6px;padding:0 4px}
   .snap-editor-title{font-size:12px;font-weight:700;color:var(--gold);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;margin-top:16px}
@@ -833,7 +1012,7 @@
   .snap-tab{padding:8px 14px;background:none;border:none;font:inherit;font-size:12px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
   .snap-tab.active{color:var(--navy-ink);border-bottom-color:var(--gold);font-weight:600}
   .snap-add-btn{padding:6px 10px;background:transparent;border:1px dashed var(--line);border-radius:6px;color:var(--navy-ink);font:inherit;font-size:11px;cursor:pointer;width:100%;margin-top:6px}
-  .snap-add-btn:hover{border-color:var(--navy-ink);background:#fff}
+  .snap-add-btn:hover{border-color:var(--navy-ink);background:var(--bg-card)}
   .snap-rm-btn{width:22px;height:22px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:14px;line-height:1}
   .snap-rm-btn:hover{color:var(--red)}
   .snap-editor-row.with-rm{grid-template-columns:60px 1fr 75px 75px 75px 24px}
@@ -842,7 +1021,7 @@
   /* ===== COMPARACIÓN VL vs REM ===== */
   .vl-rem-card{
     margin:0 24px 16px;padding:22px 24px;
-    background:#fff;border:1px solid var(--line);
+    background:var(--bg-card);border:1px solid var(--line);
     border-radius:16px;box-shadow:var(--shadow);
     border-top:3px solid var(--gold);
   }
@@ -868,7 +1047,7 @@
   }
   .comp-vl-rem-head{
     display:grid;grid-template-columns:70px 1fr 1fr 100px;gap:8px;
-    padding:10px 14px;background:#FBFAF7;
+    padding:10px 14px;background:var(--bg-card);
     font-size:10px;letter-spacing:.08em;text-transform:uppercase;
     color:var(--muted);font-weight:600;
   }
@@ -882,7 +1061,7 @@
 
   .vl-rem-footnote{
     margin-top:14px;padding:10px 12px;
-    background:#FBFAF7;border-left:3px solid var(--gold);
+    background:var(--bg-card);border-left:3px solid var(--gold);
     border-radius:4px;font-size:11.5px;color:var(--muted);line-height:1.5;
   }
   .vl-rem-footnote strong{color:var(--navy-ink);font-weight:600}
@@ -891,18 +1070,18 @@
   .sim-acordeon{margin:16px 24px 0}
   .sim-toggle{
     width:100%;padding:14px 16px;
-    background:#FBFAF7;border:1px solid var(--line);border-radius:12px;
+    background:var(--bg-card);border:1px solid var(--line);border-radius:12px;
     display:flex;justify-content:space-between;align-items:center;
     font:inherit;font-size:13px;font-weight:600;color:var(--navy-ink);
     cursor:pointer;transition:all .2s;
   }
-  .sim-toggle:hover{border-color:var(--gold);background:#fff}
+  .sim-toggle:hover{border-color:var(--gold);background:var(--bg-card)}
   .sim-toggle-chev{width:16px;height:16px;color:var(--muted);transition:transform .25s}
   .sim-toggle.open .sim-toggle-chev{transform:rotate(180deg)}
 
   .sim-body{
     margin-top:12px;padding:18px 16px;
-    background:#fff;border:1px solid var(--line);border-radius:12px;
+    background:var(--bg-card);border:1px solid var(--line);border-radius:12px;
     animation:fadeUp .3s ease;
   }
   .sim-explain{
@@ -917,7 +1096,7 @@
   }
   @media (min-width:620px){.sim-stats{grid-template-columns:repeat(4,1fr)}}
   .sim-stat{
-    padding:10px 12px;background:#FBFAF7;border:1px solid var(--line);border-radius:8px;
+    padding:10px 12px;background:var(--bg-card);border:1px solid var(--line);border-radius:8px;
   }
   .sim-stat-label{
     font-size:10px;letter-spacing:.08em;text-transform:uppercase;
@@ -947,7 +1126,7 @@
   }
   .sim-row:first-of-type{border-top:none}
   .sim-head{
-    background:#FBFAF7;font-size:9px;letter-spacing:.08em;text-transform:uppercase;
+    background:var(--bg-card);font-size:9px;letter-spacing:.08em;text-transform:uppercase;
     color:var(--muted);font-weight:700;padding:8px;
   }
   .sim-cell{padding:2px 4px;text-align:right;font-size:11.5px}
@@ -1114,7 +1293,7 @@
   .intro-btn svg{width:14px;height:14px}
   .intro-btn.primary{
     padding:14px 26px;font-size:15px;
-    background:#fff;color:var(--navy-ink);
+    background:var(--bg-card);color:var(--navy-ink);
   }
   .intro-btn.primary:hover{background:var(--gold-soft);color:var(--navy-ink)}
 
@@ -1620,7 +1799,7 @@
     <!-- 3 caminos principales -->
     <div style="display:flex;flex-direction:column;gap:12px;max-width:680px;margin:0 auto 28px">
       
-      <button class="home-card" data-action="goto-plata-parada" type="button" style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px 22px;text-align:left;cursor:pointer;display:flex;align-items:center;gap:14px;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.04);border-left:3px solid var(--gold)">
+      <button class="home-card" data-action="goto-plata-parada" type="button" style="background:var(--bg-card);border:1px solid var(--line);border-radius:14px;padding:20px 22px;text-align:left;cursor:pointer;display:flex;align-items:center;gap:14px;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.04);border-left:3px solid var(--gold)">
         
         <div style="flex:1">
           <div style="font-weight:700;font-size:16px;color:var(--ink);margin-bottom:3px">Tengo plata parada</div>
@@ -1629,7 +1808,7 @@
         <div style="color:var(--gold);font-size:18px">→</div>
       </button>
 
-      <button class="home-card" data-action="goto-calc" type="button" style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px 22px;text-align:left;cursor:pointer;display:flex;align-items:center;gap:14px;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.04);border-left:3px solid var(--gold)">
+      <button class="home-card" data-action="goto-calc" type="button" style="background:var(--bg-card);border:1px solid var(--line);border-radius:14px;padding:20px 22px;text-align:left;cursor:pointer;display:flex;align-items:center;gap:14px;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.04);border-left:3px solid var(--gold)">
         
         <div style="flex:1">
           <div style="font-weight:700;font-size:16px;color:var(--ink);margin-bottom:3px">Voy a comprar algo</div>
@@ -1638,7 +1817,7 @@
         <div style="color:var(--gold);font-size:18px">→</div>
       </button>
 
-      <button class="home-card" data-action="goto-tarjeta" type="button" style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px 22px;text-align:left;cursor:pointer;display:flex;align-items:center;gap:14px;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.04);border-left:3px solid var(--gold)">
+      <button class="home-card" data-action="goto-tarjeta" type="button" style="background:var(--bg-card);border:1px solid var(--line);border-radius:14px;padding:20px 22px;text-align:left;cursor:pointer;display:flex;align-items:center;gap:14px;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.04);border-left:3px solid var(--gold)">
         
         <div style="flex:1">
           <div style="font-weight:700;font-size:16px;color:var(--ink);margin-bottom:3px">Tengo deuda de tarjeta</div>
@@ -1973,7 +2152,7 @@
         
         <div style="display:flex;flex-direction:column;gap:10px">
           
-          <button class="invest-calc-card" data-action="goto-plata-parada" type="button" style="background:#fff;border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:12px;padding:18px 20px;text-align:left;cursor:pointer;display:flex;align-items:center;gap:14px;transition:all .2s;width:100%">
+          <button class="invest-calc-card" data-action="goto-plata-parada" type="button" style="background:var(--bg-card);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:12px;padding:18px 20px;text-align:left;cursor:pointer;display:flex;align-items:center;gap:14px;transition:all .2s;width:100%">
             <div style="flex:1">
               <div style="font-weight:700;font-size:15px;color:var(--ink);margin-bottom:3px">Tengo plata parada</div>
               <div style="font-size:12px;color:var(--muted);line-height:1.4">Cuánto estás dejando de ganar y dónde ponerla a rendir</div>
@@ -1981,7 +2160,7 @@
             <div style="color:var(--gold);font-size:18px;flex-shrink:0">→</div>
           </button>
           
-          <button class="invest-calc-card" data-action="goto-tarjeta" type="button" style="background:#fff;border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:12px;padding:18px 20px;text-align:left;cursor:pointer;display:flex;align-items:center;gap:14px;transition:all .2s;width:100%">
+          <button class="invest-calc-card" data-action="goto-tarjeta" type="button" style="background:var(--bg-card);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:12px;padding:18px 20px;text-align:left;cursor:pointer;display:flex;align-items:center;gap:14px;transition:all .2s;width:100%">
             <div style="flex:1">
               <div style="font-weight:700;font-size:15px;color:var(--ink);margin-bottom:3px">Tengo deuda de tarjeta</div>
               <div style="font-size:12px;color:var(--muted);line-height:1.4">¿Cancelo todo o pago el mínimo? El cálculo más caro</div>
@@ -1989,7 +2168,7 @@
             <div style="color:var(--gold);font-size:18px;flex-shrink:0">→</div>
           </button>
           
-          <button class="invest-calc-card" data-action="goto-meta" type="button" style="background:#fff;border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:12px;padding:18px 20px;text-align:left;cursor:pointer;display:flex;align-items:center;gap:14px;transition:all .2s;width:100%">
+          <button class="invest-calc-card" data-action="goto-meta" type="button" style="background:var(--bg-card);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:12px;padding:18px 20px;text-align:left;cursor:pointer;display:flex;align-items:center;gap:14px;transition:all .2s;width:100%">
             <div style="flex:1">
               <div style="font-weight:700;font-size:15px;color:var(--ink);margin-bottom:3px">Quiero ahorrar para algo</div>
               <div style="font-size:12px;color:var(--muted);line-height:1.4">Vacaciones, auto, depto. Cuánto guardar por mes</div>
@@ -1997,7 +2176,7 @@
             <div style="color:var(--gold);font-size:18px;flex-shrink:0">→</div>
           </button>
           
-          <button class="invest-calc-card" data-action="goto-inflacion" type="button" style="background:#fff;border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:12px;padding:18px 20px;text-align:left;cursor:pointer;display:flex;align-items:center;gap:14px;transition:all .2s;width:100%">
+          <button class="invest-calc-card" data-action="goto-inflacion" type="button" style="background:var(--bg-card);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:12px;padding:18px 20px;text-align:left;cursor:pointer;display:flex;align-items:center;gap:14px;transition:all .2s;width:100%">
             <div style="flex:1">
               <div style="font-weight:700;font-size:15px;color:var(--ink);margin-bottom:3px">¿Cuánto perdí por inflación?</div>
               <div style="font-size:12px;color:var(--muted);line-height:1.4">Lo que se devaluó tu plata por estar en la cuenta</div>
@@ -2146,7 +2325,7 @@
         <div class="section-label">Tu objetivo</div>
         <div class="field">
           <label for="meta-nombre">¿Para qué?</label>
-          <input type="text" id="meta-nombre" placeholder="Vacaciones, auto, depto…" style="width:100%;padding:12px;border:1px solid var(--line);border-radius:8px;font-size:15px;background:#fff">
+          <input type="text" id="meta-nombre" placeholder="Vacaciones, auto, depto…" style="width:100%;padding:12px;border:1px solid var(--line);border-radius:8px;font-size:15px;background:var(--bg-card)">
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
           <div class="field">
@@ -2270,7 +2449,7 @@
           </label>
         </div>
 
-        <div id="pdf-preview-area" style="display:none;background:#fffaf0;border:1px solid #e6dec0;border-radius:10px;padding:12px;margin-bottom:14px;max-height:280px;overflow-y:auto;font-size:12px">
+        <div id="pdf-preview-area" style="display:none;background:rgba(212,184,132,.06);border:1px solid #e6dec0;border-radius:10px;padding:12px;margin-bottom:14px;max-height:280px;overflow-y:auto;font-size:12px">
           <div style="font-weight:700;margin-bottom:8px;color:var(--gold)">Datos extraídos (sin guardar todavía)</div>
           <div id="pdf-preview-content"></div>
         </div>
@@ -2889,7 +3068,7 @@ function renderTeaserPlataParada(res) {
     montoEjemplo = null;
   }
   
-  let html = '<div style="margin-top:18px;padding:18px 20px;background:#fffaf0;border:1px solid #e6dec0;border-left:3px solid var(--gold);border-radius:10px">';
+  let html = '<div style="margin-top:18px;padding:18px 20px;background:rgba(212,184,132,.06);border:1px solid #e6dec0;border-left:3px solid var(--gold);border-radius:10px">';
   html += '<div style="font-size:11px;color:var(--gold);font-weight:700;letter-spacing:.18em;text-transform:uppercase;margin-bottom:8px">Próximo paso</div>';
   html += '<div style="font-size:16px;font-weight:700;color:var(--ink);margin-bottom:8px;line-height:1.3">' + titulo + '</div>';
   html += '<div style="font-size:13px;color:var(--ink);line-height:1.6;margin-bottom:14px;opacity:.85">' + bajada + '</div>';
@@ -5554,7 +5733,7 @@ document.addEventListener('DOMContentLoaded', function() {
       
       opciones.forEach(function(op, idx) {
         var isFirst = idx === 0;
-        var bg = isFirst ? 'background:rgba(184,151,90,.10);border-color:rgba(184,151,90,.45)' : 'background:#fff';
+        var bg = isFirst ? 'background:rgba(184,151,90,.10);border-color:rgba(184,151,90,.45)' : 'background:var(--bg-card)';
         var label = isFirst ? '<div style="display:inline-block;background:var(--gold);color:#fff;font-size:10px;font-weight:700;letter-spacing:.1em;padding:2px 8px;border-radius:4px;text-transform:uppercase;margin-bottom:6px">' + op.tag + '</div>' : '';
         
         html += '<div style="border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:10px;display:flex;align-items:flex-start;gap:14px;' + bg + '">';
@@ -5578,12 +5757,12 @@ document.addEventListener('DOMContentLoaded', function() {
       var diffAnio = ganAnio(lecap) - ganAnio(pf);
       var diffPctTasa = ((lecap - pf) / pf) * 100;
       
-      html += '<div style="margin-top:24px;padding:20px;background:#fffaf0;border:1px solid #e6dec0;border-left:3px solid var(--gold);border-radius:10px">';
+      html += '<div style="margin-top:24px;padding:20px;background:rgba(212,184,132,.06);border:1px solid #e6dec0;border-left:3px solid var(--gold);border-radius:10px">';
       html += '<div style="font-size:11px;color:var(--gold);font-weight:700;letter-spacing:.18em;text-transform:uppercase;margin-bottom:8px">Análisis Value Latam</div>';
       html += '<div style="font-size:15px;font-weight:700;color:var(--ink);margin-bottom:10px;line-height:1.4">¿Sabías que un Plazo Fijo te hace dejar plata sobre la mesa?</div>';
       html += '<div style="font-size:13px;color:var(--ink);line-height:1.6;margin-bottom:14px">Mucha gente arma un Plazo Fijo por costumbre. Pero hoy una <strong>LECAP a ' + (lecapDias || 30) + ' días</strong> rinde <strong>' + (lecap*100).toFixed(1) + '%</strong> contra <strong>' + (pf*100).toFixed(1) + '%</strong> del Plazo Fijo. Más tasa, mismo o menor plazo, y respaldo del Tesoro. Liquidable en mercado secundario si necesitás salir antes — algo que el Plazo Fijo no permite.</div>';
       
-      html += '<div style="background:#fff;border-radius:8px;padding:14px;margin-bottom:8px">';
+      html += '<div style="background:var(--bg-card);border-radius:8px;padding:14px;margin-bottom:8px">';
       html += '<div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--line)"><span>Con LECAP, ganás por mes</span><strong style="color:var(--gold)">+' + fmtMoney(lecapMes) + '</strong></div>';
       html += '<div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--line)"><span>Con Plazo Fijo, solo</span><span style="color:var(--muted)">+' + fmtMoney(pfMes) + '</span></div>';
       html += '<div style="display:flex;justify-content:space-between;font-size:14px;padding:8px 0 0;font-weight:700"><span>Diferencia mensual</span><span style="color:var(--gold)">+' + fmtMoney(diffMes) + '</span></div>';
@@ -5871,7 +6050,7 @@ document.addEventListener('DOMContentLoaded', function() {
       html += '<div style="font-size:13px;color:var(--muted);line-height:1.5">A Plazo Fijo (' + (tasaInv*100).toFixed(1) + '% anual) hoy tendrías esto. Habrías ganado ' + fmtMoney(ganadoInvirtiendo) + '.</div>';
       html += '</div>';
       
-      html += '<div style="border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px;background:#fff">';
+      html += '<div style="border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px;background:var(--bg-card)">';
       html += '<div style="font-weight:700;margin-bottom:10px">Diferencia total de no haber invertido</div>';
       html += '<div style="font-size:22px;font-weight:800;color:var(--gold);margin-bottom:4px">' + fmtMoney(diferencia) + '</div>';
       html += '<div style="font-size:12px;color:var(--muted);line-height:1.4">Es la suma de la inflación que perdiste + la ganancia que podrías haber tenido. Por eso tener plata parada es caro.</div>';
