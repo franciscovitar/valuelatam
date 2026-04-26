@@ -327,13 +327,15 @@
   /* HEADER */
   .brand{
     display:flex;align-items:center;justify-content:space-between;
-    padding:20px 22px;margin:0 -18px 22px;
-    background:#fff;
+    padding:18px 22px;margin:0 -18px 22px;
+    background:rgba(13, 17, 41, 0.85);
+    backdrop-filter:blur(20px);
+    -webkit-backdrop-filter:blur(20px);
     border-bottom:1px solid var(--line);
     position:sticky;top:0;z-index:40;
   }
-  .brand-logo{height:46px;width:auto;display:block;cursor:pointer}
-  .brand-spacer{width:46px;height:46px}
+  .brand-logo{height:56px;width:auto;display:block;cursor:pointer;filter:drop-shadow(0 0 12px rgba(212,184,132,.15))}
+  .brand-spacer{width:56px;height:56px}
 
   /* HERO */
   .hero{margin-bottom:22px;padding-top:4px}
@@ -588,7 +590,7 @@
 
   .foot{margin-top:22px;text-align:center;font-size:12px;color:var(--muted);padding-bottom:10px}
   .foot strong{color:var(--navy-ink);font-weight:600}
-  .foot-logo{height:30px;margin-bottom:10px;display:block;margin-left:auto;margin-right:auto}
+  .foot-logo{height:42px;margin-bottom:10px;display:block;margin-left:auto;margin-right:auto;opacity:0.7}
 
   .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:rgba(184,151,90,.15);color:var(--gold);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
   .toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:var(--navy-ink);color:#fff;padding:12px 20px;border-radius:999px;font-size:13px;font-weight:500;box-shadow:0 10px 30px rgba(0,0,0,.3);opacity:0;transition:opacity .3s, transform .3s;pointer-events:none;z-index:100}
@@ -1713,7 +1715,7 @@
           </div>
           <div class="field" id="f-n">
             <label for="n">Cantidad de cuotas</label>
-            <div class="input-wrap"><input type="text" id="n" name="vl-qty-a8b3c1" class="no-prefix" inputmode="numeric" pattern="[0-9]*" value="12" placeholder="12" readonly onfocus="this.removeAttribute('readonly');this.select()" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-form-type="other" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" maxlength="3"></div>
+            <div class="input-wrap"><input type="text" id="n" name="vl-qty-a8b3c1" class="no-prefix" inputmode="numeric" pattern="[0-9]*" placeholder="12" readonly onfocus="this.removeAttribute('readonly')" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-form-type="other" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" maxlength="3"></div>
             <div class="error-msg" id="e-n"></div>
           </div>
         </div>
