@@ -312,6 +312,30 @@
     background: rgba(212, 184, 132, 0.4);
   }
   
+  /* ============= FIX FINAL: charts visibles ============= */
+  
+  .chart-card {
+    overflow: visible !important;
+  }
+  
+  .chart-wrap {
+    position: relative !important;
+    width: 100% !important;
+    min-height: 240px !important;
+    display: block !important;
+  }
+  
+  .chart-wrap canvas {
+    max-width: 100% !important;
+    display: block !important;
+  }
+  
+  /* Asegurar que el chart card no recorte */
+  #chartBreakeven, #chartTasas {
+    width: 100% !important;
+    height: 100% !important;
+  }
+  
   /* ========================
      FIX: Mercado y análisis VL — colores de números y fondos claros
      ======================== */
@@ -405,10 +429,7 @@
   }
   
   /* ========== CHARTS Y SUS CONTENEDORES ========== */
-  .chart-card, .chart-wrap {
-    background: var(--bg-card) !important;
-    border: 1px solid var(--line) !important;
-  }
+  .chart-card,
   .chart-title {
     color: var(--ink) !important;
   }
@@ -646,10 +667,11 @@
   }
   
   /* Charts wrapper */
-  .chart-wrap, .chart-container {
+  .chart-container {
     background: var(--bg-card) !important;
     border-color: var(--line) !important;
   }
+
   
   /* Toast */
   .toast {
@@ -2252,21 +2274,6 @@
       </p>
     </div>
 
-    <!-- EXPLAINER APTO BOLUDOS -->
-    <div class="explainer-card">
-      <div class="explainer-icon"></div>
-      <div class="explainer-body">
-        <div class="explainer-title">¿Cómo se lee esto?</div>
-        <div class="explainer-text">
-          Imaginate dos bonos del mismo plazo. Uno te paga <strong>tasa fija</strong> (ej: LECAP al 27% anual). El otro <strong>ajusta por inflación</strong> (bono CER). Si mucha gente compra CER, significa que espera inflación alta. Si prefieren tasa fija, esperan inflación baja.
-          <br><br>
-          Del cruce de precios sale <strong>la inflación que el mercado está descontando</strong>. Cambia todos los días. Es plata real, no una encuesta.
-          <br><br>
-          <strong>En criollo:</strong> si el breakeven te marca 2,5% mensual y vos creés que va a ser 1,8%, comprá tasa fija. Si creés que va a ser 3,5%, comprá CER.
-        </div>
-      </div>
-    </div>
-
     <!-- GRÁFICO 1: Curva inflación VL vs REM unificada -->
     <div class="chart-card">
       <div class="chart-header">
@@ -2280,64 +2287,6 @@
         <strong>Cómo leerlo:</strong> la <strong style="color:var(--gold)">línea sólida dorada</strong> es la inflación que el mercado argentino está descontando con plata real, mes a mes. La <strong style="color:var(--red)">línea punteada roja</strong> es el dato oficial del REM BCRA "próximos 12 meses" — fijo, único valor para todo el año. <br><br>Si la curva VL queda por <strong>encima</strong> de la línea REM, el mercado cree que la inflación va a ser más alta que lo que estiman las consultoras (tendencia: <strong>comprar CER</strong>). Si queda por <strong>debajo</strong>, el mercado cree que va a ser más baja (tendencia: <strong>comprar tasa fija</strong>).
       </div>
       <div id="conclusionInflacionExperta" class="conclusion-experta"></div>
-    </div>
-
-    <!-- GLOSARIO: qué es cada instrumento -->
-    <div style="padding:0 24px 16px">
-      <div class="section-label" style="margin-bottom:12px">Qué es cada instrumento</div>
-      <div class="glosario">
-
-        <div class="glosario-item">
-          <div class="glosario-head">
-            <div class="glosario-name">Plazo Fijo</div>
-            <div class="glosario-tag warn">Ojo acá</div>
-          </div>
-          <div class="glosario-desc">Le prestás plata al banco por un plazo fijo (30, 60, 90 días). A cambio, te pagan una tasa.</div>
-          <div class="glosario-pros"><strong>✓ Pro:</strong> Fácil de entender, poco riesgo (hasta cierto monto hay garantía estatal).</div>
-          <div class="glosario-cons"><strong>✕ Contra:</strong> <strong>Iliquidez total</strong>. Si necesitás tu plata antes, no la podés sacar (o la sacás con fuerte castigo). Suele pagar menos que otros instrumentos. En Argentina casi siempre le pierde a la inflación.</div>
-        </div>
-
-        <div class="glosario-item">
-          <div class="glosario-head">
-            <div class="glosario-name">FCI Money Market</div>
-            <div class="glosario-tag good">Buena base</div>
-          </div>
-          <div class="glosario-desc">Un fondo común de inversión que invierte en cuentas remuneradas, cauciones y plazos fijos cortos. Rinde todos los días.</div>
-          <div class="glosario-pros"><strong>✓ Pro:</strong> <strong>Liquidez inmediata</strong> (retirás cuando querés, en el día). Rendimiento similar o mejor que plazo fijo. Bajo riesgo.</div>
-          <div class="glosario-cons"><strong>✕ Contra:</strong> Tasa sigue a la del mercado (puede bajar). No le gana por mucho a la inflación en periodos tranquilos.</div>
-        </div>
-
-        <div class="glosario-item">
-          <div class="glosario-head">
-            <div class="glosario-name">Caución</div>
-            <div class="glosario-tag good">Corto plazo</div>
-          </div>
-          <div class="glosario-desc">Prestás plata a alguien que deja un bono como garantía. Plazo de 1 a 30 días. Lo opera el mercado de capitales.</div>
-          <div class="glosario-pros"><strong>✓ Pro:</strong> Tasa generalmente alta para plazos muy cortos. Riesgo bajo (hay garantía).</div>
-          <div class="glosario-cons"><strong>✕ Contra:</strong> Necesitás cuenta comitente (broker). Mínimos de inversión mayores que un FCI.</div>
-        </div>
-
-        <div class="glosario-item">
-          <div class="glosario-head">
-            <div class="glosario-name">LECAP</div>
-            <div class="glosario-tag good">Tasa fija</div>
-          </div>
-          <div class="glosario-desc">Letra del Tesoro en pesos. La comprás con descuento y al vencimiento te pagan $100 por cada letra. La diferencia es tu rendimiento.</div>
-          <div class="glosario-pros"><strong>✓ Pro:</strong> Tasa fija conocida desde el día 1. Riesgo soberano (bajo si el gobierno paga). Se puede vender antes en el mercado.</div>
-          <div class="glosario-cons"><strong>✕ Contra:</strong> Si la inflación se acelera, perdés poder de compra (la tasa quedó fija). Si vendés antes, el precio puede estar para abajo.</div>
-        </div>
-
-        <div class="glosario-item">
-          <div class="glosario-head">
-            <div class="glosario-name">BONCER</div>
-            <div class="glosario-tag good">Anti-inflación</div>
-          </div>
-          <div class="glosario-desc">Bono del Tesoro que <strong>ajusta por inflación</strong> (índice CER). Te paga inflación + una tasa real extra.</div>
-          <div class="glosario-pros"><strong>✓ Pro:</strong> Cobertura directa contra inflación. Si los precios se disparan, tu inversión también.</div>
-          <div class="glosario-cons"><strong>✕ Contra:</strong> Si la inflación baja, rendís menos que una LECAP. El precio puede oscilar fuerte.</div>
-        </div>
-
-      </div>
     </div>
 
     <div style="padding:0 24px">
@@ -4069,7 +4018,8 @@ async function refreshMarket() {
     status.innerHTML = `<span style="width:6px;height:6px;border-radius:50%;background:${dotColor};display:inline-block"></span> Datos: ${label}`;
   }
   
-  try { renderMarketView(); } catch(e) { console.error('[renderMarketView]:', e); }
+  console.log('[refreshMarket] Llamando renderMarketView con marketData:', marketData);
+  try { renderMarketView(); console.log('[refreshMarket] renderMarketView OK'); } catch(e) { console.error('[renderMarketView]:', e); }
   try { renderPresets(); } catch(e) { console.error('[renderPresets]:', e); }
   try { updateInflHint(); } catch(e) { console.error('[updateInflHint]:', e); }
 }
@@ -4729,9 +4679,12 @@ function renderCharts() {
     const cvs1 = document.getElementById('chartBreakeven');
     const curvaVL = marketData.curvaVL;
     const curvaREM = marketData.curvaREM;
+    console.log('[Chart1] cvs1:', !!cvs1, '| curvaVL:', curvaVL ? curvaVL.length : 'null', '| curvaREM:', curvaREM);
+    if (cvs1) console.log('[Chart1] cvs1 dimensions:', cvs1.offsetWidth, 'x', cvs1.offsetHeight);
     if (!cvs1) {
-      // No hay canvas, salimos
+      console.warn('[Chart1] Canvas no encontrado en DOM');
     } else if (!curvaVL || curvaVL.length === 0 || !curvaVL.some(p => p.tem !== null)) {
+      console.warn('[Chart1] Sin datos válidos en curvaVL:', curvaVL);
       // Sin datos, mostrar mensaje en el canvas
       const ctx = cvs1.getContext('2d');
       ctx.canvas.width = cvs1.offsetWidth;
@@ -7465,17 +7418,17 @@ document.addEventListener('DOMContentLoaded', function() {
     var temPrincipal, tickerPrincipal, diasPrincipal, labelPrincipal, sublabelPrincipal;
     
     if (dec.principal === 'cer') {
-      // Para CER, la ganancia es: tirReal mensual + inflación esperada
-      // Acá usamos REM como aproximación de inflación
+      // CER: muestro su TIR Real cruda + 3 escenarios de inflación
+      // Para el "ganaPorMes" principal uso REM como escenario más conservador
       var remAnual = (typeof CFG !== 'undefined' && CFG.rem_manual) ? CFG.rem_manual / 100 : 0.226;
       var temREM = Math.pow(1 + remAnual, 1/12) - 1;
       var tirRealMensual = Math.pow(1 + dec.cer.tirReal, 1/12) - 1;
-      // Rendimiento esperado total CER = (1+TIR Real)*(1+inflación) - 1, mensual
+      // Rendimiento esperado bajo escenario REM (conservador)
       temPrincipal = (1 + tirRealMensual) * (1 + temREM) - 1;
       tickerPrincipal = dec.cer.ticker;
       diasPrincipal = dec.cer.dias;
       labelPrincipal = 'CER (' + tickerPrincipal + ')';
-      sublabelPrincipal = 'Bono ajustado por inflación · ' + diasPrincipal + ' días';
+      sublabelPrincipal = 'TIR Real ' + (dec.cer.tirReal*100).toFixed(2).replace('.',',') + '% · ajusta por inflación · ' + diasPrincipal + ' días';
     } else {
       temPrincipal = dec.lecap.tem;
       tickerPrincipal = dec.lecap.ticker;
@@ -7537,9 +7490,9 @@ document.addEventListener('DOMContentLoaded', function() {
           // Stats
           '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">' +
             '<div>' +
-              '<div style="font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px">Ganancia mensual</div>' +
+              '<div style="font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px">' + (dec.principal === 'cer' ? 'Estimado mensual' : 'Ganancia mensual') + '</div>' +
               '<div style="font-family:Fraunces,serif;font-size:22px;font-weight:600;color:var(--green);font-variant-numeric:tabular-nums">+' + fmtMoney(ganaPorMes) + '</div>' +
-              '<div style="font-size:10px;color:var(--muted);margin-top:2px">' + (temPrincipal*100).toFixed(2).replace('.',',') + '% TEM' + (dec.principal === 'cer' ? ' (con infl. REM)' : '') + '</div>' +
+              '<div style="font-size:10px;color:var(--muted);margin-top:2px">' + (temPrincipal*100).toFixed(2).replace('.',',') + '% TEM' + (dec.principal === 'cer' ? ' (escenario REM)' : '') + '</div>' +
             '</div>' +
             '<div>' +
               '<div style="font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px">Total al vencimiento</div>' +
@@ -7547,6 +7500,9 @@ document.addEventListener('DOMContentLoaded', function() {
               '<div style="font-size:10px;color:var(--muted);margin-top:2px">en ' + diasPrincipal + ' días</div>' +
             '</div>' +
           '</div>' +
+          
+          // Si es CER, mostrar 3 escenarios de inflación
+          (dec.principal === 'cer' ? buildEscenariosCER(dec.cer, userMoney.monto, dec.horizonte) : '') +
           
           // Si es opinión VL, agregar disclaimer + comentario
           (dec.esOpinionVL ? 
@@ -7595,6 +7551,35 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
   
+  // Construir HTML de escenarios para CER
+  function buildEscenariosCER(cerBono, monto, horizonte) {
+    var tirRealMensual = Math.pow(1 + cerBono.tirReal, 1/12) - 1;
+    var meses = horizonte / 30;
+    
+    var escenarios = [
+      { label: 'REM (BCRA)',     anual: 0.226, color: 'var(--muted-strong)' },
+      { label: 'Mercado actual', anual: 0.316, color: 'var(--gold-soft)' },
+      { label: 'Inflación alta', anual: 0.40,  color: 'var(--red)' }
+    ];
+    
+    var rows = escenarios.map(function(esc) {
+      var temInfl = Math.pow(1 + esc.anual, 1/12) - 1;
+      var temCER = (1 + tirRealMensual) * (1 + temInfl) - 1;
+      var totalCER = monto * (Math.pow(1 + temCER, meses) - 1);
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);font-size:12px">' +
+        '<div style="color:' + esc.color + ';font-weight:600">' + esc.label + ' (' + (esc.anual*100).toFixed(0) + '%)</div>' +
+        '<div style="color:var(--ink);font-variant-numeric:tabular-nums;font-weight:600">+' + fmtMoney(totalCER) + '</div>' +
+      '</div>';
+    }).join('');
+    
+    return '<div style="background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:12px">' +
+      '<div style="padding:8px 12px;background:rgba(212,184,132,.08);font-size:10px;color:var(--gold);font-weight:700;letter-spacing:.12em;text-transform:uppercase">' +
+        'Cuánto rinde el CER al vencimiento según inflación' +
+      '</div>' +
+      rows.replace(/border-bottom:1px solid var\(--line\);(?=[^<]*<\/div>\s*$)/, '') +
+    '</div>';
+  }
+  
   // Construir HTML de alternativa (mostrar la opción que NO se recomendó)
   function buildAlternativaHTML(dec, monto) {
     var altLabel, altTem, altTicker;
@@ -7605,17 +7590,25 @@ document.addEventListener('DOMContentLoaded', function() {
       altTem = dec.lecap.tem;
       altTicker = dec.lecap.ticker;
     } else {
-      // Mostramos CER como alternativa (si existe)
+      // Mostramos CER como alternativa: con TIR Real cruda
       if (!dec.cer) return '';
-      var remAnual = (typeof CFG !== 'undefined' && CFG.rem_manual) ? CFG.rem_manual / 100 : 0.226;
-      var temREM = Math.pow(1 + remAnual, 1/12) - 1;
-      var tirRealMensual = Math.pow(1 + dec.cer.tirReal, 1/12) - 1;
       altLabel = 'CER (' + dec.cer.ticker + ')';
-      altTem = (1 + tirRealMensual) * (1 + temREM) - 1;
+      // No calculamos TEM final porque depende del escenario de inflación
+      altTem = null; // marcamos null para mostrar texto distinto
       altTicker = dec.cer.ticker;
     }
     
     var ganaAlt = monto * altTem;
+    
+    var altDetailHTML;
+    if (altTem === null && dec.cer) {
+      // Es CER, mostrar TIR Real
+      altDetailHTML = '<strong style="color:var(--ink)">' + altLabel + '</strong>: TIR Real ' + (dec.cer.tirReal*100).toFixed(2).replace('.',',') + '% (rinde según inflación). ' +
+        '<span style="color:var(--muted)">Conviene si esperás inflación mayor que la tasa fija.</span>';
+    } else {
+      var ganaAltMes = monto * altTem;
+      altDetailHTML = '<strong style="color:var(--ink)">' + altLabel + '</strong>: rinde ' + (altTem*100).toFixed(2).replace('.',',') + '% TEM (' + fmtMoney(ganaAltMes) + ' / mes)';
+    }
     
     return '<details style="background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:10px;padding:0;margin-top:6px;overflow:hidden">' +
       '<summary style="padding:10px 14px;cursor:pointer;font-size:11px;color:var(--muted-strong);font-weight:600;letter-spacing:.05em;list-style:none;display:flex;justify-content:space-between;align-items:center">' +
@@ -7623,7 +7616,7 @@ document.addEventListener('DOMContentLoaded', function() {
         '<span style="color:var(--gold);font-size:13px">+</span>' +
       '</summary>' +
       '<div style="padding:0 14px 12px;font-size:12px;color:var(--muted-strong);line-height:1.5">' +
-        '<strong style="color:var(--ink)">' + altLabel + '</strong>: rinde ' + (altTem*100).toFixed(2).replace('.',',') + '% TEM (' + fmtMoney(ganaAlt) + ' / mes)' +
+        altDetailHTML +
       '</div>' +
     '</details>';
   }
