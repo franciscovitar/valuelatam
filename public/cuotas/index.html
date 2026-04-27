@@ -4029,37 +4029,31 @@ function updateInflHint() {
   const hint = document.getElementById('inflHint');
   if (!hint) return;
 
-  // Calcular REM anual a partir de la curva REM si está disponible
+  // INFLACIÓN VALUE LATAM ÚNICA (compuesto de la curva 12 meses)
+  const inflVL = marketData?.inflVL_anual;
+  
+  // REM como referencia secundaria
   let remAnual = null;
-  if (marketData?.curvaREM && Array.isArray(marketData.curvaREM)) {
-    const validRem = marketData.curvaREM.filter(p => p.tem !== null);
-    if (validRem.length > 0) {
-      const prom = validRem.reduce((s, p) => s + p.tem, 0) / validRem.length;
-      remAnual = Math.pow(1 + prom, 12) - 1;
-    }
+  if (marketData?.rem12mAnual && marketData.rem12mAnual > 0) {
+    remAnual = marketData.rem12mAnual;
+  } else if (typeof CFG !== 'undefined' && CFG.rem_manual) {
+    remAnual = CFG.rem_manual / 100;
   }
 
-  // Inflación VL (breakeven, anualizada)
-  const inflVL = marketData?.inflBreakeven?.anual;
-
-  // Pisar el campo automáticamente con el breakeven VL si el campo está vacío
-  // o si todavía contiene el default
+  // Pisar el campo automáticamente con la inflación VL
   const inflInput = document.getElementById('infl');
   const curr = parseNum(inflInput.value);
-  // Solo autocompletamos cuando el usuario no escribió nada o cuando hay un default obsoleto (40)
-  if (inflVL && (!curr || curr === 40)) {
+  if (inflVL && (!curr || curr === 40 || curr === 22.6)) {
     inflInput.value = (inflVL * 100).toFixed(1);
   } else if (!curr && remAnual) {
-    // Sin breakeven pero con REM: usar REM (mejor que default)
     inflInput.value = (remAnual * 100).toFixed(1);
   }
-  // Si no hay breakeven ni REM, dejar el placeholder (no setear nada)
 
-  // Componer el hint con dos líneas: VL (principal) + REM (referencia)
+  // Componer hint
   let html = '';
   if (inflVL) {
     const color = marketData.isSample ? 'var(--amber)' : 'var(--gold)';
-    const tag = marketData.isSample ? 'Breakeven VL (ejemplo)' : 'Breakeven Value Latam';
+    const tag = marketData.isSample ? 'Inflación VL (ejemplo)' : 'Inflación Value Latam';
     html += `<span style="color:${color}">●</span> <strong>${tag}: ${fmtPct(inflVL)}</strong>`;
   }
   if (remAnual !== null) {
@@ -4069,7 +4063,7 @@ function updateInflHint() {
   if (!html) {
     html = 'Tomamos la inflación implícita del mercado. Modificalo si tenés otra expectativa.';
   } else {
-    html += '<div style="font-size:11px;color:var(--muted);margin-top:3px;font-weight:500">El campo se autocompleta con el Breakeven VL. Podés modificarlo si tenés otra expectativa.</div>';
+    html += '<div style="font-size:11px;color:var(--muted);margin-top:3px;font-weight:500">Tomamos la inflación implícita en el cruce de bonos. Podés modificarlo si tenés otra expectativa.</div>';
   }
   hint.innerHTML = html;
 }
@@ -4089,15 +4083,33 @@ function renderMarketView() {
   console.log('[renderMarketView] breakevens calculados:', breakevens.length, breakevens);
   marketData.breakevens = breakevens;
 
-  // Inflación de referencia: mediana de TEM breakevens de corto plazo
-  let temInflVL = null;
-  let anualInflVL = null;
-  if (breakevens.length > 0) {
-    const cortos = breakevens.slice(0, Math.min(6, breakevens.length));
-    const temSorted = cortos.map(b => b.breakevenTEM).sort((a,b) => a-b);
-    const mid = Math.floor(temSorted.length / 2);
-    temInflVL = temSorted.length % 2 === 0 ? (temSorted[mid-1] + temSorted[mid])/2 : temSorted[mid];
-    anualInflVL = Math.pow(1 + temInflVL, 12) - 1;
+  // ============================================================
+  // 1) Construir CURVA VL (12 meses)
+  // 2) Calcular INFLACIÓN VL ÚNICA (compuesto de la curva)
+  // 3) Asignar temInflVL/anualInflVL para resto de la función
+  // ============================================================
+  marketData.curvaVL = curvaTEMInflacionVL(breakevens);
+  marketData.curvaREM = curvaTEMInflacionREM(marketData.remCurva);
+  
+  marketData.inflVL_anual = null;
+  marketData.inflVL_TEM = null;
+  if (marketData.curvaVL && marketData.curvaVL.length === 12) {
+    const todasTEM = marketData.curvaVL.map(p => p.tem).filter(t => t !== null && isFinite(t));
+    if (todasTEM.length === 12) {
+      let comp = 1;
+      todasTEM.forEach(t => { comp *= (1 + t); });
+      const anual = comp - 1;
+      const tem = Math.pow(1 + anual, 1/12) - 1;
+      marketData.inflVL_anual = anual;
+      marketData.inflVL_TEM = tem;
+      console.log('[InflVL] anual:', (anual*100).toFixed(2) + '%', '| TEM:', (tem*100).toFixed(2) + '%');
+    }
+  }
+  
+  // Inflación VL: usa el dato OFICIAL ya calculado
+  let temInflVL = marketData.inflVL_TEM;
+  let anualInflVL = marketData.inflVL_anual;
+  if (anualInflVL && temInflVL) {
     marketData.inflBreakeven = { anual: anualInflVL, tem: temInflVL };
   }
 
@@ -4116,9 +4128,8 @@ function renderMarketView() {
     }
   }
 
-  // Curvas para el gráfico de comparación
-  marketData.curvaVL = curvaTEMInflacionVL(breakevens);
-  marketData.curvaREM = curvaTEMInflacionREM(marketData.remCurva);
+
+  
 
   // ===== TEMs de instrumentos =====
   const { pfAnual, lecapBenchmark } = marketData;
@@ -4183,7 +4194,10 @@ function renderMarketView() {
     </div>`;
   }
 
-  grid.innerHTML = html;
+  // Guard: marketGrid ya no existe (sacamos las cards de tasas crudas)
+  if (grid) {
+    grid.innerHTML = html;
+  }
 
   // Renderizar card de comparación VL vs REM
   renderComparacionVLvsREM();
@@ -5270,7 +5284,9 @@ document.getElementById('btn').addEventListener('click', () => {
   // Resolver inflación: campo del usuario > breakeven VL > REM > 22.6 (último fallback)
   let inflInput = parseNum(document.getElementById('infl').value);
   if (!isFinite(inflInput) || inflInput <= 0) {
-    if (marketData && marketData.inflBreakeven && marketData.inflBreakeven.anual) {
+    if (marketData && isFinite(marketData.inflVL_anual)) {
+      inflInput = marketData.inflVL_anual * 100;
+    } else if (marketData && marketData.inflBreakeven && marketData.inflBreakeven.anual) {
       inflInput = marketData.inflBreakeven.anual * 100;
     } else if (CFG.rem_manual) {
       inflInput = CFG.rem_manual;
@@ -6804,8 +6820,14 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
     
-    // BREAKEVEN
-    if (temLECAP !== null && tirRealAnual !== null) {
+    // BREAKEVEN: usar el dato OFICIAL VL desde marketData.inflVL_TEM
+    // Si no está disponible (ej: datos viejos), calcular el breakeven local
+    if (typeof marketData !== 'undefined' && marketData && isFinite(marketData.inflVL_TEM)) {
+      // Dato oficial VL: compuesto de la curva 12 meses
+      temInflBreakeven = marketData.inflVL_TEM;
+      fuenteTasas = (marketData.fuentes && marketData.fuentes.lecaps) || 'snapshot';
+    } else if (temLECAP !== null && tirRealAnual !== null) {
+      // Fallback: cálculo puntual con bono más cercano
       var tirRealMensual = Math.pow(1 + tirRealAnual, 1/12) - 1;
       temInflBreakeven = (1 + temLECAP) / (1 + tirRealMensual) - 1;
       fuenteTasas = (typeof marketData !== 'undefined' && marketData && marketData.fuentes) ? 
