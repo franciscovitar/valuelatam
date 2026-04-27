@@ -4093,16 +4093,20 @@ function renderMarketView() {
   
   marketData.inflVL_anual = null;
   marketData.inflVL_TEM = null;
+  marketData.inflVL_TEM_mesProximo = null;  // TEM del primer mes de la curva (para Dashboard)
   if (marketData.curvaVL && marketData.curvaVL.length === 12) {
     const todasTEM = marketData.curvaVL.map(p => p.tem).filter(t => t !== null && isFinite(t));
     if (todasTEM.length === 12) {
+      // Compuesto anual (para card Mercado y calculadora cuotas)
       let comp = 1;
       todasTEM.forEach(t => { comp *= (1 + t); });
       const anual = comp - 1;
       const tem = Math.pow(1 + anual, 1/12) - 1;
       marketData.inflVL_anual = anual;
       marketData.inflVL_TEM = tem;
-      console.log('[InflVL] anual:', (anual*100).toFixed(2) + '%', '| TEM:', (tem*100).toFixed(2) + '%');
+      // TEM del mes próximo (para Dashboard "Tu plata, hoy")
+      marketData.inflVL_TEM_mesProximo = todasTEM[0];
+      console.log('[InflVL] anual:', (anual*100).toFixed(2) + '% | TEM compuesta:', (tem*100).toFixed(2) + '% | TEM mes próximo:', (todasTEM[0]*100).toFixed(2) + '%');
     }
   }
   
@@ -6820,14 +6824,18 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
     
-    // BREAKEVEN: usar el dato OFICIAL VL desde marketData.inflVL_TEM
-    // Si no está disponible (ej: datos viejos), calcular el breakeven local
-    if (typeof marketData !== 'undefined' && marketData && isFinite(marketData.inflVL_TEM)) {
-      // Dato oficial VL: compuesto de la curva 12 meses
+    // BREAKEVEN para Dashboard: usar el dato del MES PRÓXIMO (no compuesto anual)
+    // Esto refleja la pérdida real esperada en el próximo mes
+    if (typeof marketData !== 'undefined' && marketData && isFinite(marketData.inflVL_TEM_mesProximo)) {
+      // Dato oficial VL: TEM del mes más cercano de la curva
+      temInflBreakeven = marketData.inflVL_TEM_mesProximo;
+      fuenteTasas = (marketData.fuentes && marketData.fuentes.lecaps) || 'snapshot';
+    } else if (typeof marketData !== 'undefined' && marketData && isFinite(marketData.inflVL_TEM)) {
+      // Fallback: compuesto anual si no hay mes próximo
       temInflBreakeven = marketData.inflVL_TEM;
       fuenteTasas = (marketData.fuentes && marketData.fuentes.lecaps) || 'snapshot';
     } else if (temLECAP !== null && tirRealAnual !== null) {
-      // Fallback: cálculo puntual con bono más cercano
+      // Fallback final: cálculo puntual con bono más cercano
       var tirRealMensual = Math.pow(1 + tirRealAnual, 1/12) - 1;
       temInflBreakeven = (1 + temLECAP) / (1 + tirRealMensual) - 1;
       fuenteTasas = (typeof marketData !== 'undefined' && marketData && marketData.fuentes) ? 
@@ -6925,12 +6933,27 @@ document.addEventListener('DOMContentLoaded', function() {
     var pl = calcularPL(userMoney.monto, userMoney.fechaInicio);
     cont.style.display = 'block';
     
-    // Modo de inflación: 'rem' (default) o 'breakeven'
-    var modoInfl = 'rem';
+    // Modo de inflación: 'rem' o 'breakeven'
+    // Si el usuario eligió manualmente, respetar su elección
+    // Si no eligió, default automático = el MÁS CASTIGADOR (TEM más alta)
+    var modoInfl = null;
+    var userChoice = false;
     try {
       var saved = localStorage.getItem('vl_dash_infl_mode');
-      if (saved === 'breakeven' || saved === 'rem') modoInfl = saved;
+      if (saved === 'breakeven' || saved === 'rem') {
+        modoInfl = saved;
+        userChoice = true;
+      }
     } catch(e) {}
+    
+    // Sin elección manual: comparar REM vs Mercado y elegir el más alto
+    if (!userChoice) {
+      if (pl.hasBreakeven && pl.temInflBreakeven > pl.temInflREM) {
+        modoInfl = 'breakeven';
+      } else {
+        modoInfl = 'rem';
+      }
+    }
     
     // Si no hay breakeven calculado, forzar REM
     if (!pl.hasBreakeven) modoInfl = 'rem';
