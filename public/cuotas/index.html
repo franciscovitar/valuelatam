@@ -2282,7 +2282,7 @@
           <p class="chart-sub">La inflación mensual que cada fuente proyecta para los próximos 12 meses. Línea sólida dorada: lo que descuenta el mercado con plata real. Línea punteada roja: lo que estiman las consultoras del REM BCRA.</p>
         </div>
       </div>
-      <div class="chart-wrap"><canvas id="chartBreakeven"></canvas></div>
+      <div class="chart-wrap" style="height:280px;position:relative"><canvas id="chartBreakeven" style="display:block;width:100%;height:100%"></canvas></div>
       <div id="curvaSnapshotInfo" class="chart-footnote">
         <strong>Cómo leerlo:</strong> la <strong style="color:var(--gold)">línea sólida dorada</strong> es la inflación que el mercado argentino está descontando con plata real, mes a mes. La <strong style="color:var(--red)">línea punteada roja</strong> es el dato oficial del REM BCRA "próximos 12 meses" — fijo, único valor para todo el año. <br><br>Si la curva VL queda por <strong>encima</strong> de la línea REM, el mercado cree que la inflación va a ser más alta que lo que estiman las consultoras (tendencia: <strong>comprar CER</strong>). Si queda por <strong>debajo</strong>, el mercado cree que va a ser más baja (tendencia: <strong>comprar tasa fija</strong>).
       </div>
@@ -4746,6 +4746,10 @@ function renderCharts() {
         });
       }
 
+      // Forzar dimensiones explícitas antes de crear el chart
+      cvs1.width = cvs1.parentElement.offsetWidth || 600;
+      cvs1.height = 280;
+      
       chartBreakevenInstance = new Chart(cvs1.getContext('2d'), {
         type: 'line',
         data: { labels, datasets },
@@ -4778,109 +4782,8 @@ function renderCharts() {
     }
   } catch (e) { console.error('[Chart1 error]', e); }
 
-  // ========== 2) LECAPs posicionadas por mes + curva inflación ==========
-  try {
-    if (chartTasasInstance) { chartTasasInstance.destroy(); chartTasasInstance = null; }
-    const cvs2 = document.getElementById('chartTasas');
-    const snap = getSnapshot();
-    const lecapsSnap = snap.fija || [];
-    const curvaVL = marketData.curvaVL || [];
-    if (!cvs2) {
-      // sin canvas
-    } else if (!lecapsSnap.length || !curvaVL.length) {
-      const ctx = cvs2.getContext('2d');
-      ctx.canvas.width = cvs2.offsetWidth;
-      ctx.canvas.height = cvs2.offsetHeight || 240;
-      ctx.fillStyle = '#a8b0c4';
-      ctx.font = '14px system-ui, -apple-system, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('Esperando datos del mercado…', ctx.canvas.width / 2, ctx.canvas.height / 2);
-    } else if (cvs2 && lecapsSnap.length > 0 && curvaVL.length > 0) {
-      // Cada LECAP se ubica en el mes correspondiente a su vencimiento
-      // Recorremos los 12 meses y para cada uno buscamos la LECAP que vence ahí (o null)
-      const hoy = new Date();
-      const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-      const mesesLabels = curvaVL.map((_, i) => {
-        const m = new Date(hoy.getFullYear(), hoy.getMonth() + (i+1), 1);
-        return MESES[m.getMonth()] + " '" + String(m.getFullYear()).slice(-2);
-      });
-      // Para cada mes (posición en el array), ubicar LECAP cuyo vto esté en ese mes calendario
-      const lecapPorMes = curvaVL.map((_, i) => {
-        const mesObjetivo = new Date(hoy.getFullYear(), hoy.getMonth() + (i+1), 1);
-        const añoMes = mesObjetivo.getFullYear() * 12 + mesObjetivo.getMonth();
-        // Buscar LECAP cuyo vencimiento caiga en ese mes
-        const match = lecapsSnap.find(l => {
-          const v = new Date(l.vto);
-          return (v.getFullYear() * 12 + v.getMonth()) === añoMes;
-        });
-        return match || null;
-      });
+  // (chart 2 removido — ya no se renderiza la cotización detallada)
 
-      // Data: barras con TEM LECAP en la posición del mes que vence
-      const lecapBarData = lecapPorMes.map(l => l ? l.tem * 100 : null);
-      const lecapTickers = lecapPorMes.map(l => l ? l.ticker : '');
-      // Línea: inflación VL mensual
-      const inflaData = curvaVL.map(p => p.tem !== null ? p.tem * 100 : null);
-
-      const datasets = [
-        {
-          type: 'bar',
-          label: 'LECAP (TEM)',
-          data: lecapBarData,
-          backgroundColor: 'rgba(212,184,132,.5)',
-          borderRadius: 6,
-          order: 2,
-          tickers: lecapTickers,
-        },
-        {
-          type: 'line',
-          label: 'Inflación esperada VL (TEM)',
-          data: inflaData,
-          borderColor: '#B8975A',
-          backgroundColor: 'rgba(184,151,90,.08)',
-          borderWidth: 2.5,
-          tension: 0.25,
-          pointRadius: 4,
-          pointBackgroundColor: '#B8975A',
-          pointBorderColor: '#0d1129',
-          pointBorderWidth: 1.5,
-          fill: false,
-          order: 1,
-          spanGaps: true,
-        }
-      ];
-
-      chartTasasInstance = new Chart(cvs2.getContext('2d'), {
-        type: 'bar',
-        data: { labels: mesesLabels, datasets },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: {
-            legend: { position: 'top', labels: { font: { size: 11 }, color: '#a8b0c4', boxWidth: 18, padding: 10 } },
-            tooltip: {
-              callbacks: {
-                title: (items) => mesesLabels[items[0].dataIndex],
-                label: (item) => {
-                  if (item.datasetIndex === 0) {
-                    const ticker = lecapTickers[item.dataIndex];
-                    const v = item.parsed.y;
-                    if (v === null || !ticker) return 'Sin LECAP vence ese mes';
-                    return `${ticker}: ${v.toFixed(2).replace('.',',')}% TEM`;
-                  }
-                  const v = item.parsed.y;
-                  return v !== null ? `Inflación: ${v.toFixed(2).replace('.',',')}% TEM` : 'Sin dato';
-                }
-              }
-            }
-          },
-          scales: {
-            x: { ticks: { color: '#a8b0c4', font: { size: 10 }, maxRotation: 45, minRotation: 30 }, grid: { display: false } },
-            y: { ticks: { color: '#a8b0c4', callback: (v) => v.toFixed(1) + '%' }, grid: { color: 'rgba(212,184,132,.08)' }, title: { display: true, text: 'TEM (% mensual)', color: '#a8b0c4', font: { size: 11 } } }
-          }
-        }
-      });
-    }
-  } catch (e) { console.error('[Chart2 error]', e); }
 
   
 
@@ -5289,7 +5192,15 @@ document.querySelectorAll('.tab').forEach(t => {
     if (view === 'learn') renderCasos();
     if (view === 'market') {
       if (!marketData) refreshMarket();
-      else { renderMarketView(); }
+      else { 
+        renderMarketView();
+        // Forzar re-render de charts cuando el tab se hace visible
+        setTimeout(() => { 
+          if (marketData && window.Chart) {
+            try { renderCharts(); } catch(e) { console.error('[chart re-render]', e); }
+          }
+        }, 250);
+      }
       // Re-render charts después de que el DOM sea visible
       setTimeout(() => { if (marketData) renderCharts(); }, 150);
     }
@@ -5966,7 +5877,12 @@ function navigateTo(viewName) {
   if (viewName === 'market') {
     if (!marketData) refreshMarket();
     else { renderMarketView(); }
-    setTimeout(() => { if (marketData) renderCharts(); }, 150);
+    // Re-render del chart con un delay más largo para asegurar visibilidad
+    setTimeout(() => { 
+      if (marketData && window.Chart) {
+        try { renderCharts(); } catch(e) { console.error('[chart re-render]', e); }
+      }
+    }, 250);
   }
   
   window.scrollTo({ top: 0, behavior: 'smooth' });
