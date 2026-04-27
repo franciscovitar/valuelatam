@@ -6939,7 +6939,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // Tasas anualizadas
     var teaLECAP = Math.pow(1 + temLECAP, 12) - 1;
     var inflAnualREM = Math.pow(1 + temInflREM, 12) - 1;
-    var inflAnualBE = Math.pow(1 + temInflBreakeven, 12) - 1;
+    // IMPORTANTE: la inflación anual breakeven NO se calcula elevando la TEM del mes próximo a 12.
+    // Sale del COMPUESTO de las 12 TEMs distintas de la curva (ya calculado en marketData.inflVL_anual).
+    // Si no está disponible, fallback: elevar TEM mes 1 a 12 (aproximación)
+    var inflAnualBE;
+    if (typeof marketData !== 'undefined' && marketData && isFinite(marketData.inflVL_anual)) {
+      inflAnualBE = marketData.inflVL_anual;
+    } else {
+      inflAnualBE = Math.pow(1 + temInflBreakeven, 12) - 1;
+    }
     
     return {
       monto: monto,
