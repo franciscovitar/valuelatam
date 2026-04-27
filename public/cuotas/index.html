@@ -1992,6 +1992,36 @@
 </div>
 <!-- /PORTADA -->
 
+<!-- ONBOARDING: Configurar monto -->
+<div id="vlOnboarding" style="display:none;position:fixed;inset:0;background:rgba(13,17,41,.92);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:8000;align-items:center;justify-content:center;padding:20px">
+  <div style="max-width:440px;width:100%;background:var(--bg-card);border:1px solid var(--line-strong);border-radius:16px;padding:28px 26px;box-shadow:0 30px 80px rgba(0,0,0,.6)">
+    <div style="font-size:11px;color:var(--gold);font-weight:700;letter-spacing:.18em;text-transform:uppercase;margin-bottom:10px">Personalizá tu app</div>
+    <h2 style="font-family:'Fraunces',serif;font-weight:500;font-size:24px;color:var(--ink);margin:0 0 10px;letter-spacing:-.01em;line-height:1.2">¿Cuánta plata tenés disponible <em style="color:var(--gold)">hoy</em>?</h2>
+    <p style="font-size:13px;color:var(--muted-strong);line-height:1.55;margin:0 0 20px">Te vamos a mostrar todos los días cuánto rinde y cuánto perdés por inflación. <strong style="color:var(--ink)">No es plata real</strong> — es para que tomes mejores decisiones.</p>
+    
+    <div style="margin-bottom:20px">
+      <label style="display:block;font-size:11px;color:var(--gold);font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px">Tu plata disponible</label>
+      <div style="position:relative">
+        <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:18px;color:var(--muted)">$</span>
+        <input type="text" id="onb-monto" inputmode="decimal" placeholder="100.000" autocomplete="off"
+          style="width:100%;padding:14px 14px 14px 32px;font-size:18px;font-weight:600;background:rgba(255,255,255,.03);border:1px solid var(--line-strong);border-radius:10px;color:var(--ink);box-sizing:border-box">
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.4">Ingresá un monto aproximado. Lo podés cambiar cuando quieras.</div>
+    </div>
+    
+    <button id="onb-confirmar" type="button" 
+      style="width:100%;padding:14px;background:linear-gradient(135deg, var(--gold) 0%, var(--gold-soft) 100%);color:var(--bg);border:none;border-radius:10px;font-weight:700;font-size:15px;cursor:pointer;box-shadow:0 8px 24px rgba(212,184,132,.25);transition:all .2s">
+      Empezar
+    </button>
+    
+    <button id="onb-saltar" type="button"
+      style="width:100%;padding:10px;background:none;color:var(--muted);border:none;font-size:12px;cursor:pointer;margin-top:8px">
+      Saltar por ahora
+    </button>
+  </div>
+</div>
+
+
 
 
 
@@ -2088,6 +2118,11 @@
 
   <!-- VIEW CALCULAR -->
   <section class="view active" id="view-calc">
+    <!-- DASHBOARD: Tu plata hoy -->
+    <div id="vlDashboard" style="margin:0 24px 20px;display:none">
+      <!-- Se llena dinámicamente desde JS -->
+    </div>
+    
     <div class="hero">
       <h1>¿Cuotas <em>o</em> contado?</h1>
       <p>Comparamos el costo real de pagar en cuotas contra lo que ganarías invirtiendo el efectivo. En 30 segundos sabés qué te conviene.</p>
@@ -2205,21 +2240,8 @@
       </button>
     </div>
 
-    <!-- CONCLUSIÓN DINÁMICA: qué hacer hoy -->
-    <div style="padding:0 24px 16px">
-      <div class="conclusion-card" id="conclusionCard">
-        <div class="conclusion-kicker">Conclusión del mercado · hoy</div>
-        <h3 class="conclusion-title" id="conclusionTitle">Analizando datos...</h3>
-        <p class="conclusion-text" id="conclusionText"></p>
-        <div class="conclusion-stats" id="conclusionStats"></div>
-      </div>
-    </div>
-
-    <!-- CARDS DE MERCADO -->
-    <div class="market-grid" id="marketGrid"></div>
-
-    <!-- SECCIÓN: COMPARACIÓN VL vs REM -->
-    <div id="comparacionVLREM"></div>
+    <!-- SECCIÓN PERSONALIZADA: Tu plata, tu recomendación -->
+    <div id="vlMercadoPersonal" style="padding:0 24px 16px"></div>
 
     <!-- CARD VL: ANÁLISIS PROPIO (Value Latam) -->
     <div class="vl-analysis-card">
@@ -2259,23 +2281,6 @@
       </div>
       <div id="conclusionInflacionExperta" class="conclusion-experta"></div>
     </div>
-
-    <!-- GRÁFICO 2: LECAPs por mes vs inflación VL -->
-    <div class="chart-card">
-      <div class="chart-header">
-        <div>
-          <h3 class="chart-title">LECAPs por mes · vs inflación del mercado</h3>
-          <p class="chart-sub">Cada LECAP está ubicada en el mes en que vence. La línea dorada es la inflación que el mercado espera (nuestra curva). Si la barra supera a la línea, esa LECAP le gana a la inflación.</p>
-        </div>
-      </div>
-      <div class="chart-wrap"><canvas id="chartTasas"></canvas></div>
-      <div class="chart-footnote">
-        <strong>Cómo leerlo:</strong> barras <strong>por encima</strong> de la línea = tasa real positiva (ganás poder de compra). Barras <strong>por debajo</strong> = tasa real negativa (perdés poder de compra aunque la tasa nominal sea alta). Los huecos son meses sin LECAP que venza ahí.
-      </div>
-      <div id="conclusionLecapsExperta" class="conclusion-experta"></div>
-    </div>
-
-    
 
     <!-- GLOSARIO: qué es cada instrumento -->
     <div style="padding:0 24px 16px">
@@ -6789,6 +6794,865 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 })();
 
+
+
+/* ============================================================
+   DASHBOARD: "Tu plata hoy"
+   Muestra rendimiento simulado vs pérdida por inflación
+   Storage: localStorage.vl_user_money (monto + fecha de inicio)
+   ============================================================ */
+(function setupDashboard() {
+  'use strict';
+  
+  var STORAGE_KEY = 'vl_user_money_v1';
+  var ONBOARDING_SEEN = 'vl_onboarding_v1';
+  
+  function getUserMoney() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      var data = JSON.parse(raw);
+      if (!data || !isFinite(data.monto) || data.monto <= 0) return null;
+      return data;
+    } catch(e) { return null; }
+  }
+  
+  function setUserMoney(monto) {
+    var data = {
+      monto: monto,
+      fechaInicio: new Date().toISOString(),
+      ultimaActualizacion: new Date().toISOString()
+    };
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      return true;
+    } catch(e) { return false; }
+  }
+  
+  function clearUserMoney() {
+    try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+  }
+  
+  // Calcular rendimiento simulado y pérdida por inflación
+  function calcularPL(monto, fechaInicio) {
+    var hoy = new Date();
+    var inicio = new Date(fechaInicio);
+    var dias = Math.floor((hoy - inicio) / 86400000);
+    if (dias < 1) dias = 1;
+    
+    // ============ FUENTES DE TASAS (TEM mensual) ============
+    var lecapBench = null;
+    var cerBench = null;
+    var temLECAP = null;
+    var tirRealAnual = null;
+    var temInflBreakeven = null;
+    var temInflREM = null;
+    var fuenteTasas = 'snapshot';
+    
+    var lecapsList = [];
+    var cerList = [];
+    
+    if (typeof marketData !== 'undefined' && marketData) {
+      if (marketData.lecaps && marketData.lecaps.length) lecapsList = marketData.lecaps;
+      if (marketData.boncer && marketData.boncer.length) cerList = marketData.boncer;
+    }
+    
+    // Fallback: snapshot default
+    if (!lecapsList.length || !cerList.length) {
+      var snapDef = (typeof VL_SNAPSHOT_DEFAULT !== 'undefined') ? VL_SNAPSHOT_DEFAULT : null;
+      try {
+        var raw = localStorage.getItem('vl_snapshot_v1');
+        if (raw) snapDef = JSON.parse(raw);
+      } catch(e) {}
+      
+      if (snapDef) {
+        if (!lecapsList.length && snapDef.fija) {
+          lecapsList = snapDef.fija.map(function(item) {
+            var v = item.vto ? new Date(item.vto) : null;
+            if (!v || !isFinite(v.getTime())) return null;
+            var d = Math.ceil((v - hoy) / 86400000);
+            if (d <= 0) return null;
+            return {
+              ticker: item.ticker, dias: d, venc: v, vto: item.vto,
+              tem: item.tem, tea: item.tea
+            };
+          }).filter(Boolean);
+        }
+        if (!cerList.length && snapDef.cer) {
+          cerList = snapDef.cer.map(function(item) {
+            var v = item.vto ? new Date(item.vto) : null;
+            if (!v || !isFinite(v.getTime())) return null;
+            var d = Math.ceil((v - hoy) / 86400000);
+            if (d <= 0) return null;
+            return {
+              ticker: item.ticker, dias: d, venc: v, vto: item.vto,
+              tirReal: item.tirReal, duration: item.duration
+            };
+          }).filter(Boolean);
+        }
+      }
+    }
+    
+    // LECAP más cercana a 30 días
+    if (lecapsList.length) {
+      var sorted = lecapsList.slice().sort(function(a, b) {
+        return Math.abs(a.dias - 30) - Math.abs(b.dias - 30);
+      });
+      lecapBench = sorted[0];
+      if (lecapBench && isFinite(lecapBench.tem) && lecapBench.tem > 0) {
+        temLECAP = lecapBench.tem;
+      }
+    }
+    
+    // CER del mismo plazo (filtrando outliers)
+    if (cerList.length && lecapBench) {
+      var cerFiltrado = cerList.filter(function(b) {
+        return isFinite(b.tirReal) && b.tirReal > -0.15 && b.tirReal < 0.10;
+      });
+      
+      if (cerFiltrado.length) {
+        var sortedCer = cerFiltrado.slice().sort(function(a, b) {
+          return Math.abs(a.dias - lecapBench.dias) - Math.abs(b.dias - lecapBench.dias);
+        });
+        cerBench = sortedCer[0];
+        if (cerBench && isFinite(cerBench.tirReal)) {
+          tirRealAnual = cerBench.tirReal;
+        }
+      }
+    }
+    
+    // BREAKEVEN
+    if (temLECAP !== null && tirRealAnual !== null) {
+      var tirRealMensual = Math.pow(1 + tirRealAnual, 1/12) - 1;
+      temInflBreakeven = (1 + temLECAP) / (1 + tirRealMensual) - 1;
+      fuenteTasas = (typeof marketData !== 'undefined' && marketData && marketData.fuentes) ? 
+                    (marketData.fuentes.lecaps || 'snapshot') : 'snapshot';
+    }
+    
+    // REM ANUAL → TEM
+    var remAnual = (typeof CFG !== 'undefined' && CFG.rem_manual) ? CFG.rem_manual / 100 : 0.226;
+    temInflREM = Math.pow(1 + remAnual, 1/12) - 1;
+    
+    // Fallbacks finales
+    if (temLECAP === null) {
+      var fciAnual = (typeof CFG !== 'undefined' && CFG.tasas && CFG.tasas.fci) ? CFG.tasas.fci / 100 : 0.175;
+      temLECAP = Math.pow(1 + fciAnual, 1/12) - 1;
+    }
+    if (temInflBreakeven === null) {
+      temInflBreakeven = temInflREM; // si no hay breakeven, usar REM
+    }
+    
+    // ============ CALCULAR GANANCIAS Y PÉRDIDAS ============
+    var ganaPorMes = monto * temLECAP;
+    
+    // Para REM
+    var pierdePorMesREM = monto * temInflREM;
+    // Para Breakeven
+    var pierdePorMesBE = monto * temInflBreakeven;
+    
+    // Acumulado mensual prorrateado
+    var mesesTranscurridos = dias / 30;
+    var rendimientoAcumulado = monto * (Math.pow(1 + temLECAP, mesesTranscurridos) - 1);
+    var perdidaAcumuladaREM = monto * (Math.pow(1 + temInflREM, mesesTranscurridos) - 1);
+    var perdidaAcumuladaBE = monto * (Math.pow(1 + temInflBreakeven, mesesTranscurridos) - 1);
+    
+    // Tasas anualizadas
+    var teaLECAP = Math.pow(1 + temLECAP, 12) - 1;
+    var inflAnualREM = Math.pow(1 + temInflREM, 12) - 1;
+    var inflAnualBE = Math.pow(1 + temInflBreakeven, 12) - 1;
+    
+    return {
+      monto: monto,
+      dias: dias,
+      // Tasas LECAP (común)
+      temLECAP: temLECAP,
+      teaLECAP: teaLECAP,
+      // REM (default)
+      temInflREM: temInflREM,
+      inflAnualREM: inflAnualREM,
+      pierdePorMesREM: pierdePorMesREM,
+      perdidaAcumuladaREM: perdidaAcumuladaREM,
+      // Breakeven
+      temInflBreakeven: temInflBreakeven,
+      inflAnualBE: inflAnualBE,
+      pierdePorMesBE: pierdePorMesBE,
+      perdidaAcumuladaBE: perdidaAcumuladaBE,
+      // Ganancia (igual para ambos)
+      ganaPorMes: ganaPorMes,
+      rendimientoAcumulado: rendimientoAcumulado,
+      saldoVirtual: monto + rendimientoAcumulado,
+      // Trazabilidad
+      lecapTicker: lecapBench ? lecapBench.ticker : null,
+      lecapDias: lecapBench ? lecapBench.dias : null,
+      cerTicker: cerBench ? cerBench.ticker : null,
+      cerDias: cerBench ? cerBench.dias : null,
+      hasBreakeven: cerBench !== null && tirRealAnual !== null,
+      fuenteTasas: fuenteTasas
+    };
+  }
+  
+  // Renderizar el dashboard
+  function renderDashboard() {
+    var cont = document.getElementById('vlDashboard');
+    if (!cont) return;
+    
+    var userMoney = getUserMoney();
+    
+    if (!userMoney) {
+      // Sin datos: mostrar CTA para activar
+      cont.style.display = 'block';
+      cont.innerHTML = 
+        '<div style="background:linear-gradient(135deg, rgba(212,184,132,.08) 0%, rgba(212,184,132,.04) 100%);border:1px solid rgba(212,184,132,.3);border-left:3px solid var(--gold);border-radius:14px;padding:18px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">' +
+          '<div style="flex:1;min-width:200px">' +
+            '<div style="font-size:11px;color:var(--gold);font-weight:700;letter-spacing:.18em;text-transform:uppercase;margin-bottom:6px">Tu plata, hoy</div>' +
+            '<div style="font-size:15px;color:var(--ink);font-weight:600;margin-bottom:4px;line-height:1.3">Activá tu dashboard personal</div>' +
+            '<div style="font-size:12px;color:var(--muted-strong);line-height:1.5">Te mostramos todos los días cuánto rinde tu plata y cuánto perdés por inflación.</div>' +
+          '</div>' +
+          '<button id="dash-activar" type="button" style="padding:10px 18px;background:var(--gold);color:var(--bg);border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;flex-shrink:0">Activar →</button>' +
+        '</div>';
+      
+      var btn = document.getElementById('dash-activar');
+      if (btn) btn.addEventListener('click', showOnboarding);
+      return;
+    }
+    
+    // Con datos: mostrar dashboard completo
+    var pl = calcularPL(userMoney.monto, userMoney.fechaInicio);
+    cont.style.display = 'block';
+    
+    // Modo de inflación: 'rem' (default) o 'breakeven'
+    var modoInfl = 'rem';
+    try {
+      var saved = localStorage.getItem('vl_dash_infl_mode');
+      if (saved === 'breakeven' || saved === 'rem') modoInfl = saved;
+    } catch(e) {}
+    
+    // Si no hay breakeven calculado, forzar REM
+    if (!pl.hasBreakeven) modoInfl = 'rem';
+    
+    // Valores según modo
+    var pierdePorMes, temInfl, inflAnual, perdidaAcum, fuenteInfl;
+    if (modoInfl === 'breakeven') {
+      pierdePorMes = pl.pierdePorMesBE;
+      temInfl = pl.temInflBreakeven;
+      inflAnual = pl.inflAnualBE;
+      perdidaAcum = pl.perdidaAcumuladaBE;
+      fuenteInfl = pl.lecapTicker && pl.cerTicker ? 
+        'Breakeven ' + pl.lecapTicker + '/' + pl.cerTicker : 'Mercado';
+    } else {
+      pierdePorMes = pl.pierdePorMesREM;
+      temInfl = pl.temInflREM;
+      inflAnual = pl.inflAnualREM;
+      perdidaAcum = pl.perdidaAcumuladaREM;
+      fuenteInfl = 'REM BCRA';
+    }
+    
+    var diferenciaTotal = pl.rendimientoAcumulado + perdidaAcum;
+    
+    var diasTexto;
+    if (pl.dias <= 1) {
+      diasTexto = 'desde ayer';
+    } else if (pl.dias < 30) {
+      diasTexto = 'hace ' + pl.dias + ' días';
+    } else {
+      var meses = Math.floor(pl.dias / 30);
+      diasTexto = 'hace ' + meses + (meses === 1 ? ' mes' : ' meses');
+    }
+    
+    var lecapInfo = pl.lecapTicker && pl.lecapDias ? 
+      pl.lecapTicker + ' · ' + pl.lecapDias + ' días' : 
+      (pl.teaLECAP*100).toFixed(1) + '% TEA';
+    
+    cont.innerHTML = 
+      '<div style="background:linear-gradient(135deg, #1a2342 0%, #2d3a6e 100%);border:1px solid var(--line-strong);border-top:3px solid var(--gold);border-radius:14px;padding:20px 22px;color:#fff;position:relative;overflow:hidden">' +
+        
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:16px">' +
+          '<div>' +
+            '<div style="font-size:11px;color:var(--gold-soft);font-weight:700;letter-spacing:.18em;text-transform:uppercase;margin-bottom:4px">Tu plata, hoy</div>' +
+            '<div style="font-size:28px;font-weight:800;letter-spacing:-.02em">' + fmtMoney(userMoney.monto) + '</div>' +
+          '</div>' +
+          '<button id="dash-editar" type="button" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:var(--gold-soft);font-size:11px;padding:6px 12px;border-radius:6px;cursor:pointer;font-weight:600">Ajustar</button>' +
+        '</div>' +
+        
+        // Stats grid mensual
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">' +
+          
+          '<div style="background:rgba(95,212,154,.1);border:1px solid rgba(95,212,154,.25);border-radius:10px;padding:12px 14px">' +
+            '<div style="font-size:10px;color:rgba(95,212,154,.85);font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px">Si invirtieras</div>' +
+            '<div style="font-size:20px;font-weight:800;color:var(--green);font-variant-numeric:tabular-nums">+' + fmtMoney(pl.ganaPorMes) + '</div>' +
+            '<div style="font-size:10px;color:rgba(255,255,255,.65);margin-top:3px;line-height:1.3">por mes · ' + (pl.temLECAP*100).toFixed(2).replace('.',',') + '% TEM</div>' +
+            '<div style="font-size:9px;color:rgba(255,255,255,.45);margin-top:2px">' + lecapInfo + '</div>' +
+          '</div>' +
+          
+          '<div style="background:rgba(255,117,117,.1);border:1px solid rgba(255,117,117,.25);border-radius:10px;padding:12px 14px">' +
+            '<div style="font-size:10px;color:rgba(255,117,117,.85);font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px">Plata parada</div>' +
+            '<div style="font-size:20px;font-weight:800;color:var(--red);font-variant-numeric:tabular-nums">−' + fmtMoney(pierdePorMes) + '</div>' +
+            '<div style="font-size:10px;color:rgba(255,255,255,.65);margin-top:3px;line-height:1.3">por mes · ' + (temInfl*100).toFixed(2).replace('.',',') + '% TEM</div>' +
+            '<div style="font-size:9px;color:rgba(255,255,255,.45);margin-top:2px">' + fuenteInfl + '</div>' +
+          '</div>' +
+          
+        '</div>' +
+        
+        // Toggle de inflación (solo si hay breakeven disponible)
+        (pl.hasBreakeven ? 
+          '<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px 12px;margin-bottom:14px">' +
+            '<div style="font-size:10px;color:rgba(255,255,255,.6);letter-spacing:.05em;margin-bottom:6px">INFLACIÓN SEGÚN</div>' +
+            '<div style="display:flex;gap:6px">' +
+              '<button id="infl-rem" type="button" style="flex:1;padding:7px 10px;background:' + (modoInfl === 'rem' ? 'var(--gold)' : 'rgba(255,255,255,.06)') + ';color:' + (modoInfl === 'rem' ? 'var(--bg)' : 'rgba(255,255,255,.7)') + ';border:1px solid ' + (modoInfl === 'rem' ? 'var(--gold)' : 'rgba(255,255,255,.1)') + ';border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.05em">REM oficial</button>' +
+              '<button id="infl-be" type="button" style="flex:1;padding:7px 10px;background:' + (modoInfl === 'breakeven' ? 'var(--gold)' : 'rgba(255,255,255,.06)') + ';color:' + (modoInfl === 'breakeven' ? 'var(--bg)' : 'rgba(255,255,255,.7)') + ';border:1px solid ' + (modoInfl === 'breakeven' ? 'var(--gold)' : 'rgba(255,255,255,.1)') + ';border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.05em">Mercado</button>' +
+            '</div>' +
+            '<div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:6px;line-height:1.4">' +
+              (modoInfl === 'rem' ? 
+                'Encuesta del BCRA a economistas (' + (pl.inflAnualREM*100).toFixed(1).replace('.',',') + '% anual)' :
+                'Implícita en el cruce de bonos LECAP/CER (' + (pl.inflAnualBE*100).toFixed(1).replace('.',',') + '% anual)') +
+            '</div>' +
+          '</div>' : '') +
+        
+        // Acumulado
+        (pl.dias > 1 ? 
+          '<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:12px 14px;margin-bottom:14px">' +
+            '<div style="font-size:11px;color:rgba(255,255,255,.6);margin-bottom:4px;letter-spacing:.05em">Diferencia acumulada ' + diasTexto + '</div>' +
+            '<div style="font-size:22px;font-weight:800;color:var(--gold-soft);font-variant-numeric:tabular-nums">' + fmtMoney(Math.abs(diferenciaTotal)) + '</div>' +
+            '<div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:3px;line-height:1.4">' +
+              (pl.ganaPorMes > pierdePorMes ? 
+                'Lo que ganarías por encima de la inflación' : 
+                'Estás dejando de ganar esto por no invertir') +
+            '</div>' +
+          '</div>' : '') +
+        
+        // CTA
+        '<button id="dash-asesor" type="button" style="width:100%;padding:12px;background:#25D366;color:#fff;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">' +
+          '<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>' +
+          'Quiero invertir esta plata' +
+        '</button>' +
+        
+      '</div>';
+    
+    // Conectar botones
+    var btnEditar = document.getElementById('dash-editar');
+    if (btnEditar) btnEditar.addEventListener('click', showOnboarding);
+    
+    var btnInflRem = document.getElementById('infl-rem');
+    if (btnInflRem) {
+      btnInflRem.addEventListener('click', function() {
+        try { localStorage.setItem('vl_dash_infl_mode', 'rem'); } catch(e) {}
+        renderDashboard();
+      });
+    }
+    
+    var btnInflBe = document.getElementById('infl-be');
+    if (btnInflBe) {
+      btnInflBe.addEventListener('click', function() {
+        try { localStorage.setItem('vl_dash_infl_mode', 'breakeven'); } catch(e) {}
+        renderDashboard();
+      });
+    }
+    
+    var btnAsesor = document.getElementById('dash-asesor');
+    if (btnAsesor) {
+      btnAsesor.addEventListener('click', function() {
+        var msg = 'Hola! Vi en el dashboard que tengo ' + fmtMoney(userMoney.monto) + ' parados. Si los invirtiera podría ganar ' + fmtMoney(pl.ganaPorMes) + ' por mes con LECAP. ¿Pueden asesorarme?';
+        var wa = (typeof CFG !== 'undefined' && CFG.wa) ? CFG.wa : '5491130004720';
+        window.open('https://wa.me/' + wa + '?text=' + encodeURIComponent(msg), '_blank');
+      });
+    }
+  }
+  
+  // Mostrar el modal de onboarding
+  function showOnboarding() {
+    var overlay = document.getElementById('vlOnboarding');
+    if (!overlay) return;
+    overlay.style.display = 'flex';
+    
+    // Pre-llenar con valor actual si existe
+    var current = getUserMoney();
+    var input = document.getElementById('onb-monto');
+    if (input && current) {
+      input.value = Math.round(current.monto).toLocaleString('es-AR');
+    }
+    
+    setTimeout(function() {
+      try { input.focus(); } catch(e) {}
+    }, 200);
+  }
+  
+  function hideOnboarding() {
+    var overlay = document.getElementById('vlOnboarding');
+    if (overlay) overlay.style.display = 'none';
+  }
+  
+  // Init
+  function init() {
+    // Conectar botones del modal
+    var btnConfirmar = document.getElementById('onb-confirmar');
+    var btnSaltar = document.getElementById('onb-saltar');
+    var inputMonto = document.getElementById('onb-monto');
+    
+    if (inputMonto) {
+      // Aplicar formato automático al input del onboarding
+      inputMonto.addEventListener('input', function() {
+        var raw = inputMonto.value.replace(/[^0-9]/g, '');
+        if (raw.length >= 4) {
+          inputMonto.value = raw.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        } else {
+          inputMonto.value = raw;
+        }
+      });
+      
+      // Enter para confirmar
+      inputMonto.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && btnConfirmar) btnConfirmar.click();
+      });
+    }
+    
+    if (btnConfirmar) {
+      btnConfirmar.addEventListener('click', function() {
+        var raw = inputMonto.value.replace(/[^0-9]/g, '');
+        var monto = parseInt(raw, 10);
+        if (!isFinite(monto) || monto <= 0) {
+          inputMonto.style.borderColor = 'var(--red)';
+          return;
+        }
+        setUserMoney(monto);
+        try { localStorage.setItem(ONBOARDING_SEEN, '1'); } catch(e) {}
+        hideOnboarding();
+        renderDashboard();
+        // Re-render de Mercado Personal también
+        try {
+          if (window.__vlMercadoPersonal && window.__vlMercadoPersonal.render) {
+            window.__vlMercadoPersonal.render();
+          }
+        } catch(e) {}
+      });
+    }
+    
+    if (btnSaltar) {
+      btnSaltar.addEventListener('click', function() {
+        try { localStorage.setItem(ONBOARDING_SEEN, '1'); } catch(e) {}
+        hideOnboarding();
+        renderDashboard(); // muestra el CTA "Activar"
+      });
+    }
+    
+    // Render inicial del dashboard
+    renderDashboard();
+    
+    // Mostrar onboarding automáticamente si:
+    // - el usuario YA pasó la portada (vl_intro_seen_v1)
+    // - pero NUNCA vio el onboarding
+    // - y NO tiene plata cargada
+    setTimeout(function() {
+      try {
+        var introSeen = localStorage.getItem('vl_intro_seen_v1') === '1';
+        var onbSeen = localStorage.getItem(ONBOARDING_SEEN) === '1';
+        var hasMoney = !!getUserMoney();
+        
+        if (introSeen && !onbSeen && !hasMoney) {
+          showOnboarding();
+        }
+      } catch(e) {}
+    }, 800);
+    
+    // Re-render cada vez que cambia marketData (después de refreshMarket)
+    // Hookeamos a refreshMarket si es posible
+    var origRefresh = window.refreshMarket;
+    if (typeof origRefresh === 'function') {
+      window.refreshMarket = async function() {
+        var result = await origRefresh.apply(this, arguments);
+        try { renderDashboard(); } catch(e) {}
+        return result;
+      };
+    }
+  }
+  
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+  
+  // Exponer para debug
+  window.__vlDashboard = { renderDashboard, showOnboarding, getUserMoney, setUserMoney, clearUserMoney };
+})();
+
+
+/* ============================================================
+   SECCIÓN PERSONALIZADA EN MERCADO
+   "Tu plata, tu recomendación" basada en monto + horizonte
+   ============================================================ */
+(function setupMercadoPersonal() {
+  'use strict';
+  
+  var STORAGE_KEY = 'vl_user_money_v1';
+  var HORIZONTE_KEY = 'vl_horizonte_pref';
+  
+  function getUserMoney() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      var data = JSON.parse(raw);
+      if (!data || !isFinite(data.monto) || data.monto <= 0) return null;
+      return data;
+    } catch(e) { return null; }
+  }
+  
+  function getHorizonte() {
+    try {
+      var saved = localStorage.getItem(HORIZONTE_KEY);
+      if (saved === '30' || saved === '90' || saved === '180') return saved;
+    } catch(e) {}
+    return '30'; // default 30 días
+  }
+  
+  function setHorizonte(h) {
+    try { localStorage.setItem(HORIZONTE_KEY, h); } catch(e) {}
+  }
+  
+  // ============ CONSTRUIR LISTAS DE BONOS ============
+  function getBonos() {
+    var hoy = new Date();
+    var lecaps = [];
+    var cer = [];
+    
+    if (typeof marketData !== 'undefined' && marketData) {
+      if (marketData.lecaps) lecaps = marketData.lecaps.slice();
+      if (marketData.boncer) cer = marketData.boncer.slice();
+    }
+    
+    if (!lecaps.length || !cer.length) {
+      var snapDef = (typeof VL_SNAPSHOT_DEFAULT !== 'undefined') ? VL_SNAPSHOT_DEFAULT : null;
+      try {
+        var raw = localStorage.getItem('vl_snapshot_v1');
+        if (raw) snapDef = JSON.parse(raw);
+      } catch(e) {}
+      
+      if (snapDef) {
+        if (!lecaps.length && snapDef.fija) {
+          lecaps = snapDef.fija.map(function(item) {
+            var v = item.vto ? new Date(item.vto) : null;
+            if (!v || !isFinite(v.getTime())) return null;
+            var d = Math.ceil((v - hoy) / 86400000);
+            if (d <= 0) return null;
+            return { ticker: item.ticker, dias: d, venc: v, vto: item.vto, tem: item.tem, tea: item.tea };
+          }).filter(Boolean);
+        }
+        if (!cer.length && snapDef.cer) {
+          cer = snapDef.cer.map(function(item) {
+            var v = item.vto ? new Date(item.vto) : null;
+            if (!v || !isFinite(v.getTime())) return null;
+            var d = Math.ceil((v - hoy) / 86400000);
+            if (d <= 0) return null;
+            return { ticker: item.ticker, dias: d, venc: v, vto: item.vto, tirReal: item.tirReal };
+          }).filter(Boolean);
+        }
+      }
+    }
+    
+    return { lecaps: lecaps, cer: cer };
+  }
+  
+  // ============ ELEGIR BONO PARA UN HORIZONTE ============
+  function pickLecapByDias(lecaps, target) {
+    if (!lecaps.length) return null;
+    var sorted = lecaps.slice().sort(function(a, b) {
+      return Math.abs(a.dias - target) - Math.abs(b.dias - target);
+    });
+    return sorted[0];
+  }
+  
+  function pickCerByDias(cer, target) {
+    if (!cer.length) return null;
+    // Filtrar outliers (TIR Real entre -15% y +10%)
+    var filtrado = cer.filter(function(b) {
+      return isFinite(b.tirReal) && b.tirReal > -0.15 && b.tirReal < 0.10;
+    });
+    if (!filtrado.length) return null;
+    var sorted = filtrado.slice().sort(function(a, b) {
+      return Math.abs(a.dias - target) - Math.abs(b.dias - target);
+    });
+    return sorted[0];
+  }
+  
+  // ============ CALCULAR BREAKEVEN ENTRE 2 BONOS ============
+  function calcBreakeven(lecap, cer) {
+    if (!lecap || !cer) return null;
+    if (!isFinite(lecap.tem) || !isFinite(cer.tirReal)) return null;
+    var tirRealMensual = Math.pow(1 + cer.tirReal, 1/12) - 1;
+    return (1 + lecap.tem) / (1 + tirRealMensual) - 1;
+  }
+  
+  // ============ DECIDIR INSTRUMENTO RECOMENDADO ============
+  function decidirInstrumento(horizonte, bonos) {
+    var dias = parseInt(horizonte, 10);
+    var lecap = pickLecapByDias(bonos.lecaps, dias);
+    var cer = pickCerByDias(bonos.cer, dias);
+    
+    var resultado = {
+      horizonte: dias,
+      lecap: lecap,
+      cer: cer,
+      principal: 'lecap', // default: LECAP
+      esOpinionVL: false,
+      breakeven: null
+    };
+    
+    if (!lecap) return resultado;
+    
+    // Para 30 y 90 días: SIEMPRE LECAP (CER cortos son ruidosos)
+    if (dias <= 90) {
+      resultado.principal = 'lecap';
+      return resultado;
+    }
+    
+    // Para 180+: si breakeven > LECAP TEM por al menos 0.5 puntos mensuales,
+    // recomendar CER como opinión Value Latam
+    if (dias >= 180 && cer && lecap) {
+      var be = calcBreakeven(lecap, cer);
+      resultado.breakeven = be;
+      
+      if (be !== null && (be - lecap.tem) >= 0.005) {
+        resultado.principal = 'cer';
+        resultado.esOpinionVL = true;
+      }
+    }
+    
+    return resultado;
+  }
+  
+  // ============ RENDER ============
+  function render() {
+    var cont = document.getElementById('vlMercadoPersonal');
+    if (!cont) return;
+    
+    var userMoney = getUserMoney();
+    var horizonte = getHorizonte();
+    var bonos = getBonos();
+    
+    // Caso 1: sin monto cargado
+    if (!userMoney) {
+      cont.innerHTML = 
+        '<div style="background:linear-gradient(135deg, rgba(212,184,132,.08) 0%, rgba(212,184,132,.04) 100%);border:1px solid rgba(212,184,132,.3);border-left:3px solid var(--gold);border-radius:14px;padding:20px 22px">' +
+          '<div style="font-size:11px;color:var(--gold);font-weight:700;letter-spacing:.18em;text-transform:uppercase;margin-bottom:8px">Mercado personalizado</div>' +
+          '<h3 style="font-family:Fraunces,serif;font-weight:500;font-size:20px;color:var(--ink);margin:0 0 8px;letter-spacing:-.01em;line-height:1.25">Cargá tu capital y armamos una recomendación a tu medida</h3>' +
+          '<p style="font-size:13px;color:var(--muted-strong);line-height:1.5;margin:0 0 14px">Te decimos exactamente en qué instrumento poner tu plata según el tiempo que la podés dejar.</p>' +
+          '<button id="mp-cargar" type="button" style="padding:10px 18px;background:var(--gold);color:var(--bg);border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">Cargar mi capital →</button>' +
+        '</div>';
+      
+      var btn = document.getElementById('mp-cargar');
+      if (btn) {
+        btn.addEventListener('click', function() {
+          // Llamar a showOnboarding del dashboard
+          if (window.__vlDashboard && window.__vlDashboard.showOnboarding) {
+            window.__vlDashboard.showOnboarding();
+          }
+        });
+      }
+      return;
+    }
+    
+    // Caso 2: con monto cargado → recomendación
+    var dec = decidirInstrumento(horizonte, bonos);
+    
+    if (!dec.lecap) {
+      cont.innerHTML = 
+        '<div style="background:var(--bg-card);border:1px solid var(--line);border-radius:14px;padding:20px;text-align:center;color:var(--muted-strong)">' +
+          'Esperando datos del mercado para personalizar tu recomendación...' +
+        '</div>';
+      return;
+    }
+    
+    // Calcular ganancia mensual del instrumento principal
+    var temPrincipal, tickerPrincipal, diasPrincipal, labelPrincipal, sublabelPrincipal;
+    
+    if (dec.principal === 'cer') {
+      // Para CER, la ganancia es: tirReal mensual + inflación esperada
+      // Acá usamos REM como aproximación de inflación
+      var remAnual = (typeof CFG !== 'undefined' && CFG.rem_manual) ? CFG.rem_manual / 100 : 0.226;
+      var temREM = Math.pow(1 + remAnual, 1/12) - 1;
+      var tirRealMensual = Math.pow(1 + dec.cer.tirReal, 1/12) - 1;
+      // Rendimiento esperado total CER = (1+TIR Real)*(1+inflación) - 1, mensual
+      temPrincipal = (1 + tirRealMensual) * (1 + temREM) - 1;
+      tickerPrincipal = dec.cer.ticker;
+      diasPrincipal = dec.cer.dias;
+      labelPrincipal = 'CER (' + tickerPrincipal + ')';
+      sublabelPrincipal = 'Bono ajustado por inflación · ' + diasPrincipal + ' días';
+    } else {
+      temPrincipal = dec.lecap.tem;
+      tickerPrincipal = dec.lecap.ticker;
+      diasPrincipal = dec.lecap.dias;
+      labelPrincipal = 'LECAP (' + tickerPrincipal + ')';
+      sublabelPrincipal = 'Tasa fija conocida · ' + diasPrincipal + ' días';
+    }
+    
+    var ganaPorMes = userMoney.monto * temPrincipal;
+    var ganaTotal = userMoney.monto * (Math.pow(1 + temPrincipal, dec.horizonte / 30) - 1);
+    
+    // Toggle de horizonte
+    var horizontes = [
+      { val: '30',  label: '30 días' },
+      { val: '90',  label: '3 meses' },
+      { val: '180', label: '6 meses+' }
+    ];
+    
+    var togglesHTML = '<div style="display:flex;gap:6px;margin-bottom:14px">';
+    horizontes.forEach(function(h) {
+      var active = h.val === horizonte;
+      togglesHTML += '<button class="mp-h-btn" data-h="' + h.val + '" type="button" ' +
+        'style="flex:1;padding:9px 10px;background:' + (active ? 'var(--gold)' : 'rgba(255,255,255,.04)') + ';' +
+        'color:' + (active ? 'var(--bg)' : 'var(--muted-strong)') + ';' +
+        'border:1px solid ' + (active ? 'var(--gold)' : 'var(--line)') + ';' +
+        'border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.03em">' +
+        h.label + '</button>';
+    });
+    togglesHTML += '</div>';
+    
+    // Construir HTML principal
+    var html = 
+      '<div style="background:var(--bg-card);border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin-bottom:14px">' +
+        
+        // Header
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:16px">' +
+          '<div>' +
+            '<div style="font-size:11px;color:var(--gold);font-weight:700;letter-spacing:.18em;text-transform:uppercase;margin-bottom:4px">Tu plata, tu mercado</div>' +
+            '<div style="font-size:14px;color:var(--muted-strong);margin-bottom:2px">Tenés ' + fmtMoney(userMoney.monto) + ' para invertir.</div>' +
+            '<div style="font-size:13px;color:var(--ink);font-weight:500">¿Por cuánto tiempo no la necesitás?</div>' +
+          '</div>' +
+        '</div>' +
+        
+        // Toggle de horizonte
+        togglesHTML +
+        
+        // Card de recomendación principal
+        '<div style="background:linear-gradient(135deg, rgba(212,184,132,.08) 0%, rgba(212,184,132,.04) 100%);border:1px solid rgba(212,184,132,.35);border-left:3px solid var(--gold);border-radius:12px;padding:18px 20px;margin-bottom:12px">' +
+          
+          (dec.esOpinionVL ? 
+            '<div style="display:inline-block;padding:3px 10px;background:var(--gold);color:var(--bg);font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;border-radius:999px;margin-bottom:10px">Opinión Value Latam</div>' :
+            '<div style="font-size:10px;color:var(--gold);font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px">Recomendado para vos</div>') +
+          
+          '<div style="font-family:Fraunces,serif;font-weight:500;font-size:22px;color:var(--ink);margin-bottom:4px;letter-spacing:-.01em">' +
+            labelPrincipal +
+          '</div>' +
+          '<div style="font-size:12px;color:var(--muted-strong);margin-bottom:14px">' + sublabelPrincipal + '</div>' +
+          
+          // Stats
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">' +
+            '<div>' +
+              '<div style="font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px">Ganancia mensual</div>' +
+              '<div style="font-family:Fraunces,serif;font-size:22px;font-weight:600;color:var(--green);font-variant-numeric:tabular-nums">+' + fmtMoney(ganaPorMes) + '</div>' +
+              '<div style="font-size:10px;color:var(--muted);margin-top:2px">' + (temPrincipal*100).toFixed(2).replace('.',',') + '% TEM' + (dec.principal === 'cer' ? ' (con infl. REM)' : '') + '</div>' +
+            '</div>' +
+            '<div>' +
+              '<div style="font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px">Total al vencimiento</div>' +
+              '<div style="font-family:Fraunces,serif;font-size:22px;font-weight:600;color:var(--gold-soft);font-variant-numeric:tabular-nums">+' + fmtMoney(ganaTotal) + '</div>' +
+              '<div style="font-size:10px;color:var(--muted);margin-top:2px">en ' + diasPrincipal + ' días</div>' +
+            '</div>' +
+          '</div>' +
+          
+          // Si es opinión VL, agregar disclaimer + comentario
+          (dec.esOpinionVL ? 
+            '<div style="background:rgba(255,255,255,.04);border-left:2px solid var(--gold);padding:10px 12px;border-radius:0 6px 6px 0;font-size:12px;line-height:1.55;color:var(--muted-strong);margin-top:6px">' +
+              'Hoy el mercado cotiza inflación más alta que la tasa fija. A ' + dec.horizonte + '+ días, conviene cubrirse con CER. ' +
+              '<strong style="color:var(--ink)">No lo vas a leer en bancos ni en asesores tradicionales</strong> — la mayoría sigue sugiriendo plazo fijo o LECAP corta.' +
+            '</div>' : '') +
+          
+        '</div>' +
+        
+        // Mini comparativa con otras opciones (LECAP vs CER)
+        (dec.cer && dec.lecap ? buildAlternativaHTML(dec, userMoney.monto) : '') +
+        
+        // CTA WhatsApp
+        '<button id="mp-asesor" type="button" style="width:100%;padding:13px;background:#25D366;color:#fff;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px">' +
+          '<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>' +
+          (dec.esOpinionVL ? 'Quiero armar esta cartera con un asesor' : 'Hablar con un asesor de Value Latam') +
+        '</button>' +
+        
+      '</div>';
+    
+    cont.innerHTML = html;
+    
+    // Eventos: toggles
+    var btnsH = cont.querySelectorAll('.mp-h-btn');
+    btnsH.forEach(function(b) {
+      b.addEventListener('click', function() {
+        setHorizonte(b.dataset.h);
+        render();
+      });
+    });
+    
+    // CTA WhatsApp
+    var btnAsesor = document.getElementById('mp-asesor');
+    if (btnAsesor) {
+      btnAsesor.addEventListener('click', function() {
+        var msg;
+        if (dec.esOpinionVL) {
+          msg = 'Hola! Vi en la app que para mis ' + fmtMoney(userMoney.monto) + ' a ' + dec.horizonte + ' días recomiendan CER (' + tickerPrincipal + '). Quiero armar esta cartera, ¿me asesoran?';
+        } else {
+          msg = 'Hola! Vi en la app que para mis ' + fmtMoney(userMoney.monto) + ' a ' + dec.horizonte + ' días recomiendan ' + labelPrincipal + '. Quiero invertir, ¿me asesoran?';
+        }
+        var wa = (typeof CFG !== 'undefined' && CFG.wa) ? CFG.wa : '5491130004720';
+        window.open('https://wa.me/' + wa + '?text=' + encodeURIComponent(msg), '_blank');
+      });
+    }
+  }
+  
+  // Construir HTML de alternativa (mostrar la opción que NO se recomendó)
+  function buildAlternativaHTML(dec, monto) {
+    var altLabel, altTem, altTicker;
+    
+    if (dec.principal === 'cer') {
+      // Mostramos la LECAP como alternativa
+      altLabel = 'LECAP (' + dec.lecap.ticker + ')';
+      altTem = dec.lecap.tem;
+      altTicker = dec.lecap.ticker;
+    } else {
+      // Mostramos CER como alternativa (si existe)
+      if (!dec.cer) return '';
+      var remAnual = (typeof CFG !== 'undefined' && CFG.rem_manual) ? CFG.rem_manual / 100 : 0.226;
+      var temREM = Math.pow(1 + remAnual, 1/12) - 1;
+      var tirRealMensual = Math.pow(1 + dec.cer.tirReal, 1/12) - 1;
+      altLabel = 'CER (' + dec.cer.ticker + ')';
+      altTem = (1 + tirRealMensual) * (1 + temREM) - 1;
+      altTicker = dec.cer.ticker;
+    }
+    
+    var ganaAlt = monto * altTem;
+    
+    return '<details style="background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:10px;padding:0;margin-top:6px;overflow:hidden">' +
+      '<summary style="padding:10px 14px;cursor:pointer;font-size:11px;color:var(--muted-strong);font-weight:600;letter-spacing:.05em;list-style:none;display:flex;justify-content:space-between;align-items:center">' +
+        '<span>Ver otra opción</span>' +
+        '<span style="color:var(--gold);font-size:13px">+</span>' +
+      '</summary>' +
+      '<div style="padding:0 14px 12px;font-size:12px;color:var(--muted-strong);line-height:1.5">' +
+        '<strong style="color:var(--ink)">' + altLabel + '</strong>: rinde ' + (altTem*100).toFixed(2).replace('.',',') + '% TEM (' + fmtMoney(ganaAlt) + ' / mes)' +
+      '</div>' +
+    '</details>';
+  }
+  
+  // Init: render al cargar y cada vez que se actualizan datos
+  function init() {
+    render();
+    
+    // Re-render cuando refreshMarket termina
+    var origRefresh = window.refreshMarket;
+    if (typeof origRefresh === 'function' && !origRefresh.__personalHooked) {
+      window.refreshMarket = async function() {
+        var result = await origRefresh.apply(this, arguments);
+        try { render(); } catch(e) { console.error('[mp render]', e); }
+        return result;
+      };
+      window.refreshMarket.__personalHooked = true;
+    }
+  }
+  
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+  
+  // Exponer para que el dashboard pueda forzar re-render
+  window.__vlMercadoPersonal = { render: render };
+})();
 </script>
 
 </body>
