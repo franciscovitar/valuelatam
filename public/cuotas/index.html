@@ -2792,6 +2792,7 @@ const VL_SNAPSHOT_DEFAULT = {
 };
 
 function getSnapshot() {
+  console.log('[getSnapshot] llamado');
   // Prioridad: 1) Datos LIVE (siempre que tengamos los 2 lados, sino mergeamos), 
   //            2) Override del admin, 
   //            3) Default hardcoded
@@ -4077,8 +4078,10 @@ function updateInflHint() {
    RENDER MERCADO
    ========================================================= */
 function renderMarketView() {
-  if (!marketData) return;
+  console.log('======== [Market] INICIO renderMarketView ========');
+  if (!marketData) { console.warn('[Market] ⚠️ sin marketData'); return; }
   const grid = document.getElementById('marketGrid');
+  console.log('[Market] marketGrid:', !!grid, '| marketData:', { lecaps: marketData.lecaps?.length, boncer: marketData.boncer?.length });
 
   // ===== Calcular breakevens de Value Latam =====
   const snap = getSnapshot();
@@ -4660,12 +4663,23 @@ let chartBreakevenInstance = null;
 let chartTasasInstance = null;
 
 function renderCharts() {
-  if (!marketData) { console.warn('[Charts] sin marketData'); return; }
+  console.log('======== [Charts] INICIO renderCharts ========');
+  if (!marketData) { console.warn('[Charts] ⚠️ sin marketData'); return; }
+  console.log('[Charts] marketData OK:', { 
+    lecaps_n: marketData.lecaps?.length, 
+    boncer_n: marketData.boncer?.length, 
+    breakevens_n: marketData.breakevens?.length,
+    curvaVL_n: marketData.curvaVL?.length,
+    curvaVL_first3: marketData.curvaVL?.slice(0,3),
+    rem12mAnual: marketData.rem12mAnual,
+    isSample: marketData.isSample
+  });
   if (!window.Chart) {
-    console.warn('[Charts] Chart.js no está cargado');
+    console.warn('[Charts] ⚠️ Chart.js no está cargado, reintentando...');
     setTimeout(() => { if (window.Chart) renderCharts(); }, 500);
     return;
   }
+  console.log('[Charts] Chart.js OK, version:', window.Chart.version || '?');
   const { lecaps, boncer, pfAnual, rem } = marketData;
 
   // Convertir todo a TEM (tasa efectiva mensual)
