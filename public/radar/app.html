@@ -672,21 +672,32 @@ table tbody tr.is-selected td:first-child{box-shadow:inset 2px 0 0 var(--accent)
 <main class="main">
   <div class="topbar">
     <div class="crumbs">
-      <span>Radar</span>
-      <span class="sep">/</span>
-      <span>Cartera</span>
-      <span class="sep">/</span>
+      <span>Radar</span><span class="sep">/</span>
+      <span>Cartera</span><span class="sep">/</span>
       <span class="current" id="page-title">Dashboard</span>
     </div>
     <div class="topbar-spacer"></div>
-    <div class="topbar-actions">
-      <button class="btn btn-secondary btn-sm" onclick="exportData()">
-        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v8M5 7l3 3 3-3M3 13h10"/></svg>
-        Exportar
+    <!-- CARGA RÁPIDA -->
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div id="carga-rapida-expandido" style="display:none;align-items:center;gap:6px;">
+        <input type="text" id="carga-rapida-input"
+          placeholder='Ej: "préstamo Galicia $5M al 38%" · "cheque Carrefour $800k para 15/05"'
+          style="width:320px;height:26px;font-size:11px;"
+          onkeydown="if(event.key==='Enter')procesarCargaRapida();if(event.key==='Escape')toggleCargaRapida()">
+        <button class="btn btn-primary btn-sm" onclick="procesarCargaRapida()" id="btn-carga-rapida" style="height:26px;">↵</button>
+        <button class="btn btn-ghost btn-sm" onclick="toggleCargaRapida()" style="height:26px;">✕</button>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="toggleCargaRapida()" id="btn-abrir-carga">
+        <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M2 8h8M2 12h5"/></svg>
+        Carga rápida
       </button>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-secondary btn-sm" onclick="exportData()">↓ Exportar</button>
       <button class="btn btn-primary btn-sm" onclick="openModal('op')">+ Nueva Operación</button>
     </div>
   </div>
+  <div id="carga-rapida-estado" style="display:none;padding:5px 24px;font-size:11px;border-bottom:1px solid var(--line);color:var(--text2);"></div>
 
   <div class="content">
 
@@ -695,18 +706,6 @@ table tbody tr.is-selected td:first-child{box-shadow:inset 2px 0 0 var(--accent)
 
       <!-- ALERTA PRIORITARIA -->
       <div id="dash-alerta-top" style="display:none;margin-bottom:var(--sp-4);"></div>
-
-      <!-- CARGA RÁPIDA POR TEXTO -->
-      <div style="margin-bottom:var(--sp-4);">
-        <div style="display:flex;align-items:center;gap:var(--sp-2);">
-          <input type="text" id="carga-rapida-input"
-            placeholder='Ej: "tomé $5M de Galicia al 38% por 90 días" · "cheque de Carrefour $800k para el 15/05" · "nueva línea de descubierto BBVA $2M"' 
-            style="flex:1;height:30px;font-size:var(--fs-sm);"
-            onkeydown="if(event.key==='Enter')procesarCargaRapida()">
-          <button class="btn btn-primary btn-sm" onclick="procesarCargaRapida()" id="btn-carga-rapida">↵ Interpretar</button>
-        </div>
-        <div id="carga-rapida-estado" style="display:none;margin-top:var(--sp-2);font-size:var(--fs-xs);"></div>
-      </div>
 
       <!-- KPIs -->
       <div class="kpi-grid">
@@ -2615,6 +2614,21 @@ async function marcarPagadaRapido(cuotaId){
   const c=cuotas.find(x=>x.id===cuotaId);if(!c)return;
   try{await db.collection('empresas').doc(uid).collection('cuotas').doc(cuotaId).update({estado:'pagada'});c.estado='pagada';renderDashboard();renderCuotas();toast('✓ Cuota pagada','green');}
   catch(e){toast('Error: '+e.message,'red');}
+}
+
+function toggleCargaRapida(){
+  const exp=document.getElementById('carga-rapida-expandido');
+  const btn=document.getElementById('btn-abrir-carga');
+  const estado=document.getElementById('carga-rapida-estado');
+  if(exp.style.display==='none'||!exp.style.display){
+    exp.style.display='flex';
+    btn.style.display='none';
+    if(estado)estado.style.display='none';
+    setTimeout(()=>document.getElementById('carga-rapida-input')?.focus(),50);
+  } else {
+    exp.style.display='none';
+    btn.style.display='';
+  }
 }
 
 async function procesarCargaRapida(){
