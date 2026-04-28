@@ -839,57 +839,21 @@ table tbody tr.is-selected td:first-child{box-shadow:inset 2px 0 0 var(--accent)
       <!-- CURVA BREAKEVEN -->
       <div class="tna-card" style="margin-bottom:24px;">
         <div class="tna-card-title">📈 Curva de Inflación Breakeven (LECAP vs CER)</div>
-        <div class="tna-card-sub">El sistema calcula la inflación implícita que el mercado descuenta en cada plazo y la usa como referencia en el Análisis de cada cliente.</div>
+        <div class="tna-card-sub">Ingresá la TNA de LECAP y la TIR de CER para cada plazo. El sistema calcula la inflación implícita que el mercado descuenta y la usa como referencia en el Análisis de tasas de cada cliente.</div>
 
-        <!-- UPLOAD PDFs -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0;">
-          <!-- LECAP -->
-          <div id="drop-lecap"
-            onclick="document.getElementById('input-lecap').click()"
-            ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
-            ondragleave="this.style.borderColor='var(--line2)'"
-            ondrop="event.preventDefault();this.style.borderColor='var(--line2)';procesarPDFBreakeven(event.dataTransfer.files[0],'lecap')"
-            style="border:1px dashed var(--line2);border-radius:4px;padding:12px;cursor:pointer;text-align:center;transition:border var(--dur-1);">
-            <div style="font-size:1rem;opacity:0.3;margin-bottom:4px;">📄</div>
-            <div style="font-size:var(--fs-xs);color:var(--text3);">Subir PDF <strong style="color:var(--text2)">LECAP / Tasa Fija</strong></div>
-            <div style="font-size:10px;color:var(--text4);margin-top:2px;">de doctacapital.com.ar</div>
-            <input type="file" id="input-lecap" accept=".pdf" style="display:none" onchange="procesarPDFBreakeven(this.files[0],'lecap')">
-          </div>
-          <!-- CER -->
-          <div id="drop-cer"
-            onclick="document.getElementById('input-cer').click()"
-            ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
-            ondragleave="this.style.borderColor='var(--line2)'"
-            ondrop="event.preventDefault();this.style.borderColor='var(--line2)';procesarPDFBreakeven(event.dataTransfer.files[0],'cer')"
-            style="border:1px dashed var(--line2);border-radius:4px;padding:12px;cursor:pointer;text-align:center;transition:border var(--dur-1);">
-            <div style="font-size:1rem;opacity:0.3;margin-bottom:4px;">📄</div>
-            <div style="font-size:var(--fs-xs);color:var(--text3);">Subir PDF <strong style="color:var(--text2)">CER / Soberano CER</strong></div>
-            <div style="font-size:10px;color:var(--text4);margin-top:2px;">de doctacapital.com.ar</div>
-            <input type="file" id="input-cer" accept=".pdf" style="display:none" onchange="procesarPDFBreakeven(this.files[0],'cer')">
-          </div>
+        <div style="background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.15);border-radius:7px;padding:8px 12px;font-size:.72rem;color:var(--text2);margin:12px 0;">
+          💡 <strong>Breakeven = TNA LECAP − TIR CER.</strong> Si la TNA de la operación del cliente está <em>por debajo</em> del breakeven de su plazo, se financia en términos reales negativos — ventaja competitiva clara.
         </div>
 
-        <!-- Estado análisis -->
-        <div id="be-analisis-estado" style="display:none;margin-bottom:12px;"></div>
-
-        <!-- Info metodología -->
-        <div class="info-bar" style="margin-bottom:12px;">
-          💡 <strong>Cálculo Fisher:</strong> Inflación breakeven TEM = (1 + TEM_LECAP) / (1 + TEM_CER) − 1. Plazos fijos: 30d a 360d cada 30 días. Los plazos con distorsión de mercado se corrigen automáticamente con nuestra estimación.
-        </div>
-
-        <!-- Tabla fija 12 plazos -->
-        <div style="overflow-x:auto;">
-          <table style="font-size:var(--fs-sm);width:100%;">
+        <div style="overflow-x:auto;margin-top:12px;">
+          <table style="font-size:.75rem;width:100%;">
             <thead>
               <tr>
-                <th>Plazo</th>
-                <th>Días</th>
-                <th>Vto. ref.</th>
+                <th style="width:90px;">Plazo</th>
+                <th>Vto. Ref.</th>
                 <th style="width:110px;">TNA LECAP (%)</th>
                 <th style="width:110px;">TIR CER (%)</th>
-                <th style="width:120px;">Breakeven TEM</th>
                 <th style="width:120px;">Breakeven TNA</th>
-                <th>Fuente</th>
               </tr>
             </thead>
             <tbody id="breakeven-rows"></tbody>
@@ -897,9 +861,10 @@ table tbody tr.is-selected td:first-child{box-shadow:inset 2px 0 0 var(--accent)
         </div>
 
         <div style="display:flex;gap:8px;margin-top:14px;justify-content:space-between;align-items:center;">
-          <div style="font-size:var(--fs-xs);color:var(--text4);font-family:var(--font-mono);" id="breakeven-fecha">Última actualización: —</div>
-          <button class="btn btn-primary btn-sm" onclick="guardarBreakeven()">✓ Publicar curva</button>
+          <button class="btn btn-ghost btn-sm" onclick="agregarFilaBreakeven()">+ Agregar plazo</button>
+          <button class="btn btn-success btn-sm" onclick="guardarBreakeven()">✓ Publicar curva</button>
         </div>
+        <div style="font-family:var(--mono);font-size:.65rem;color:var(--text3);margin-top:8px;" id="breakeven-fecha">Última actualización: —</div>
       </div>
 
       <div class="table-card">
@@ -1353,112 +1318,15 @@ auth.onAuthStateChanged(async user=>{
   if(!user){window.location.href='index.html';return;}
   if(user.email!==ADMIN_EMAIL){window.location.href='app.html';return;}
   document.getElementById('admin-email').textContent=user.email;
-  const av=document.getElementById('admin-avatar');
-  if(av)av.textContent=user.email[0].toUpperCase();
-  try{
-    await Promise.all([
-      loadTNA().catch(e=>console.warn('loadTNA:',e)),
-      loadClientes().catch(e=>console.warn('loadClientes:',e)),
-      loadBreakeven().catch(e=>console.warn('loadBreakeven:',e)),
-    ]);
-  } catch(e){
-    console.error('Error cargando admin:',e);
-  } finally {
-    document.getElementById('loading-screen').style.display='none';
-    document.getElementById('app').style.display='flex';
-  }
+  await loadTNA(); await loadClientes(); await loadBreakeven();
+  document.getElementById('loading-screen').style.display='none';
+  document.getElementById('app').style.display='flex';
 });
 
-async function procesarCargaRapidaAdm(){
-  const input=document.getElementById('adm-carga-rapida-input');
-  const texto=input?.value.trim(); if(!texto||!clienteActivo) return;
-  // Guardar texto antes de cualquier re-render que destruya el DOM
-  const textoGuardado=texto;
-  const btn=document.getElementById('adm-btn-carga');
-  const estado=document.getElementById('adm-carga-estado');
-  if(btn){ btn.disabled=true; btn.textContent='...'; }
-  if(estado){ estado.style.display='block'; estado.innerHTML='<span style="color:var(--text3);">Interpretando...</span>'; }
+function doLogout(){auth.signOut().then(()=>window.location.href='index.html');}
 
-  const bancosDisp=(clienteActivo.entidades||[]).map(e=>e.nombre).filter((v,i,a)=>a.indexOf(v)===i).join(', ');
-
-  try{
-    const response=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,
-        messages:[{role:'user',content:`Sos el asistente de un operador financiero argentino que carga datos de su cliente "${clienteActivo.nombre}". El operador escribió: "${texto}". Hoy: ${today()}. Entidades del cliente: ${bancosDisp||'(ninguna)'}.
-
-Interpretá y respondé SOLO JSON válido.
-
-Si es operación financiera:
-{"tipo_accion":"operacion","entidad_nombre":"banco","tipo_operacion":"Préstamo"|"Cheque descontado"|"Factura descontada"|"Descubierto"|"Otro","monto":numero,"moneda":"ARS","tna":numero_o_null,"plazo_meses":numero_o_null,"fecha_desembolso":"YYYY-MM-DD"|null,"amortizacion":"frances"|"bullet","frecuencia":1,"confianza":"alta"|"media"|"baja","interpretacion":"español simple"}
-
-Si es flujo de fondos (cobro, pago, cheque):
-{"tipo_accion":"flujo","tipo":"cheque_recibido"|"factura_cobrar"|"cheque_emitido"|"pago_proveedor","contraparte":"nombre","importe":numero,"fecha":"YYYY-MM-DD","descripcion":"texto","confianza":"alta"|"media"|"baja","interpretacion":"español simple"}
-
-Si es entidad/línea nueva:
-{"tipo_accion":"entidad","nombre":"banco","tipo_linea":"Rotativa"|"Puntual","subtipo":null|"Descubierto","linea_total":numero_o_null,"confianza":"alta"|"media"|"baja","interpretacion":"español simple"}
-
-Si ambiguo:
-{"tipo_accion":"ambiguo","interpretacion":"qué necesitás clarificar"}`}]})
-    });
-    if(!response.ok) throw new Error(`API ${response.status}`);
-    const data=await response.json();
-    const parsed=JSON.parse((data.content?.find(b=>b.type==='text')?.text||'').replace(/```json|```/g,'').trim());
-
-    if(parsed.tipo_accion==='operacion'){
-      // Restaurar botón ANTES de abrir modal (el modal no destruye el DOM del detalle)
-      if(btn){ btn.disabled=false; btn.textContent='↵ Interpretar'; }
-      openModal('op');
-      setTimeout(()=>{
-        if(parsed.entidad_nombre){const sel=document.getElementById('op-entidad');if(sel){const m=[...sel.options].find(o=>o.text.toLowerCase().includes(parsed.entidad_nombre.toLowerCase().split(' ')[0]));if(m)sel.value=m.value;onOpEntidadChange?.();}}
-        if(parsed.tipo_operacion){const sel=document.getElementById('op-tipo');if(sel){const m=[...sel.options].find(o=>o.value===parsed.tipo_operacion);if(m)sel.value=m.value;}}
-        if(parsed.monto){const el=document.getElementById('op-monto');if(el)el.value=parsed.monto;}
-        if(parsed.tna){const el=document.getElementById('op-tna');if(el)el.value=parsed.tna;}
-        if(parsed.plazo_meses){const el=document.getElementById('op-plazo');if(el)el.value=parsed.plazo_meses;}
-        if(parsed.fecha_desembolso){const el=document.getElementById('op-desembolso');if(el)el.value=parsed.fecha_desembolso;}
-        if(parsed.amortizacion){const sel=document.getElementById('op-amortizacion');if(sel)sel.value=parsed.amortizacion;}
-        previewCuotas?.();
-      },300);
-      // Mostrar estado en el detalle (el DOM sigue vivo)
-      const estadoAdm=document.getElementById('adm-carga-estado');
-      if(estadoAdm) estadoAdm.innerHTML=`<span style="color:var(--green);">✓ ${parsed.interpretacion} — Revisá y guardá.</span>`;
-      const inputAdm=document.getElementById('adm-carga-rapida-input');
-      if(inputAdm) inputAdm.value='';
-
-    } else if(parsed.tipo_accion==='flujo'){
-      const uid=clienteActivo.uid;
-      const ref=db.collection('empresas').doc(uid).collection('flujo_fondos');
-      await ref.add({tipo:parsed.tipo,contraparte:parsed.contraparte||'',importe:parsed.importe,fecha:parsed.fecha,descripcion:parsed.descripcion||texto,estado:'pendiente',creado:new Date().toISOString()});
-      // Si estamos viendo el flujo del cliente, recargar
-      if(document.getElementById('inner-flujo')?.classList.contains('active')) renderFlujoCli();
-      if(estado) estado.innerHTML=`<span style="color:var(--green);">✓ ${parsed.interpretacion} — Guardado en Flujo de Fondos.</span>`;
-      if(input) input.value='';
-
-    } else if(parsed.tipo_accion==='entidad'){
-      openModal('ent');
-      setTimeout(()=>{
-        const el=document.getElementById('ent-nombre');if(el)el.value=parsed.nombre||'';
-        const tl=document.getElementById('ent-tipo');if(tl&&parsed.tipo_linea)tl.value=parsed.tipo_linea;
-        if(parsed.linea_total){const el2=document.getElementById('ent-linea');if(el2)el2.value=parsed.linea_total;}
-      },300);
-      if(estado) estado.innerHTML=`<span style="color:var(--green);">✓ ${parsed.interpretacion} — Revisá y guardá.</span>`;
-
-    } else {
-      if(estado) estado.innerHTML=`<span style="color:var(--yellow);">¿Quisiste decir? ${parsed.interpretacion}</span>`;
-    }
-  } catch(err){
-    console.error('Carga rápida admin error:',err);
-    if(estado) estado.innerHTML='<span style="color:var(--red);">No pude interpretar. Intentá ser más específico.</span>';
-  } finally {
-    if(btn){ btn.disabled=false; btn.textContent='↵ Interpretar'; }
-  }
-}
-
-// ── FIN CARGA RÁPIDA ADMIN ──────────────────────────
-
-function doLogout(){ sessionStorage.setItem('logout','1'); auth.signOut().then(()=>{ window.location.href='index.html'; }).catch(()=>{ window.location.href='index.html'; }); })
-    .catch(()=>{ window.location.href='index.html'; });
-}
+// ═══════════════════════════════════════════════════════
+//  ANÁLISIS DE PDF CON CLAUDE API — ADMIN
 // ═══════════════════════════════════════════════════════
 
 function handlePDFDropAdm(file) { if(file) analizarPDFAdm(file); }
@@ -1962,258 +1830,71 @@ async function recalcularCuotasVariables(tipoTasa, nuevaTasa){
 async function loadHistorialTNA(){}
 
 // =================== BREAKEVEN INFLACIÓN ===================
-let breakevenData = [];
+let breakevenData = []; // [{plazo, vto, lecap, cer}]
 
-// 12 plazos fijos: 30d a 360d cada 30 días
-const BREAKEVEN_PLAZOS = [
-  {dias:30,  label:'1 mes'},
-  {dias:60,  label:'2 meses'},
-  {dias:90,  label:'3 meses'},
-  {dias:120, label:'4 meses'},
-  {dias:150, label:'5 meses'},
-  {dias:180, label:'6 meses'},
-  {dias:210, label:'7 meses'},
-  {dias:240, label:'8 meses'},
-  {dias:270, label:'9 meses'},
-  {dias:300, label:'10 meses'},
-  {dias:330, label:'11 meses'},
-  {dias:360, label:'12 meses'},
+const BREAKEVEN_DEFAULTS = [
+  {plazo:'~1 mes',   vto:'2026-04-30', lecap:21.19, cer:-13.55},
+  {plazo:'~2 mes',   vto:'2026-05-29', lecap:22.71, cer:-12.86},
+  {plazo:'~3 mes',   vto:'2026-06-30', lecap:24.81, cer:-9.52},
+  {plazo:'~4 mes',   vto:'2026-07-31', lecap:24.19, cer:-7.84},
+  {plazo:'~6 mes',   vto:'2026-09-30', lecap:26.55, cer:-5.01},
+  {plazo:'~8 mes',   vto:'2026-11-30', lecap:27.96, cer:-1.13},
+  {plazo:'~10 mes',  vto:'2027-01-15', lecap:29.30, cer:-0.27},
+  {plazo:'~12 mes',  vto:'2027-04-30', lecap:30.63, cer:-0.44},
 ];
-
-// Inicializar con defaults vacíos en la estructura fija
-const BREAKEVEN_DEFAULTS = BREAKEVEN_PLAZOS.map(p => {
-  const vto = new Date();
-  vto.setDate(vto.getDate() + p.dias);
-  return { plazo: p.label, dias: p.dias, vto: vto.toISOString().slice(0,10), lecap: 0, cer: 0, fuente: 'manual' };
-});
 
 async function loadBreakeven(){
   try{
-    const doc = await db.collection('config').doc('breakeven').get();
-    if(doc.exists && doc.data().curva && doc.data().curva.length){
-      const curvaGuardada = doc.data().curva;
-      // Mapear a la estructura fija de 12 plazos
-      breakevenData = BREAKEVEN_PLAZOS.map((p, i) => {
-        const match = curvaGuardada.find(r => r.dias === p.dias) || curvaGuardada[i] || {};
-        const vto = new Date(); vto.setDate(vto.getDate() + p.dias);
-        return {
-          plazo: p.label, dias: p.dias,
-          vto: match.vto || vto.toISOString().slice(0,10),
-          lecap: match.lecap || 0, cer: match.cer || 0,
-          fuente: match.fuente || 'manual'
-        };
-      });
-      const fecha = doc.data().fecha;
-      if(fecha) document.getElementById('breakeven-fecha').textContent = 'Última actualización: ' + fecha;
+    const doc=await db.collection('config').doc('breakeven').get();
+    if(doc.exists&&doc.data().curva&&doc.data().curva.length){
+      breakevenData=doc.data().curva;
+      const fecha=doc.data().fecha;
+      if(fecha&&document.getElementById('breakeven-fecha'))
+        document.getElementById('breakeven-fecha').textContent='Última actualización: '+fecha;
     } else {
-      breakevenData = [...BREAKEVEN_DEFAULTS];
+      breakevenData=[...BREAKEVEN_DEFAULTS];
     }
-  } catch(e){ breakevenData = [...BREAKEVEN_DEFAULTS]; }
+  }catch(e){ breakevenData=[...BREAKEVEN_DEFAULTS]; }
   renderBreakevenRows();
 }
 
-// Fisher: (1 + TNA/100)^(1/12) → TEM, luego breakeven
-function calcBreakevenTEM(lecap_tna, cer_tir){
-  const tem_lecap = Math.pow(1 + lecap_tna/100, 1/12) - 1;
-  const tem_cer   = Math.pow(1 + cer_tir/100,   1/12) - 1;
-  return (1 + tem_lecap) / (1 + tem_cer) - 1; // TEM inflación
-}
-function calcBreakevenTNA(lecap_tna, cer_tir){
-  const tem = calcBreakevenTEM(lecap_tna, cer_tir);
-  return (Math.pow(1 + tem, 12) - 1) * 100;
-}
+function calcBreakeven(lecap, cer){ return Math.round((lecap - cer)*100)/100; }
 
 function renderBreakevenRows(){
-  const tbody = document.getElementById('breakeven-rows');
-  if(!tbody) return;
-  tbody.innerHTML = breakevenData.map((row, i) => {
-    const be_tem = calcBreakevenTEM(row.lecap||0, row.cer||0) * 100;
-    const be_tna = calcBreakevenTNA(row.lecap||0, row.cer||0);
-    const color  = be_tna > 35 ? 'var(--red)' : be_tna > 28 ? 'var(--yellow)' : 'var(--green)';
-    const fuenteLabel = row.fuente === 'estimado' ?
-      `<span style="color:var(--yellow);font-size:10px;">est.</span>` :
-      row.fuente === 'mercado' ?
-      `<span style="color:var(--green);font-size:10px;">mkt</span>` :
-      `<span style="color:var(--text4);font-size:10px;">manual</span>`;
-    return `<tr>
-      <td style="color:var(--text2);">${row.plazo}</td>
-      <td style="font-family:var(--font-mono);color:var(--text3);">${row.dias}d</td>
-      <td>
-        <input type="date" value="${row.vto||''}" data-idx="${i}" data-field="vto"
-          onchange="onBreakevenChange(this)"
-          style="font-size:var(--fs-xs);padding:2px 4px;width:120px;">
+  const tbody=document.getElementById('breakeven-rows');
+  if(!tbody)return;
+  tbody.innerHTML=breakevenData.map((row,i)=>{
+    const be=calcBreakeven(row.lecap||0, row.cer||0);
+    const color=be>35?'var(--red)':be>28?'var(--yellow)':'var(--green)';
+    return`<tr>
+      <td><input type="text" value="${row.plazo||''}" data-idx="${i}" data-field="plazo" onchange="onBreakevenChange(this)" style="font-size:.72rem;padding:4px 6px;width:80px;"></td>
+      <td><input type="text" value="${row.vto||''}" data-idx="${i}" data-field="vto" onchange="onBreakevenChange(this)" style="font-size:.72rem;padding:4px 6px;width:100px;" placeholder="2026-06-30"></td>
+      <td><input type="number" value="${row.lecap||''}" step="0.01" data-idx="${i}" data-field="lecap" onchange="onBreakevenChange(this)" style="font-size:.72rem;padding:4px 6px;width:90px;"></td>
+      <td><input type="number" value="${row.cer||''}" step="0.01" data-idx="${i}" data-field="cer" onchange="onBreakevenChange(this)" style="font-size:.72rem;padding:4px 6px;width:90px;" placeholder="negativo p.ej. -5"></td>
+      <td style="display:flex;align-items:center;gap:6px;">
+        <span style="font-family:var(--mono);font-size:.85rem;font-weight:600;color:${color};">${be.toFixed(2)}%</span>
+        <button onclick="eliminarFilaBreakeven(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.8rem;padding:0;">✕</button>
       </td>
-      <td>
-        <input type="number" value="${row.lecap||''}" step="0.01" data-idx="${i}" data-field="lecap"
-          onchange="onBreakevenChange(this)"
-          style="font-size:var(--fs-xs);padding:2px 6px;width:90px;" placeholder="TNA%">
-      </td>
-      <td>
-        <input type="number" value="${row.cer||''}" step="0.01" data-idx="${i}" data-field="cer"
-          onchange="onBreakevenChange(this)"
-          style="font-size:var(--fs-xs);padding:2px 6px;width:90px;" placeholder="TIR%">
-      </td>
-      <td style="font-family:var(--font-mono);font-weight:500;color:${color};">${be_tem.toFixed(2)}% TEM</td>
-      <td style="font-family:var(--font-mono);font-weight:500;color:${color};">${be_tna.toFixed(1)}% TNA</td>
-      <td>${fuenteLabel}</td>
     </tr>`;
   }).join('');
 }
 
 function onBreakevenChange(el){
-  const i = parseInt(el.dataset.idx), field = el.dataset.field;
-  if(!breakevenData[i]) return;
-  breakevenData[i][field] = (field === 'lecap' || field === 'cer') ? parseFloat(el.value)||0 : el.value;
-  if(field === 'lecap' || field === 'cer') breakevenData[i].fuente = 'manual';
+  const i=parseInt(el.dataset.idx), field=el.dataset.field;
+  if(!breakevenData[i])return;
+  breakevenData[i][field]=field==='lecap'||field==='cer'?parseFloat(el.value)||0:el.value;
   renderBreakevenRows();
 }
 
-async function guardarBreakeven(){
-  const fecha = today();
-  try{
-    await db.collection('config').doc('breakeven').set({ curva: breakevenData, fecha });
-    document.getElementById('breakeven-fecha').textContent = 'Última actualización: ' + fecha;
-    toast('✓ Curva publicada', 'green');
-  } catch(e){ toast('Error: ' + e.message, 'red'); }
+function agregarFilaBreakeven(){
+  breakevenData.push({plazo:'',vto:'',lecap:0,cer:0});
+  renderBreakevenRows();
 }
 
-// ═══════════════════════════════════════════════════════
-//  ANÁLISIS PDF BREAKEVEN — LECAP y CER
-// ═══════════════════════════════════════════════════════
-
-async function procesarPDFBreakeven(file, tipo){
-  if(!file) return;
-  const estado = document.getElementById('be-analisis-estado');
-  const dropId = tipo === 'lecap' ? 'drop-lecap' : 'drop-cer';
-  const drop   = document.getElementById(dropId);
-
-  estado.style.display = 'block';
-  estado.innerHTML = `
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--line2);border-radius:4px;font-size:var(--fs-xs);color:var(--text3);">
-      <div class="spinner" style="width:14px;height:14px;flex:0 0 14px;"></div>
-      Analizando ${tipo.toUpperCase()} — ${file.name}...
-    </div>`;
-  drop.style.opacity = '0.4';
-  drop.style.pointerEvents = 'none';
-
-  try {
-    const base64 = await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result.split(',')[1]); r.onerror=rej; r.readAsDataURL(file); });
-
-    const prompt = tipo === 'lecap' ? `
-Analizá este PDF de LECAP (Letras Capitalizables / Tasa Fija) del mercado argentino.
-Para cada instrumento encontrá: ticker, DTM (días al vencimiento), TNA (%), fecha de vencimiento.
-Necesito encontrar la TNA más representativa para estos plazos exactos en días: 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360.
-Para cada plazo, elegí el instrumento cuyo DTM más se acerque. Si hay distorsión clara (TNA muy fuera de la curva del resto), indicalo.
-Respondé SOLO con JSON válido:
-{
-  "tipo": "lecap",
-  "fecha_datos": "YYYY-MM-DD",
-  "plazos": [
-    {"dias": 30,  "tna": 0.0, "ticker": "S30A6", "dtm_real": 3,  "fuente": "mercado"|"estimado", "nota": null},
-    {"dias": 60,  "tna": 0.0, ...},
-    {"dias": 90,  "tna": 0.0, ...},
-    {"dias": 120, "tna": 0.0, ...},
-    {"dias": 150, "tna": 0.0, ...},
-    {"dias": 180, "tna": 0.0, ...},
-    {"dias": 210, "tna": 0.0, ...},
-    {"dias": 240, "tna": 0.0, ...},
-    {"dias": 270, "tna": 0.0, ...},
-    {"dias": 300, "tna": 0.0, ...},
-    {"dias": 330, "tna": 0.0, ...},
-    {"dias": 360, "tna": 0.0, ...}
-  ]
+function eliminarFilaBreakeven(i){
+  breakevenData.splice(i,1);
+  renderBreakevenRows();
 }
-Si no hay instrumento para un plazo, interpolá linealmente entre los más cercanos y marcá fuente "estimado".
-Si hay distorsión en un plazo (por ejemplo los más cortos cotizando muy fuera de la curva), estimá vos el valor razonable extrapolando la curva y marcá "estimado" con nota explicando por qué.
-Nunca dejés tna en 0 — siempre interpolá o estimá.` :
-`Analizá este PDF de bonos CER (ajustados por inflación) del mercado argentino.
-Para cada instrumento encontrá: ticker, duration (años), TIR real (%), fecha de vencimiento.
-Necesito la TIR real más representativa para estos plazos exactos en días: 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360.
-Para cada plazo, elegí el instrumento cuya duration más se acerque. Si hay distorsión clara, indicalo.
-Respondé SOLO con JSON válido:
-{
-  "tipo": "cer",
-  "fecha_datos": "YYYY-MM-DD",
-  "plazos": [
-    {"dias": 30,  "tir": 0.0, "ticker": "X15Y6", "duration_real": 0.05, "fuente": "mercado"|"estimado", "nota": null},
-    {"dias": 60,  "tir": 0.0, ...},
-    {"dias": 90,  "tir": 0.0, ...},
-    {"dias": 120, "tir": 0.0, ...},
-    {"dias": 150, "tir": 0.0, ...},
-    {"dias": 180, "tir": 0.0, ...},
-    {"dias": 210, "tir": 0.0, ...},
-    {"dias": 240, "tir": 0.0, ...},
-    {"dias": 270, "tir": 0.0, ...},
-    {"dias": 300, "tir": 0.0, ...},
-    {"dias": 330, "tir": 0.0, ...},
-    {"dias": 360, "tir": 0.0, ...}
-  ]
-}
-Si no hay instrumento para un plazo, interpolá entre los más cercanos.
-Para plazos muy cortos donde los CER cotizan distorsionados (TIR muy positiva por el dato de inflación inminente), aplicá nuestra corrección: estimá la TIR real que debería tener ese plazo extrapolando la curva del tramo limpio (normalmente desde 90d en adelante) y marcá "estimado".
-Nunca dejés tir en 0.`;
-
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 2000,
-        messages: [{ role:'user', content:[
-          { type:'document', source:{ type:'base64', media_type:'application/pdf', data:base64 } },
-          { type:'text', text: prompt }
-        ]}]
-      })
-    });
-
-    if(!response.ok) throw new Error(`API ${response.status}`);
-    const data = await response.json();
-    const text = data.content?.find(b=>b.type==='text')?.text || '';
-    const parsed = JSON.parse(text.replace(/```json|```/g,'').trim());
-
-    // Aplicar a breakevenData
-    parsed.plazos.forEach(p => {
-      const idx = breakevenData.findIndex(r => r.dias === p.dias);
-      if(idx === -1) return;
-      if(tipo === 'lecap'){
-        breakevenData[idx].lecap = p.tna;
-        breakevenData[idx].lecap_ticker = p.ticker;
-        breakevenData[idx].fuente_lecap = p.fuente;
-      } else {
-        breakevenData[idx].cer = p.tir;
-        breakevenData[idx].cer_ticker = p.ticker;
-        breakevenData[idx].fuente_cer = p.fuente;
-      }
-      // Fuente del plazo = estimado si cualquiera es estimado
-      if(p.fuente === 'estimado') breakevenData[idx].fuente = 'estimado';
-      else if(breakevenData[idx].fuente !== 'estimado') breakevenData[idx].fuente = 'mercado';
-      if(p.nota) breakevenData[idx].nota = p.nota;
-    });
-
-    renderBreakevenRows();
-
-    const estimados = parsed.plazos.filter(p=>p.fuente==='estimado').length;
-    estado.innerHTML = `
-      <div style="padding:8px 12px;border:1px solid var(--green-border);border-radius:4px;font-size:var(--fs-xs);color:var(--green);">
-        ✓ ${tipo.toUpperCase()} actualizado — ${file.name}
-        ${estimados > 0 ? `<span style="color:var(--yellow);margin-left:8px;">⚠ ${estimados} plazos estimados (distorsión corregida)</span>` : ''}
-      </div>`;
-
-  } catch(err){
-    console.error('PDF breakeven error:', err);
-    estado.innerHTML = `
-      <div style="padding:8px 12px;border:1px solid var(--red-border);border-radius:4px;font-size:var(--fs-xs);color:var(--red);">
-        ⚠ Error analizando ${tipo.toUpperCase()}: ${err.message}. Cargá los datos manualmente.
-      </div>`;
-  } finally {
-    drop.style.opacity = '1';
-    drop.style.pointerEvents = 'auto';
-  }
-}
-
-// eliminar funciones que ya no se usan
-function agregarFilaBreakeven(){ /* deshabilitado — plazos fijos */ }
-function eliminarFilaBreakeven(){ /* deshabilitado — plazos fijos */ }
 
 async function guardarBreakeven(){
   const fecha=today();
@@ -2367,7 +2048,6 @@ function irARelevamiento(id){
 }
 
 function seleccionarCliente(id){
-  // Reset estado de carga rápida antes de re-renderizar
   clienteActivo=allClientes.find(e=>e.id===id)||null;
   if(!clienteActivo)return;
   document.querySelectorAll('.cliente-list-item').forEach(i=>i.classList.remove('active'));
@@ -2378,30 +2058,16 @@ function seleccionarCliente(id){
 function renderDetalleCliente(){
   const emp=clienteActivo, st=getStats(emp);
   document.getElementById('rel-detail').innerHTML=`
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
       <div><div style="font-family:var(--display);font-size:1rem;font-weight:700;">${emp.nombre}</div>
       <div style="font-size:.72rem;color:var(--text3);font-family:var(--mono);">${emp.cuit||''} · ${emp.email||''}</div></div>
     </div>
-
-    <!-- CARGA RÁPIDA ADMIN -->
-    <div style="margin-bottom:14px;">
-      <div style="display:flex;align-items:center;gap:8px;">
-        <input type="text" id="adm-carga-rapida-input"
-          placeholder='Ej: "préstamo Galicia $5M al 38% 90 días" · "cheque Carrefour $800k para 15/05" · "nueva línea descubierto BBVA $2M"'
-          style="flex:1;height:28px;font-size:var(--fs-xs);"
-          onkeydown="if(event.key==='Enter')procesarCargaRapidaAdm()">
-        <button class="btn btn-primary btn-sm" onclick="procesarCargaRapidaAdm()" id="adm-btn-carga">↵ Interpretar</button>
-      </div>
-      <div id="adm-carga-estado" style="display:none;margin-top:6px;font-size:var(--fs-xs);"></div>
-    </div>
-
     <div class="mini-kpi">
       <div class="mini-kpi-item"><div class="mini-kpi-label">Deuda Total</div><div class="mini-kpi-value">${fmt(st.deuda)}</div></div>
       <div class="mini-kpi-item"><div class="mini-kpi-label">Ops. Activas</div><div class="mini-kpi-value">${st.opsAct}</div></div>
       <div class="mini-kpi-item"><div class="mini-kpi-label">TNA Promedio</div><div class="mini-kpi-value" style="color:var(--yellow)">${st.tna>0?fmtN(st.tna,1)+'%':'—'}</div></div>
     </div>
     <div class="inner-tabs rel-tabs">
-      <div class="inner-tab active" onclick="showInnerTab('entidades',this)">⬡ Entidades (${emp.entidades.length})</div>
       <div class="inner-tab" onclick="showInnerTab('operaciones',this)">◎ Operaciones (${emp.operaciones.length})</div>
       <div class="inner-tab" onclick="showInnerTab('cuotas',this)">◷ Cuotas (${emp.cuotas.length})</div>
       <div class="inner-tab" onclick="showInnerTab('analisis',this)">↕ Análisis</div>
