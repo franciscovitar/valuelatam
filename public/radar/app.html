@@ -1295,6 +1295,34 @@ async function recalcularLineaUtilizada() {
 
 function doLogout(){ sessionStorage.setItem('logout','1'); auth.signOut().then(()=>{ window.location.href='index.html'; }).catch(()=>{ window.location.href='index.html'; }); }
 
+const panelTitles={dashboard:'Dashboard',entidades:'Entidades',operaciones:'Operaciones',cuotas:'Cuotas',tasas:'Vencimientos',analisis:'Análisis',calendario:'Flujo de Fondos',reporte:'Reporte Financiero'};
+
+// ── UTILITARIOS ──────────────────────────────────────
+function fmt(n){if(!n&&n!==0)return'$0';return'$'+Math.round(n).toLocaleString('es-AR');}
+function fmtN(n,dec=2){return(Math.round(n*Math.pow(10,dec))/Math.pow(10,dec)).toFixed(dec);}
+function fmtDate(f){if(!f)return'—';const d=new Date(f+'T00:00:00');return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});}
+function today(){return new Date().toISOString().slice(0,10);}
+function daysBetween(a,b){const d1=new Date(a+'T00:00:00'),d2=new Date(b+'T00:00:00');return Math.round((d2-d1)/(1000*60*60*24));}
+function addMeses(fecha,meses){const d=new Date(fecha+'T00:00:00');d.setMonth(d.getMonth()+meses);return d.toISOString().slice(0,10);}
+function calcEstadoCuota(fecha){const hoy=today();if(fecha<hoy)return'vencida';if(fecha===hoy)return'hoy';return'pendiente';}
+function toast(msg,tipo='green'){const t=document.getElementById('toast');if(!t)return;t.innerHTML='<span style="color:var(--'+tipo+')">●</span> '+msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+function sortEntidades(arr){return [...arr].sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||''));}
+
+function showTab(name,el){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const panel=document.getElementById('panel-'+name);
+  if(panel)panel.classList.add('active');
+  if(el)el.classList.add('active');
+  const pt=document.getElementById('page-title');
+  if(pt)pt.textContent=panelTitles[name]||name;
+  if(name==='cuotas')renderCuotas();
+  if(name==='tasas'){loadGlobalTNA().then(()=>renderTasas());}
+  if(name==='analisis'){loadGlobalTNA().then(()=>renderAnalisisApp());}
+  if(name==='calendario')renderFlujoDeFondos();
+  if(name==='reporte')renderReporte();
+}
+
 function onEntTipoLineaChangeApp(){
   const tipo=document.getElementById('ent-tipo-linea')?.value;
   const wrap=document.getElementById('ent-subtipo-wrap');
