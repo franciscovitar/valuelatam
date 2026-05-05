@@ -1148,6 +1148,13 @@ let entidades = [];
 let operaciones = [];
 let cuotas = [];
 let tnaRef = 60, badlarRef = 0, tamarRef = 0, tcUSD = 1200, umbralAmarillo = 3, umbralRojo = 8, tasasBancosRef = {};
+const PUNTUAL_AMORTIZABLE_APP = ['Préstamo de Inversión','Leasing','Préstamo','Cheque descontado','Factura descontada'];
+const FF_TIPOS_CLI = {
+  cheque_recibido: { label:'📥 Cheque recibido', dir:'entrada' },
+  factura_cobrar:  { label:'📄 Factura a cobrar', dir:'entrada' },
+  cheque_emitido:  { label:'📤 Cheque emitido',   dir:'salida'  },
+  pago_proveedor:  { label:'🏭 Pago proveedor',   dir:'salida'  },
+};
 let breakevenCurva = []; // cargado desde Firestore config/breakeven
 
 async function loadBreakevenApp(){
