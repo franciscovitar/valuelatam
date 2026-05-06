@@ -3692,10 +3692,17 @@ function openModalOp(){
   const sel=document.getElementById('op-entidad');
   sel.innerHTML='<option value="">— seleccioná —</option>';
   const rotativas=clienteActivo.entidades.filter(e=>e.tipoLinea==='Rotativa');
-  if(!rotativas.length){toast('Cargá al menos una entidad rotativa primero','yellow');return;}
-  rotativas.forEach(e=>{
-    sel.innerHTML+=`<option value="${e.id}">${e.nombre} · ↺ Rotativa</option>`;
-  });
+  const puntuales=clienteActivo.entidades.filter(e=>e.tipoLinea!=='Rotativa');
+  if(rotativas.length){
+    const gr=document.createElement('optgroup'); gr.label='↺ Rotativas';
+    rotativas.forEach(e=>{ const o=document.createElement('option'); o.value=e.id; o.textContent=e.nombre+' · Rotativa'; gr.appendChild(o); });
+    sel.appendChild(gr);
+  }
+  if(puntuales.length){
+    const gr=document.createElement('optgroup'); gr.label='◆ Puntuales';
+    puntuales.forEach(e=>{ const o=document.createElement('option'); o.value=e.id; o.textContent=e.nombre+(e.subtipo?' · '+e.subtipo:''); gr.appendChild(o); });
+    sel.appendChild(gr);
+  }
   document.getElementById('preview-wrap').style.display='none';
   document.getElementById('op-desembolso').value=today();
   const n=new Date();n.setMonth(n.getMonth()+1);document.getElementById('op-primera-cuota').value=n.toISOString().slice(0,10);
