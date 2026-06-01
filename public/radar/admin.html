@@ -684,13 +684,13 @@ table tbody tr.is-selected td:first-child{box-shadow:inset 2px 0 0 var(--accent)
         </div>
         <div class="kpi-card yellow">
           <div class="kpi-head">
-            <div class="kpi-label">TNA Ref. Global</div>
+            <div class="kpi-label">Vence esta semana</div>
             <div class="kpi-ico">
-              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11l4-4 3 3 5-6"/></svg>
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="11" rx="1"/><path d="M5 2v2M11 2v2M2 7h12"/></svg>
             </div>
           </div>
-          <div class="kpi-value" id="ov-tna">—%</div>
-          <div class="kpi-sub">Actualizada por vos</div>
+          <div class="kpi-value" id="ov-vence7" style="font-size:1.4rem;">$0</div>
+          <div class="kpi-sub" id="ov-vence7-desc">Próximos 7 días — todos los clientes</div>
         </div>
         <div class="kpi-card purple">
           <div class="kpi-head">
@@ -705,7 +705,7 @@ table tbody tr.is-selected td:first-child{box-shadow:inset 2px 0 0 var(--accent)
       </div>
       <div class="table-card">
         <div class="table-header"><div><div class="table-title">Resumen por Cliente</div><div class="table-sub">Vista consolidada</div></div></div>
-        <table><thead><tr><th>Empresa</th><th>CUIT</th><th>Email</th><th>Deuda Total</th><th>Ops.</th><th>TNA Prom.</th><th>Próx. Vto.</th><th></th></tr></thead>
+        <table><thead><tr><th>Empresa</th><th>CUIT</th><th>Deuda Total</th><th>Ops.</th><th>TNA Prom.</th><th>Próx. Vto.</th><th>Estado</th><th></th></tr></thead>
         <tbody id="tabla-overview"><tr><td colspan="8"><div class="empty"><div class="empty-icon">⬡</div><div class="empty-text">Cargando...</div></div></td></tr></tbody></table>
       </div>
     </div>
@@ -728,7 +728,11 @@ table tbody tr.is-selected td:first-child{box-shadow:inset 2px 0 0 var(--accent)
       <div class="table-card" style="overflow:visible;">
         <div class="relevamiento-wrap">
           <div class="cliente-list" id="rel-cliente-list">
-            <div class="cli-header">Clientes</div>
+            <div style="padding:6px 8px;border-bottom:1px solid var(--line);">
+              <input type="text" id="cli-search" placeholder="Buscar..."
+                style="width:100%;height:24px;font-size:var(--fs-xs);"
+                oninput="filtrarClientes(this.value)">
+            </div>
           </div>
           <div class="relevamiento-detail" id="rel-detail">
             <div class="rel-empty"><div style="font-size:2rem;opacity:.2;">◎</div><div>Seleccioná un cliente de la lista</div></div>
@@ -1537,7 +1541,7 @@ async function guardarTNA(){
   if(isNaN(v)||v<0){toast('TNA inválida','red');return;}
   const data={tnaRef:v,updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:auth.currentUser?.email};
   await db.collection('config').doc('global').set(data,{merge:true});
-  tnaActual=v;document.getElementById('tna-display').textContent=v.toFixed(1)+' %';document.getElementById('ov-tna').textContent=v.toFixed(1)+'%';
+  tnaActual=v;document.getElementById('tna-display').textContent=v.toFixed(1)+' %';const elOvTna=document.getElementById('ov-tna');if(elOvTna)elOvTna.textContent=v.toFixed(1)+'%';
   toast(`TNA Mercado actualizada a ${v.toFixed(1)}%`);await loadTNA();
 }
 
@@ -2186,13 +2190,67 @@ function getStats(emp){
 }
 
 function renderOverview(){
+  const hoy=today();
+  const lim7=new Date();lim7.setDate(lim7.getDate()+7);
+  const lim7str=lim7.toISOString().slice(0,10);
+
   const stats=allClientes.map(e=>getStats(e));
+
+  // KPIs
   document.getElementById('ov-clientes').textContent=allClientes.length;
   document.getElementById('ov-deuda').textContent=fmt(stats.reduce((s,st)=>s+st.deuda,0));
   document.getElementById('ov-ops').textContent=stats.reduce((s,st)=>s+st.opsAct,0);
+
+  // KPI vencimientos semana — suma de TODAS las cuotas de TODOS los clientes en 7 días
+  let totalVence7=0, cantVence7=0;
+  allClientes.forEach(emp=>{
+    emp.cuotas.filter(c=>c.estado!=='pagada'&&c.fecha<=lim7str&&c.fecha>=hoy).forEach(c=>{
+      totalVence7+=c.total||0; cantVence7++;
+    });
+  });
+  const elV7=document.getElementById('ov-vence7');
+  const elV7d=document.getElementById('ov-vence7-desc');
+  if(elV7) elV7.textContent=totalVence7>0?fmt(totalVence7):'$0';
+  if(elV7d) elV7d.textContent=cantVence7>0?cantVence7+' cuota(s) · '+allClientes.length+' clientes':'Sin vencimientos próximos';
+
+  // Tabla — ordenada por urgencia
   const tbody=document.getElementById('tabla-overview');
-  if(!allClientes.length){tbody.innerHTML='<tr><td colspan="8"><div class="empty"><div class="empty-icon">⬡</div><div class="empty-text">Sin clientes</div></div></td></tr>';return;}
-  tbody.innerHTML=allClientes.map((emp,i)=>{const st=stats[i];return`<tr><td class="td-bold">${emp.nombre||'—'}</td><td class="td-mono" style="font-size:.7rem;color:var(--text3)">${emp.cuit||'—'}</td><td style="font-size:.72rem">${emp.email||'—'}</td><td class="td-mono" style="color:var(--accent)">${fmt(st.deuda)}</td><td class="td-mono">${st.opsAct}</td><td class="td-mono" style="color:var(--yellow)">${st.tna>0?fmtN(st.tna,1)+'%':'—'}</td><td class="td-mono" style="font-size:.7rem">${st.proxFecha?fmtDate(st.proxFecha):'—'}</td><td><button class="btn btn-ghost btn-sm" onclick="irARelevamiento('${emp.id}')">Cargar datos →</button></td></tr>`;}).join('');
+  if(!allClientes.length){
+    tbody.innerHTML='<tr><td colspan="8"><div class="empty"><div class="empty-icon">⬡</div><div class="empty-text">Sin clientes</div></div></td></tr>';
+    return;
+  }
+
+  // Calcular semáforo por cliente
+  const clientesConEstado=allClientes.map((emp,i)=>{
+    const st=stats[i];
+    const tieneVencidas=emp.cuotas.some(c=>c.estado==='vencida');
+    const tieneUrgentes=emp.cuotas.some(c=>c.estado!=='pagada'&&c.fecha>=hoy&&c.fecha<=lim7str);
+    const tieneLineaVencida=emp.entidades.some(e=>e.vtoLinea&&e.vtoLinea<hoy);
+    let semaforo=tieneVencidas?'rojo':tieneUrgentes||tieneLineaVencida?'amarillo':'verde';
+    let urgencia=tieneVencidas?0:tieneUrgentes?1:tieneLineaVencida?2:3;
+    return{emp,st,semaforo,urgencia,tieneVencidas,tieneUrgentes,tieneLineaVencida};
+  }).sort((a,b)=>a.urgencia-b.urgencia);
+
+  tbody.innerHTML=clientesConEstado.map(({emp,st,semaforo,tieneVencidas,tieneUrgentes,tieneLineaVencida})=>{
+    const semColor=semaforo==='rojo'?'var(--red)':semaforo==='amarillo'?'var(--yellow)':'var(--green)';
+    const semLabel=tieneVencidas
+      ?`<span style="color:var(--red);font-size:var(--fs-xs);">⚠ Vencidas</span>`
+      :tieneUrgentes
+      ?`<span style="color:var(--yellow);font-size:var(--fs-xs);">⚡ Vence en 7d</span>`
+      :tieneLineaVencida
+      ?`<span style="color:var(--yellow);font-size:var(--fs-xs);">📅 Línea vencida</span>`
+      :`<span style="color:var(--green);font-size:var(--fs-xs);">✓ Al día</span>`;
+    return`<tr>
+      <td><div style="display:flex;align-items:center;gap:6px;"><span style="width:6px;height:6px;border-radius:50%;background:${semColor};flex:0 0 6px;"></span><span class="td-bold">${emp.nombre||'—'}</span></div></td>
+      <td class="td-mono" style="font-size:.7rem;color:var(--text3)">${emp.cuit||'—'}</td>
+      <td class="td-mono" style="color:var(--accent)">${fmt(st.deuda)}</td>
+      <td class="td-mono">${st.opsAct}</td>
+      <td class="td-mono" style="color:var(--yellow)">${st.tna>0?fmtN(st.tna,1)+'%':'—'}</td>
+      <td class="td-mono" style="font-size:.7rem">${st.proxFecha?fmtDate(st.proxFecha):'—'}</td>
+      <td>${semLabel}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="irARelevamiento('${emp.id}')">Ver →</button></td>
+    </tr>`;
+  }).join('');
 }
 
 function renderClientes(){
@@ -2201,16 +2259,54 @@ function renderClientes(){
   tbody.innerHTML=allClientes.map(emp=>`<tr><td class="td-bold">${emp.nombre||'—'}</td><td class="td-mono" style="font-size:.7rem;color:var(--text3)">${emp.cuit||'—'}</td><td style="font-size:.72rem">${emp.email||'—'}</td><td class="td-mono" style="font-size:.7rem;color:var(--text3)">${fmtTs(emp.creado)}</td><td><span class="badge badge-green">● Activo</span></td><td><button class="btn btn-ghost btn-sm" onclick="irARelevamiento('${emp.id}')">Cargar datos →</button></td></tr>`).join('');
 }
 
-function renderRelevamientoList(){
+function renderRelevamientoList(filtro=''){
   const list=document.getElementById('rel-cliente-list');
-  list.innerHTML='<div class="cli-header">Clientes</div>';
-  allClientes.forEach(emp=>{
+  // Mantener el input de búsqueda
+  let searchEl=document.getElementById('cli-search');
+  if(!searchEl){
+    list.innerHTML='<div style="padding:6px 8px;border-bottom:1px solid var(--line);"><input type="text" id="cli-search" placeholder="Buscar..." style="width:100%;height:24px;font-size:var(--fs-xs);" oninput="filtrarClientes(this.value)"></div>';
+    searchEl=document.getElementById('cli-search');
+  }
+  // Limpiar items anteriores (mantener el search)
+  [...list.querySelectorAll('.cliente-list-item')].forEach(el=>el.remove());
+
+  const hoy=today();
+  const lim7=new Date();lim7.setDate(lim7.getDate()+7);
+  const lim7str=lim7.toISOString().slice(0,10);
+  const term=filtro.toLowerCase();
+
+  const filtrados=allClientes.filter(emp=>
+    !term||
+    (emp.nombre||'').toLowerCase().includes(term)||
+    (emp.cuit||'').includes(term)
+  );
+
+  if(!filtrados.length){
+    const empty=document.createElement('div');
+    empty.className='cliente-list-item';
+    empty.style.cssText='color:var(--text4);font-size:var(--fs-xs);padding:8px 12px;';
+    empty.textContent='Sin resultados';
+    list.appendChild(empty);
+    return;
+  }
+
+  filtrados.forEach(emp=>{
+    const tieneVencidas=emp.cuotas.some(c=>c.estado==='vencida');
+    const tieneUrgentes=emp.cuotas.some(c=>c.estado!=='pagada'&&c.fecha>=hoy&&c.fecha<=lim7str);
+    const tieneLineaVencida=emp.entidades.some(e=>e.vtoLinea&&e.vtoLinea<hoy);
+    const dot=tieneVencidas?'<span style="color:var(--red);font-size:8px;">●</span>':
+              tieneUrgentes||tieneLineaVencida?'<span style="color:var(--yellow);font-size:8px;">●</span>':
+              '<span style="color:var(--green);font-size:8px;">●</span>';
     const item=document.createElement('div');
     item.className='cliente-list-item'+(clienteActivo?.id===emp.id?' active':'');
-    item.innerHTML=`<div class="cli-nombre">${emp.nombre||'—'}</div><div class="cli-sub">${emp.cuit||emp.email||'—'}</div>`;
+    item.innerHTML=`<div style="display:flex;align-items:center;gap:6px;">${dot}<span class="cli-nombre">${emp.nombre||'—'}</span></div><div class="cli-sub">${emp.cuit||emp.email||'—'}</div>`;
     item.onclick=()=>seleccionarCliente(emp.id);
     list.appendChild(item);
   });
+}
+
+function filtrarClientes(term){
+  renderRelevamientoList(term);
 }
 
 function irARelevamiento(id){
