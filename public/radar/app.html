@@ -726,9 +726,17 @@ table tbody tr.is-selected td:first-child{box-shadow:inset 2px 0 0 var(--accent)
         </div>
         <div class="kpi-card red">
           <div class="kpi-head"><div class="kpi-label">Próx. 30 días</div><div class="kpi-ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="11" rx="1"/><path d="M5 2v2M11 2v2M2 7h12"/></svg></div></div>
-          <div class="kpi-value" id="kpi-prox-fecha" style="font-size:1.1rem;">—</div>
-          <div class="kpi-sub" id="kpi-prox-desc">Sin vencimientos</div>
-          <div class="kpi-sub" id="kpi-prox-monto" style="color:var(--danger-fg);"></div>
+          <div class="kpi-value big" id="kpi-prox30-total">$0</div>
+          <div class="kpi-sub" id="kpi-prox30-desc">Sin vencimientos</div>
+          <div class="kpi-sub" id="kpi-prox30-prox" style="color:var(--danger-fg);margin-top:2px;"></div>
+        </div>
+      </div>
+
+      <!-- ONBOARDING -->
+      <div id="dash-onboarding" style="display:none;margin-bottom:var(--sp-5);">
+        <div style="border:1px solid var(--line);border-radius:6px;padding:var(--sp-4) var(--sp-5);">
+          <div style="font-size:var(--fs-sm);color:var(--text);font-weight:500;margin-bottom:var(--sp-3);">Primeros pasos para activar tu dashboard</div>
+          <div id="ob-steps"></div>
         </div>
       </div>
 
@@ -2444,13 +2452,17 @@ function renderDashboard(){
   const diff=tnaF-tnaRef;
   document.getElementById('kpi-tna-badge').textContent='vs mercado '+(diff>=0?'+':'')+fmtN(diff,1)+'pp';
 
-  const prox=[...cuotas].filter(c=>c.estado!=='pagada').sort((a,b)=>a.fecha.localeCompare(b.fecha));
-  if(prox.length){
-    const p=prox[0],op=operaciones.find(o=>o.id===p.opId)||{};
-    document.getElementById('kpi-prox-fecha').textContent=fmtDate(p.fecha);
-    document.getElementById('kpi-prox-desc').textContent=(op.entidadNombre||'—')+' · '+(op.tipo||'');
-    document.getElementById('kpi-prox-monto').textContent=fmt(p.total);
-  }
+  // KPI — Total a pagar en 30 días
+  const lim30d=new Date();lim30d.setDate(lim30d.getDate()+30);
+  const cuotas30d=cuotas.filter(c=>c.estado!=='pagada'&&c.fecha<=lim30d.toISOString().slice(0,10));
+  const total30d=cuotas30d.reduce((s,c)=>s+c.total,0);
+  const el30t=document.getElementById('kpi-prox30-total');
+  const el30d=document.getElementById('kpi-prox30-desc');
+  const el30p=document.getElementById('kpi-prox30-prox');
+  if(el30t) el30t.textContent=total30d>0?fmt(total30d):'$0';
+  if(el30d) el30d.textContent=cuotas30d.length>0?cuotas30d.length+' cuota(s) próximas':'Sin vencimientos';
+  const proxC=[...cuotas].filter(c=>c.estado!=='pagada').sort((a,b)=>a.fecha.localeCompare(b.fecha))[0];
+  if(proxC&&el30p){const opP=operaciones.find(o=>o.id===proxC.opId)||{};const dP=daysBetween(hoy,proxC.fecha);el30p.textContent=(dP===0?'Hoy':dP===1?'Mañana':'En '+dP+'d')+' · '+(opP.entidadNombre||'—');}
 
   // ── ALERTA PRIORITARIA ───────────────────────────────
   const vencidas=cuotas.filter(c=>c.estado==='vencida');
@@ -2549,7 +2561,7 @@ function renderDashboard(){
     } else {
       const fila=(label,p)=>{
         const c=p.neto>=0?'var(--green)':'var(--red)';
-        const pct=p.entradas+p.salidas>0?Math.round(p.entradas/(p.entradas+p.salidas)*100):0;
+        const pct=(p.entradas>0&&p.salidas>0)?Math.round(p.entradas/(p.entradas+p.salidas)*100):(p.entradas>0?100:0);
         return '<div style="margin-bottom:12px;">'+
           '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">'+
             '<span style="font-size:var(--fs-xs);color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;">'+label+'</span>'+
@@ -2644,6 +2656,50 @@ function renderDashboard(){
           '<div class="progress-bg"><div class="progress-fill" style="width:'+w+'%;background:'+color+';"></div></div>'+
         '</div>';
       }).join('');
+    }
+  }
+
+  // ── ONBOARDING ───────────────────────────────────────
+  const obWrap=document.getElementById('dash-onboarding');
+  if(obWrap){
+    const tieneEnt=entidades.length>0;
+    const tieneOps=operaciones.length>0;
+    const tieneFF2=(movimientosFF||[]).length>0;
+    if(tieneEnt&&tieneOps&&tieneFF2){
+      obWrap.style.display='none';
+    } else {
+      obWrap.style.display='block';
+      const obEl=document.getElementById('ob-steps');
+      if(obEl){
+        obEl.innerHTML='';
+        const pasos=[
+          {ok:tieneEnt,   txt:'Cargá tu primera entidad bancaria',   ev:'ent',  btn:'+ Entidad'},
+          {ok:tieneOps,   txt:'Cargá tu primera operación financiera',ev:'op',   btn:'+ Operación'},
+          {ok:tieneFF2,   txt:'Agregá un cobro en Flujo de Fondos',   ev:'flujo',btn:'→ Flujo'},
+        ];
+        pasos.forEach(function(p,i){
+          const row=document.createElement('div');
+          row.style.cssText='display:flex;align-items:center;gap:10px;font-size:var(--fs-sm);margin-bottom:8px;';
+          const dot=document.createElement('span');
+          dot.style.cssText='width:18px;height:18px;border-radius:50%;border:1px solid '+(p.ok?'var(--green)':'var(--line2)')+';background:'+(p.ok?'var(--green)':'transparent')+';display:grid;place-items:center;flex:0 0 18px;font-size:9px;color:'+(p.ok?'#000':'var(--text3)')+';';
+          dot.textContent=p.ok?'✓':String(i+1);
+          const txt=document.createElement('span');
+          txt.textContent=p.txt;
+          txt.style.color=p.ok?'var(--text3)':'var(--text2)';
+          if(p.ok)txt.style.textDecoration='line-through';
+          row.appendChild(dot);row.appendChild(txt);
+          if(!p.ok){
+            const b=document.createElement('button');
+            b.className='btn btn-secondary btn-sm';
+            b.style.cssText='margin-left:auto;height:22px;font-size:10px;';
+            b.textContent=p.btn;
+            if(p.ev==='flujo'){b.setAttribute('onclick',"showTab('calendario',null)");}
+            else{b.setAttribute('onclick',"openModal('"+p.ev+"')");}
+            row.appendChild(b);
+          }
+          obEl.appendChild(row);
+        });
+      }
     }
   }
 }
